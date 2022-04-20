@@ -37,24 +37,7 @@ const connectToDb = async (): Promise<void> => {
   }
 };
 
-const checkForEnvVariables = (): void => {
-  if (
-    !(
-      process.env.TYPEORM_CONNECTION &&
-      process.env.TYPEORM_HOST &&
-      process.env.TYPEORM_USERNAME &&
-      process.env.TYPEORM_PASSWORD &&
-      process.env.TYPEORM_DATABASE &&
-      process.env.TYPEORM_ENTITIES &&
-      process.env.TYPEORM_SYNCHRONIZE
-    )
-  ) {
-    throw new Error('Missing TYPEORM environment variables!');
-  }
-};
-
 app.listen(PORT, (e?: Error) => {
   e ? console.error(e) : console.log('Listening on port 3000');
-  checkForEnvVariables();
   connectToDb();
 });

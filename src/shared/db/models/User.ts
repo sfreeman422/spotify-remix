@@ -13,7 +13,7 @@ export class User {
   public spotifyId!: string;
 
   @Column()
-  public auth!: string;
+  public authToken!: string;
 
   @OneToMany(
     () => Playlist,
