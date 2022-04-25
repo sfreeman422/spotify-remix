@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import axios from 'axios';
+import request from 'request';
 import express, { Router } from 'express';
 import * as querystring from 'querystring';
 import { v4 as uuidv4 } from 'uuid';
@@ -30,23 +30,52 @@ authController.get('/login/callback', (req, res) => {
   if (state === null) {
     res.status(500).send('State mismatch');
   } else {
-    axios
-      .post(
-        'https://accounts.spotify.com/api/token',
-        {
-          code: code,
-          redirect_uri: process.env.SPOTIFY_SUCCESS_REDIRECT_URL,
-          grant_type: 'authorization_code',
-        },
-        {
-          headers: {
-            Authorization:
-              'Basic ' +
-              Buffer.from(process.env.SPOTIFY_CLIENT_ID + ':' + process.env.SPOTIFY_CLIENT_SECRET).toString('base64'),
-          },
-        },
-      )
-      .then(() => res.redirect(process.env.SPOTIFY_SUCCESS_REDIRECT_URL as string));
+    const reqOptions = {
+      url: 'https://accounts.spotify.com/api/token',
+      form: {
+        code,
+        redirect_uri: process.env.SPOTIFY_TOKEN_REDIRECT_URL,
+        grant_type: 'authorization_code',
+      },
+      headers: {
+        Authorization:
+          'Basic ' +
+          Buffer.from(process.env.SPOTIFY_CLIENT_ID + ':' + process.env.SPOTIFY_CLIENT_SECRET).toString('base64'),
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      json: true,
+    };
+
+    console.log(reqOptions);
+
+    request.post(reqOptions, (err, response, body) => {
+      console.log(response.statusCode);
+      console.log(response.statusMessage);
+      console.log(response.body);
+      if (!err && response.statusCode === 200) {
+        console.log('success');
+        console.log(body);
+        const access_token = body.access_token;
+        const refresh_token = body.refresh_token;
+
+        console.log(access_token);
+        console.log(refresh_token);
+
+        const options = {
+          url: 'https://api.spotify.com/v1/me',
+          headers: { Authorization: 'Bearer ' + access_token },
+          json: true,
+        };
+
+        // use the access token to access the Spotify Web API
+        request.get(options, function(_e, _r, b) {
+          console.log(b);
+        });
+      } else {
+        console.log(err);
+        res.status(500).send(err);
+      }
+    });
   }
 });
 
