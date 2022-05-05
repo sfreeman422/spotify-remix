@@ -22,7 +22,7 @@
         color: green;
       }
 
-      #playlists {
+      .playlist {
         display: flex;
         flex-wrap: wrap;
       }
@@ -55,6 +55,59 @@
       })
         .then(x => x.json())
         .then(x => {
+          const playlistDiv = document.getElementById('playlists');
+
+          if (x.orphanPlaylists && x.orphanPlaylists.length > 0) {
+            playlistDiv.innerHTML += `<div>
+              <h3 class="text-white">Orphaned Playlists</h3>
+              <div class="playlist" id="orphan-playlists"></div>
+              </div>`;
+            x.orphanPlaylists.map(
+              item =>
+                (document.getElementById('orphan-playlists').innerHTML += `
+            <div class="card">
+            <h3>${item.name}</h3>
+            <p>${item.tracks.total} tracks</p>
+            <a href=${item.external_urls.spotify}>${item.external_urls.spotify}</a>
+            <p>${item.description}</p>
+            </div>`),
+            );
+          }
+
+          if (x.managedPlaylists && x.managedPlaylists.length > 0) {
+            playlistDiv.innerHTML += `<div>
+              <h3 class="text-white">Managed Playlists</h3>
+              <div class="playlist" id="managed-playlists"></div>
+              </div>`;
+            x.managedPlaylists.map(
+              item =>
+                (document.getElementById('managed-playlists').innerHTML += `
+            <div class="card">
+            <h3>${item.name}</h3>
+            <p>${item.tracks.total} tracks</p>
+            <a href=${item.external_urls.spotify}>${item.external_urls.spotify}</a>
+            <p>${item.description}</p>
+            </div>`),
+            );
+          }
+
+          if (x.unmanagedPlaylists && x.unmanagedPlaylists.length > 0) {
+            playlistDiv.innerHTML += `<div>
+              <h3 class="text-white">Unmanaged Playlists</h3>
+              <div class="playlist" id="unmanaged-playlists"></div>
+              </div>`;
+            x.unmanagedPlaylists.map(
+              item =>
+                (document.getElementById('unmanaged-playlists').innerHTML += `
+            <div class="card">
+            <h3>${item.name}</h3>
+            <p>${item.tracks.total} tracks</p>
+            <a href=${item.external_urls.spotify}>${item.external_urls.spotify}</a>
+            <p>${item.description}</p>
+            </div>`),
+            );
+          }
+
           if (x.items && x.items.length > 0) {
             x.items.map(
               item =>

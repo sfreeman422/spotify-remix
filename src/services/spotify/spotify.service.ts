@@ -26,14 +26,27 @@ export class SpotifyService {
       });
   }
 
-  getUserPlaylists(accessToken: string): Promise<any> {
+  async getUserPlaylists(accessToken: string): Promise<any> {
+    const playlists = await (await this.userService.getAllOwnedPlaylists(accessToken)).map(x => x.playlistId);
     return axios
       .get(`${this.baseSelfUrl}/playlists`, {
         headers: {
           Authorization: accessToken,
         },
       })
-      .then(resp => resp.data)
+      .then(resp => {
+        // Primary source of truth.
+        const spotifyPlaylists: any[] = resp.data.items;
+        // Not working maybe.
+        const orphanPlaylists = playlists.filter(x => !spotifyPlaylists.find(y => x === y.id));
+        const managedPlaylists = spotifyPlaylists.filter(x => playlists.includes(x.id));
+        const unmanagedPlaylists = spotifyPlaylists.filter(x => !playlists.includes(x.id));
+        return {
+          unmanagedPlaylists,
+          orphanPlaylists,
+          managedPlaylists,
+        };
+      })
       .catch(e => console.log(e));
   }
 

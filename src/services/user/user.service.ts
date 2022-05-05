@@ -31,6 +31,18 @@ export class UserService {
     return getDataSource().then(datasource => datasource.getRepository(Playlist).save(playlist));
   }
 
+  public async getAllOwnedPlaylists(accessToken: string) {
+    return getDataSource().then(async datasource => {
+      const token = accessToken.split(' ')[1];
+      const user = await datasource
+        .getRepository(User)
+        .find({ where: { accessToken: token }, relations: ['ownedPlaylists'] });
+      if (user?.[0]?.ownedPlaylists?.length) {
+        return user[0].ownedPlaylists;
+      }
+      return [];
+    });
+  }
   public async getPlaylist(playlistId: string) {
     return getDataSource().then(datasource =>
       datasource.getRepository(Playlist).find({ where: { playlistId }, relations: ['members'] }),
