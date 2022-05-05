@@ -67,17 +67,16 @@ export class SpotifyService {
     console.log('not yet implemented');
   }
 
+  unsubscribeFromPlaylist(_accessToken: string, _playlistId: string) {
+    console.log('not yet implemented');
+  }
+
   subscribeToPlaylist(_accessToken: string, _playlistId: string) {
     console.log('not yet implemented');
   }
 
-  async populatePlaylist(playlistId: string) {
-    // get list of owners + subscribers (as far as WE know, we cannot use tthe followers key) in the playlist
-    const members = await this.userService.getPlaylist(playlistId).then(playlist => {
-      return playlist[0]?.members;
-    });
-    // For each member, get most recently playec + liked tracks
-    const music: any[] = members?.length
+  async getTopAndLikedSongs(members: any[], songsPerUser: number): Promise<any[]> {
+    return members?.length
       ? await Promise.all(
           members.map(async member => {
             const userMusic = await Promise.all([
@@ -111,35 +110,38 @@ export class SpotifyService {
                 .catch(e => console.error(e)),
             ]);
 
-            return userMusic.flat();
+            const allMusic = userMusic.flat();
+            const playlistSongs = [];
+            const randomNumbers: Record<number, boolean> = {};
+            let count = 0;
+            while (count < songsPerUser) {
+              const randomNumber = Math.floor(Math.random() * (allMusic.length - 1));
+              if (!randomNumbers[randomNumber]) {
+                randomNumbers[randomNumber] = true;
+                playlistSongs.push(allMusic[randomNumber]);
+                count += 1;
+              }
+            }
+            return playlistSongs;
           }),
         )
       : [];
+  }
 
-    const numberOfItemsPerUser = this.getNumberOfItemsPerUser(members.length);
-    const itemsByUserMap: Record<string, number> = {};
-    // Create a list of songs to add to the playlist.
-    // Save those songs in the DB to keep track of what has been added to a given playlist.
-    const playlistItems: any[] = [];
-
-    music?.flat().forEach(item => {
-      const { accessToken } = item;
-      // Do this after you add tthe song.
-      if (itemsByUserMap[accessToken] && itemsByUserMap[accessToken] < numberOfItemsPerUser) {
-        playlistItems.push(item);
-        itemsByUserMap[accessToken] += 1;
-      } else if (!itemsByUserMap[accessToken]) {
-        playlistItems.push(item);
-        itemsByUserMap[accessToken] = 1;
-      }
+  async populatePlaylist(playlistId: string) {
+    const members = await this.userService.getPlaylist(playlistId).then(playlist => {
+      return playlist[0]?.members;
     });
-    // We will want to round robin sort by access token here i believe.
-    // Fire off mad network requests to add to playlist.
+    const songsPerUser = this.getNumberOfItemsPerUser(members.length);
+    // For each member, get most recently played + liked tracks and limit to the number of songs each user should provide.
+    const music: any[] = await this.getTopAndLikedSongs(members, songsPerUser);
+    const playlist = this.roundRobinSort(music);
 
-    console.log(playlistItems.length);
+    console.log(playlist.length);
     // Need to add rate limit error handling here with retry logic.
+    // https://developer.spotify.com/documentation/web-api/guides/rate-limits/
     return await Promise.all(
-      this.roundRobinSort(playlistItems).map(song => {
+      playlist.map(song => {
         return axios
           .post(
             `${this.basePlaylistUrl}/${playlistId}/tracks`,
@@ -152,7 +154,7 @@ export class SpotifyService {
               },
             },
           )
-          .catch(e => console.error(e));
+          .catch(_e => console.error('an error has occurred'));
       }),
     );
   }
@@ -170,13 +172,13 @@ export class SpotifyService {
           i -= 1;
         }
       }
-      sortedArr = sortedArr.concat(orderedSet);
+      sortedArr = sortedArr.concat(orderedSet).flat();
     }
     return sortedArr;
   }
 
-  // This function sucks, but basically if we have under 10 ppl, use 50 songs total, if we have more than 10, use 5 songs each.
-  getNumberOfItemsPerUser(numberOfUsers: number) {
+  // This function sucks, but basically if we have under 10 ppl, use 48 songs total, if we have more than 10, use 5 songs each.
+  getNumberOfItemsPerUser(numberOfUsers: number): number {
     const minSongsPerUser = numberOfUsers * 6;
     const maxNumberOfSongs = 48;
     return minSongsPerUser > maxNumberOfSongs ? minSongsPerUser : Math.round(maxNumberOfSongs / numberOfUsers);
