@@ -13,7 +13,10 @@ playlistController.get('/playlists', async (req, res) => {
     spotifyService
       .getUserPlaylists(authorization)
       .then(x => res.send(x))
-      .catch(e => res.send(e));
+      .catch(e => {
+        console.log(e);
+        res.send(e);
+      });
   } else {
     res.status(400).send('Missing access token!');
   }

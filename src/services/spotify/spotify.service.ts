@@ -27,11 +27,14 @@ export class SpotifyService {
   }
 
   getUserPlaylists(accessToken: string): Promise<any> {
-    return axios.get(this.basePlaylistUrl, {
-      headers: {
-        Authorization: accessToken,
-      },
-    });
+    return axios
+      .get(`${this.baseSelfUrl}/playlists`, {
+        headers: {
+          Authorization: accessToken,
+        },
+      })
+      .then(resp => resp.data)
+      .catch(e => console.log(e));
   }
 
   createUserPlaylist(accessToken: string): Promise<any> {

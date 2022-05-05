@@ -1,10 +1,38 @@
 <html>
-  <head></head>
+  <head>
+    <style>
+      body {
+        background: black;
+      }
+      .card {
+        border-radius: 5px;
+        border: solid 1px;
+        background-color: rgb(201, 201, 201);
+        padding: 1rem;
+        margin: 1rem;
+        width: 300px;
+        word-wrap: normal;
+      }
+
+      .text-white {
+        color: white;
+      }
+
+      .text-green {
+        color: green;
+      }
+
+      #playlists {
+        display: flex;
+        flex-wrap: wrap;
+      }
+    </style>
+  </head>
   <body>
-    <h1>Dashboard</h1>
+    <h1><span class="text-white">Spotify</span><span class="text-green">Remix</span></h1>
+    <h2 class="text-white">Dashboard</h2>
     <div>
-      <h2>Manage your playlists here.</h2>
-      <button onclick="createPlaylist()">Create New Playlist</button>
+      <button onclick="createPlaylist()">Create a New Remix Playlist</button>
       <div id="playlists"></div>
     </div>
     <script>
@@ -20,15 +48,29 @@
       const params = new URLSearchParams(window.location.search);
       const accessToken = params.get('accessToken');
       const refreshToken = params.get('refreshToken');
-      console.log(accessToken);
-      console.log(refreshToken);
       fetch('/playlists', {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
       })
         .then(x => x.json())
-        .then(x => x.items.map(item => document.getElementById('playlists').append(`${item.id}`)));
+        .then(x => {
+          if (x.items && x.items.length > 0) {
+            x.items.map(
+              item =>
+                (document.getElementById('playlists').innerHTML += `<div class="card">
+            <h3>${item.name}</h3>
+            <p>${item.tracks.total} tracks</p>
+            <a href=${item.external_urls.spotify}>${item.external_urls.spotify}</a>
+            <p>${item.description}</p>
+            </div>`),
+            );
+          } else {
+            document.getElementById(
+              'playlists',
+            ).innerHtml = `<h1 class="text-white">No playlists found. Create a remix to get started.</h1>`;
+          }
+        });
     </script>
   </body>
 </html>

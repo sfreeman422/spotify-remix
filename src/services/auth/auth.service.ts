@@ -13,8 +13,22 @@ export class AuthService {
   spotifyService = new SpotifyService();
   loginWithScope(res: Response): void {
     const state = uuidv4();
-    const scope =
-      'user-read-private user-read-email playlist-modify-public playlist-modify-private user-top-read user-library-read user-follow-read user-follow-modify';
+    const playlistScopes = [
+      'playlist-modify-public',
+      'playlist-modify-private',
+      'playlist-read-collaborative',
+      'playlist-read-private',
+    ];
+    const userScopes = [
+      'user-top-read',
+      'user-library-read',
+      'user-follow-read',
+      'user-follow-modify',
+      'user-read-email',
+      'user-read-private',
+    ];
+    const scope = playlistScopes.concat(userScopes).join(' ');
+    console.log(scope);
     res.redirect(
       'https://accounts.spotify.com/authorize?' +
         querystring.stringify({

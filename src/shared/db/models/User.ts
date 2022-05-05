@@ -9,13 +9,13 @@ export class User {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   public createdAt!: Date;
 
-  @Column()
+  @Column({ type: 'longtext' })
   public spotifyId!: string;
 
-  @Column()
+  @Column({ type: 'longtext' })
   public accessToken!: string;
 
-  @Column()
+  @Column({ type: 'longtext' })
   public refreshToken!: string;
 
   @OneToMany(
