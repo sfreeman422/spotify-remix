@@ -19,7 +19,7 @@ authController.get('/login/callback', (req, res) => {
     // This should eventually route to a page where a user can see what playlist they spotify / own.
     authService
       .getUserDataAndSaveUser(code as string)
-      .then(() => res.status(200).send())
+      .then(() => res.redirect('/dashboard'))
       .catch(e => res.status(500).send(e));
   }
 });

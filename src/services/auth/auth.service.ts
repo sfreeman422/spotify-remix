@@ -1,16 +1,16 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import axios from 'axios';
 import { Response } from 'express';
 import * as querystring from 'querystring';
 import request from 'request';
 import { v4 as uuidv4 } from 'uuid';
 import { User } from '../../shared/db/models/User';
+import { SpotifyService } from '../spotify/spotify.service';
 import { UserService } from '../user/user.service';
-import { TokenSet, SpotifyUserData } from './auth.interfaces';
+import { TokenSet } from './auth.interfaces';
 
 export class AuthService {
   userService = new UserService();
-
+  spotifyService = new SpotifyService();
   loginWithScope(res: Response): void {
     const state = uuidv4();
     const scope = 'user-read-private user-read-email playlist-modify-public user-top-read';
@@ -57,28 +57,12 @@ export class AuthService {
     });
   }
 
-  getUserData(accessToken: string): Promise<SpotifyUserData> {
-    return axios
-      .get('https://api.spotify.com/v1/me', {
-        headers: {
-          Authorization: 'Bearer ' + accessToken,
-        },
-      })
-      .then(response => {
-        return response.data;
-      })
-      .catch(e => {
-        console.error(e);
-        throw new Error(e);
-      });
-  }
-
   async getUserDataAndSaveUser(code: string): Promise<User> {
     const tokens = await this.getTokens(code).catch(e => {
       console.error(e);
       throw new Error(e);
     });
-    const userData = await this.getUserData(tokens.accessToken).catch(e => {
+    const userData = await this.spotifyService.getUserData(tokens.accessToken).catch(e => {
       console.error(e);
       throw new Error(e);
     });
