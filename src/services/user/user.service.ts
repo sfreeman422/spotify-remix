@@ -1,13 +1,14 @@
+import { FindOptionsWhere } from 'typeorm';
 import { getDataSource } from '../../shared/db/AppDataSource';
 import { User } from '../../shared/db/models/User';
 // TODO: Add error handling for getDataSource.
 export class UserService {
-  public async getUser(spotifyId: string): Promise<User | null> {
-    return getDataSource().then(dataSource => dataSource.getRepository(User).findOneBy({ spotifyId }));
+  public async getUser(findOptions: FindOptionsWhere<User> | FindOptionsWhere<User>[]): Promise<User | null> {
+    return getDataSource().then(dataSource => dataSource.getRepository(User).findOneBy(findOptions));
   }
 
   public async saveUser(accessToken: string, refreshToken: string, spotifyId: string): Promise<User> {
-    const existingUser = await this.getUser(spotifyId);
+    const existingUser = await this.getUser({ spotifyId });
     if (existingUser) {
       existingUser.accessToken = accessToken;
       existingUser.refreshToken = refreshToken;

@@ -22,9 +22,15 @@ playlistController.get('/playlists', async (req, res) => {
 
 // Should create a new playlist for the user that is public and available to be shared with others.
 playlistController.post('/playlist', (req, res) => {
-  const { accessToken } = req.body;
-  if (accessToken) {
-    return spotifyService.createUserPlaylist(accessToken);
+  const { authorization } = req.headers;
+  if (authorization) {
+    spotifyService
+      .createUserPlaylist(authorization)
+      .then(x => res.send(x.data))
+      .catch(e => {
+        console.error(e);
+        res.status(500).send(e);
+      });
   } else {
     res.status(400).send('Missing access token!');
   }

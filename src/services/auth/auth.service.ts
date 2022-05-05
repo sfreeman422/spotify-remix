@@ -13,7 +13,7 @@ export class AuthService {
   spotifyService = new SpotifyService();
   loginWithScope(res: Response): void {
     const state = uuidv4();
-    const scope = 'user-read-private user-read-email playlist-modify-public user-top-read';
+    const scope = 'user-read-private user-read-email playlist-modify-public playlist-modify-private user-top-read';
     res.redirect(
       'https://accounts.spotify.com/authorize?' +
         querystring.stringify({

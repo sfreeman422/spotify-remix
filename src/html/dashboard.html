@@ -3,10 +3,21 @@
   <body>
     <h1>Dashboard</h1>
     <div>
-      Manage your playlists here.
+      <h2>Manage your playlists here.</h2>
+      <button onclick="createPlaylist()">Create New Playlist</button>
       <div id="playlists"></div>
     </div>
     <script>
+      function createPlaylist() {
+        console.log('should create new playlist');
+        fetch('/playlist', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({}),
+        });
+      }
       const params = new URLSearchParams(window.location.search);
       const accessToken = params.get('accessToken');
       const refreshToken = params.get('refreshToken');
