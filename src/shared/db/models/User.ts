@@ -21,10 +21,13 @@ export class User {
   @OneToMany(
     () => Playlist,
     playlist => playlist.owner,
+    {
+      cascade: true,
+    },
   )
   public ownedPlaylists?: Playlist[];
 
-  @ManyToMany(() => Playlist)
+  @ManyToMany(() => Playlist, { cascade: true })
   @JoinTable()
   public memberPlaylists?: Playlist[];
 }

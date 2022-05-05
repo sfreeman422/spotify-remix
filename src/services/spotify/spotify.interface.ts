@@ -1,3 +1,5 @@
+import { User } from '../../shared/db/models/User';
+
 export interface SpotifyUserDataExplicitContent {
   filter_enabled: boolean;
   filter_locked: boolean;
@@ -25,4 +27,15 @@ export interface SpotifyUserData {
   product: string;
   type: string;
   uri: string;
+}
+
+export interface MemberMusic {
+  user: User;
+  topTracks: any;
+  likedTracks: any;
+}
+
+export interface MemberPlaylistItem {
+  user: User;
+  tracks: any[];
 }

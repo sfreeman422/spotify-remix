@@ -1,5 +1,6 @@
 import { FindOptionsWhere } from 'typeorm';
 import { getDataSource } from '../../shared/db/AppDataSource';
+import { Playlist } from '../../shared/db/models/Playlist';
 import { User } from '../../shared/db/models/User';
 // TODO: Add error handling for getDataSource.
 export class UserService {
@@ -20,5 +21,19 @@ export class UserService {
       user.spotifyId = spotifyId;
       return getDataSource().then(datasource => datasource.getRepository(User).save(user));
     }
+  }
+
+  public async savePlaylist(user: User, playlistId: string) {
+    const playlist = new Playlist();
+    playlist.playlistId = playlistId;
+    playlist.owner = user;
+    playlist.members = [user];
+    return getDataSource().then(datasource => datasource.getRepository(Playlist).save(playlist));
+  }
+
+  public async getPlaylist(playlistId: string) {
+    return getDataSource().then(datasource =>
+      datasource.getRepository(Playlist).find({ where: { playlistId }, relations: ['members'] }),
+    );
   }
 }

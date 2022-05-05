@@ -8,12 +8,11 @@ const spotifyService = new SpotifyService();
 // Should show all of the playlists that a user is subscribed to?
 // Maybe should only be subset of playlists that we manage?
 playlistController.get('/playlists', async (req, res) => {
-  console.log('playlists  hit');
   const { authorization } = req.headers;
   if (authorization) {
     spotifyService
       .getUserPlaylists(authorization)
-      .then(x => res.send(x.data))
+      .then(x => res.send(x))
       .catch(e => res.send(e));
   } else {
     res.status(400).send('Missing access token!');
