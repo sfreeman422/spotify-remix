@@ -4,6 +4,21 @@
     <h1>Dashboard</h1>
     <div>
       Manage your playlists here.
+      <div id="playlists"></div>
     </div>
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const accessToken = params.get('accessToken');
+      const refreshToken = params.get('refreshToken');
+      console.log(accessToken);
+      console.log(refreshToken);
+      fetch('/playlists', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+        .then(x => x.json())
+        .then(x => x.items.map(item => document.getElementById('playlists').append(`${item.id}`)));
+    </script>
   </body>
 </html>

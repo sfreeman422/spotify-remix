@@ -19,7 +19,8 @@ authController.get('/login/callback', (req, res) => {
     // This should eventually route to a page where a user can see what playlist they spotify / own.
     authService
       .getUserDataAndSaveUser(code as string)
-      .then(() => res.redirect('/dashboard'))
+      // We should maybe not put accessToken and refreshToken here but...
+      .then(x => res.redirect(`/dashboard?accessToken=${x.accessToken}&refreshToken=${x.refreshToken}`))
       .catch(e => res.status(500).send(e));
   }
 });
