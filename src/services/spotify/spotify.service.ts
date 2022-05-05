@@ -1,11 +1,12 @@
 import axios from 'axios';
 import { UserService } from '../user/user.service';
-import { MemberMusic, MemberPlaylistItem, SpotifyUserData } from './spotify.interface';
+import { SpotifyUserData } from './spotify.interface';
 
 export class SpotifyService {
   baseUrl = 'https://api.spotify.com/v1';
   baseSelfUrl = `${this.baseUrl}/me`;
   baseUserUrl = `${this.baseUrl}/users`;
+  basePlaylistUrl = `${this.baseUrl}/playlists`;
 
   userService = new UserService();
 
@@ -26,7 +27,7 @@ export class SpotifyService {
   }
 
   getUserPlaylists(accessToken: string): Promise<any> {
-    return axios.get(`${this.baseSelfUrl}/playlists`, {
+    return axios.get(this.basePlaylistUrl, {
       headers: {
         Authorization: accessToken,
       },
@@ -73,13 +74,10 @@ export class SpotifyService {
   async populatePlaylist(playlistId: string) {
     // get list of owners + subscribers (as far as WE know, we cannot use tthe followers key) in the playlist
     const members = await this.userService.getPlaylist(playlistId).then(playlist => {
-      console.log(playlist);
       return playlist[0]?.members;
     });
-    console.log('members');
-    console.log(members);
     // For each member, get most recently playec + liked tracks
-    const music: MemberMusic[] = members?.length
+    const music: any[] = members?.length
       ? await Promise.all(
           members.map(async member => {
             const userMusic = await Promise.all([
@@ -89,7 +87,13 @@ export class SpotifyService {
                     Authorization: `Bearer ${member.accessToken}`,
                   },
                 })
-                .then(x => x.data.items)
+                .then(x =>
+                  x.data.items.map((song: any) => ({
+                    ...song,
+                    accessToken: member.accessToken,
+                    refreshToken: member.refreshToken,
+                  })),
+                )
                 .catch(e => console.error(e)),
               axios
                 .get(`${this.baseSelfUrl}/tracks?limit=50`, {
@@ -97,42 +101,78 @@ export class SpotifyService {
                     Authorization: `Bearer ${member.accessToken}`,
                   },
                 })
-                .then(x => x.data.items)
+                .then(x =>
+                  x.data.items.map((song: any) => ({
+                    ...song,
+                    accessToken: member.accessToken,
+                    refreshToken: member.refreshToken,
+                  })),
+                )
                 .catch(e => console.error(e)),
             ]);
 
-            return {
-              user: member,
-              topTracks: userMusic[0],
-              likedTracks: userMusic[1],
-            } as MemberMusic;
+            return userMusic.flat();
           }),
         )
       : [];
 
-    const numberOfItemsPerUser = this.getNumberOfItemsPerUser(music.length);
+    const numberOfItemsPerUser = this.getNumberOfItemsPerUser(members.length);
+    const itemsByUserMap: Record<string, number> = {};
     // Create a list of songs to add to the playlist.
     // Save those songs in the DB to keep track of what has been added to a given playlist.
-    const playlistItems: MemberPlaylistItem[] = music?.map(item => {
-      const { user } = item;
-      const tracks = [];
-      const numberOfTracksPerCategory = Math.round(numberOfItemsPerUser / 2);
-      // This is not final state. WE need to be able to check if the song has been added to the playlist before.
-      // We also should not just grab the first n number of songs for a given user because that will not give any variabilioty.
-      // We should instead grab a random track from each category based on numberOfTracksPerCategory
-      for (let i = 0; i < numberOfTracksPerCategory; i += 1) {
-        tracks.push(item.likedTracks[i]);
-        tracks.push(item.topTracks[i]);
+    const playlistItems: any[] = [];
+
+    music?.flat().forEach(item => {
+      const { accessToken } = item;
+      // Do this after you add tthe song.
+      if (itemsByUserMap[accessToken] && itemsByUserMap[accessToken] < numberOfItemsPerUser) {
+        playlistItems.push(item);
+        itemsByUserMap[accessToken] += 1;
+      } else if (!itemsByUserMap[accessToken]) {
+        playlistItems.push(item);
+        itemsByUserMap[accessToken] = 1;
       }
-      return {
-        user,
-        tracks,
-      };
     });
-    console.log('playlistItems');
-    console.log(playlistItems);
-    console.log(playlistItems[0].tracks);
+    // We will want to round robin sort by access token here i believe.
     // Fire off mad network requests to add to playlist.
+
+    console.log(playlistItems.length);
+    // Need to add rate limit error handling here with retry logic.
+    return await Promise.all(
+      this.roundRobinSort(playlistItems).map(song => {
+        return axios
+          .post(
+            `${this.basePlaylistUrl}/${playlistId}/tracks`,
+            {
+              uris: [song.uri],
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${song.accessToken}`,
+              },
+            },
+          )
+          .catch(e => console.error(e));
+      }),
+    );
+  }
+
+  roundRobinSort(arr: any[]): any[] {
+    const allSongs = arr;
+    let sortedArr: any[] = [];
+    while (allSongs.length > 0) {
+      const orderedSet: any[] = [];
+      for (let i = 0; i < allSongs.length; i += 1) {
+        const found = orderedSet.find(element => element.accessToken === allSongs[i].accessToken);
+        if (!found) {
+          orderedSet.push(allSongs[i]);
+          allSongs.splice(i, 1);
+          i -= 1;
+        }
+      }
+      sortedArr = sortedArr.concat(orderedSet);
+    }
+    return sortedArr;
   }
 
   // This function sucks, but basically if we have under 10 ppl, use 50 songs total, if we have more than 10, use 5 songs each.
