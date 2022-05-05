@@ -1,8 +1,8 @@
 import { DataSource } from 'typeorm';
 
-let AppDataSource: DataSource;
+let AppDataSource: Promise<DataSource>;
 
-export const getDataSource = (): DataSource => {
+export const getDataSource = async (): Promise<DataSource> => {
   if (
     !(
       process.env.TYPEORM_CONNECTION &&
@@ -25,7 +25,8 @@ export const getDataSource = (): DataSource => {
       username: process.env.TYPEORM_USERNAME,
       password: process.env.TYPEORM_PASSWORD,
       database: process.env.TYPEORM_DATABASE,
-    });
+      entities: [process.env.TYPEORM_ENTITIES],
+    }).initialize();
     return AppDataSource;
   }
 };

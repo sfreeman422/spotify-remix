@@ -3,11 +3,11 @@ import request from 'request';
 import express, { Router } from 'express';
 import * as querystring from 'querystring';
 import { v4 as uuidv4 } from 'uuid';
-import { AuthService } from '../services/auth/auth.service';
+import { UserService } from '../services/user/user.service';
 
 export const authController: Router = express.Router();
 
-const authService = new AuthService();
+const userService = new UserService();
 // Used to initiate authorization workflow for spotify.
 authController.get('/login', (_req, res) => {
   const state = uuidv4();
@@ -68,8 +68,10 @@ authController.get('/login/callback', (req, res) => {
         };
 
         // use the access token to access the Spotify Web API
-        request.get(options, function(_e, _r, b) {
+        request.get(options, async (_e, _r, b) => {
+          console.log('end');
           console.log(b);
+          await userService.saveUser(access_token, refresh_token, b.id).then(() => res.status(200).send());
         });
       } else {
         console.log(err);
@@ -77,9 +79,4 @@ authController.get('/login/callback', (req, res) => {
       }
     });
   }
-});
-
-authController.get('/login/success', (req, res) => {
-  // Take the token and save it in the DB.
-  authService.saveUser(req.body.code, '123').then(() => res.status(200).send());
 });
