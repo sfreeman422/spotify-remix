@@ -23,7 +23,7 @@ export class UserService {
     }
   }
 
-  public async getUserWithRelations(options: FindManyOptions<User>) {
+  public async getUserWithRelations(options: FindManyOptions<User>): Promise<User[] | undefined> {
     return getDataSource().then(datasource => datasource.getRepository(User).find(options));
   }
 
@@ -31,7 +31,7 @@ export class UserService {
     return getDataSource().then(datasource => datasource.getRepository(User).save(user));
   }
 
-  public async savePlaylist(user: User, playlistId: string) {
+  public async savePlaylist(user: User, playlistId: string): Promise<Playlist> {
     const playlist = new Playlist();
     playlist.playlistId = playlistId;
     playlist.owner = user;
@@ -39,7 +39,7 @@ export class UserService {
     return getDataSource().then(datasource => datasource.getRepository(Playlist).save(playlist));
   }
 
-  public async getAllOwnedPlaylists(accessToken: string) {
+  public async getAllOwnedPlaylists(accessToken: string): Promise<Playlist[]> {
     return getDataSource().then(async datasource => {
       const token = accessToken.split(' ')[1];
       const user = await datasource
@@ -51,7 +51,7 @@ export class UserService {
       return [];
     });
   }
-  public async getPlaylist(playlistId: string) {
+  public async getPlaylist(playlistId: string): Promise<Playlist[]> {
     return getDataSource().then(datasource =>
       datasource.getRepository(Playlist).find({ where: { playlistId }, relations: ['members'] }),
     );

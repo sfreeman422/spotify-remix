@@ -81,11 +81,11 @@ export class SpotifyService {
     });
   }
 
-  removeUserPlaylist(_accessToken: string) {
+  removeUserPlaylist(_accessToken: string): void {
     console.log('not yet implemented');
   }
 
-  unsubscribeFromPlaylist(_accessToken: string, _playlistId: string) {
+  unsubscribeFromPlaylist(_accessToken: string, _playlistId: string): void {
     console.log('not yet implemented');
   }
 
@@ -96,7 +96,7 @@ export class SpotifyService {
     });
 
     const playlist = await this.userService.getPlaylist(playlistId);
-    if (user.length && playlist[0]) {
+    if (user?.length && playlist[0]) {
       const userWithPlaylist = user[0];
       const newList: Playlist[] | undefined = userWithPlaylist.memberPlaylists
         ? userWithPlaylist.memberPlaylists.map(x => x)
@@ -107,7 +107,7 @@ export class SpotifyService {
       userWithPlaylist.memberPlaylists = newList;
       return this.userService.updateExistingUser(userWithPlaylist);
     }
-    return user[0];
+    return undefined;
   }
 
   async getTopAndLikedSongs(members: any[], songsPerUser: number): Promise<any[]> {
@@ -163,7 +163,7 @@ export class SpotifyService {
       : [];
   }
 
-  async populatePlaylist(playlistId: string) {
+  async populatePlaylist(playlistId: string): Promise<any[]> {
     const members = await this.userService.getPlaylist(playlistId).then(playlist => {
       return playlist[0]?.members;
     });
