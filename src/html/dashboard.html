@@ -1,0 +1,196 @@
+<html>
+  <head>
+    <style>
+      body {
+        background: black;
+      }
+      
+      a{
+        word-wrap: break-word;
+      }
+
+      .card {
+        border-radius: 5px;
+        border: solid 1px;
+        background-color: rgb(201, 201, 201);
+        padding: 1rem;
+        margin: 1rem;
+        width: 300px;
+        word-wrap: normal;
+      }
+
+      .text-white {
+        color: white;
+      }
+
+      .text-green {
+        color: green;
+      }
+
+      .text-blue {
+        color: blueviolet;
+      }
+
+      .playlist {
+        display: flex;
+        flex-wrap: wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <h1><span class="text-white">Spotify</span><span class="text-green">Remix</span></h1>
+    <h2 class="text-white">Dashboard</h2>
+    <div>
+      <button id="create-playlist-button" onclick="createPlaylist()">Create a New Remix Playlist</button>
+      <span>Code:</span><input type="text" id="code"></input><br>
+      <button onclick="subscribeToAPlaylist()">Follow a Remix</button>
+      <div id="playlists"></div>
+    </div>
+    <script>
+      // Should mayube check token validity here.
+      const accessTokenString = "spotify-remix-access-token";
+      const refreshTokenString = "spotify-remix-refresh-token";
+      let accessToken = localStorage.getItem(accessTokenString);
+      let refreshToken = localStorage.getItem(refreshTokenString);
+      if (!!accessToken || !!refreshToken) {
+        const params = new URLSearchParams(window.location.search);
+        const possibleAccessToken = params.get('accessToken');
+        const possibleRefreshToken = params.get('refreshToken')
+
+        if(possibleAccessToken && possibleRefreshToken) {
+          accessToken = possibleAccessToken;
+          refreshToken = possibleRefreshToken;
+        }
+      }
+      if (accessToken && refreshToken) {
+        localStorage.setItem("spotify-remix-access-token", accessToken);
+        localStorage.setItem("spotify-remix-refresh-token", refreshToken);
+      }
+      
+      let playlists;
+
+      function getPlaylistsAndBuildDivs() {
+        fetch('/playlists', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+        .then(x => x.json())
+        .then(x => {
+          const playlistDiv = document.getElementById('playlists');
+          playlistDiv.innerHTML = '';
+          playlists = x;
+          if (x.orphanPlaylists && x.orphanPlaylists.length > 0) {
+            const orphanedPlaylists = x.orphanPlaylists;
+            playlistDiv.innerHTML += `<div>
+              <h3 class="text-white">Orphaned Playlists</h3>
+              <button onclick="removeOrphanedPlaylists()">Remove Orphaned Playlists</button>
+              <div class="playlist" id="orphan-playlists"></div>
+              </div>`;
+            x.orphanPlaylists.map(
+              item =>
+                (document.getElementById('orphan-playlists').innerHTML += `
+            <div class="card">
+            <h3>${item}</h3>
+            </div>`),
+            );
+          }
+
+          if (x.managedPlaylists && x.managedPlaylists.length > 0) {
+            playlistDiv.innerHTML += `<div>
+              <h3 class="text-white">Managed Playlists</h3>
+              <div class="playlist" id="managed-playlists"></div>
+              </div>`;
+            x.managedPlaylists.map(
+              item =>
+                (document.getElementById('managed-playlists').innerHTML += `
+            <div class="card">
+            <h3>${item.name}</h3>
+            <p>${item.tracks.total} tracks</p>
+            <a href=${item.external_urls.spotify}>${item.external_urls.spotify}</a>
+            <p>${item.description}</p>
+            <p>Invite your friends using this link:</p>
+            <a href="${window.location.protocol}//${window.location.host}/playlist?playlistId=${item.id}">
+              <span>${window.location.protocol}//${window.location.host}/playlist?playlistId=${item.id}</span>
+            </a>
+            </div>`),
+            );
+          }
+
+          if (x.unmanagedPlaylists && x.unmanagedPlaylists.length > 0) {
+            playlistDiv.innerHTML += `<div>
+              <h3 class="text-white">Unmanaged Playlists</h3>
+              <div class="playlist" id="unmanaged-playlists"></div>
+              </div>`;
+            x.unmanagedPlaylists.map(
+              item =>
+                (document.getElementById('unmanaged-playlists').innerHTML += `
+            <div class="card">
+            <h3>${item.name}</h3>
+            <p>${item.tracks.total} tracks</p>
+            <a href=${item.external_urls.spotify}>${item.external_urls.spotify}</a>
+            <p>${item.description}</p>
+            </div>`),
+            );
+          }
+
+          if (x.items && x.items.length > 0) {
+            x.items.map(
+              item =>
+                (document.getElementById('playlists').innerHTML += `<div class="card">
+            <h3>${item.name}</h3>
+            <p>${item.tracks.total} tracks</p>
+            <a href=${item.external_urls.spotify}>${item.external_urls.spotify}</a>
+            <p>${item.description}</p>
+            </div>`),
+            );
+          } else {
+            document.getElementById(
+              'playlists',
+            ).innerHtml = `<h1 class="text-white">No playlists found. Create a remix to get started.</h1>`;
+          }
+          return x;
+        });
+      }
+
+      getPlaylistsAndBuildDivs()
+
+      function removeOrphanedPlaylists() {
+        fetch(`/playlist`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              playlists: playlists.orphanPlaylists
+            })
+          }).then(x => {
+            getPlaylistsAndBuildDivs();
+          });
+      }
+      function createPlaylist() {
+        const playlistButton = document.getElementById('create-playlist-button');
+        playlistButton.innerHTML = "<span class='text-blue'>Loading...</span>";
+        playlistButton.disabled = true;
+        fetch('/playlist', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({}),
+        }).then(() => {
+          playlistButton.innerHTML = "Create a New Remix Playlist";
+          playlistButton.disabled = false;
+          getPlaylistsAndBuildDivs();
+        });
+      }
+
+      function subscribeToAPlaylist() {
+        const code = document.getElementById("code").value;
+        console.log(code);
+        window.location = `${window.location.protocol}//${window.location.host}/playlist?playlistId=${code}`
+      }
+    </script>
+  </body>
+</html>

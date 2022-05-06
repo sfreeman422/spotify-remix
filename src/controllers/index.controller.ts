@@ -1,3 +1,20 @@
-import { sampleController } from './sample.controller';
+import express from 'express';
+import * as path from 'path';
+import { authController } from './auth.controller';
+import { playlistController } from './playlist.controller';
 
-export const controllers = [sampleController];
+const indexController = express.Router();
+
+indexController.get('/', (_req, res) => {
+  res.sendFile(path.join(__dirname, '../html', 'index.html'));
+});
+
+indexController.get('/dashboard', (_req, res) => {
+  res.sendFile(path.join(__dirname, '../html', 'dashboard.html'));
+});
+
+indexController.get('/playlist', (_req, res) => {
+  res.sendFile(path.join(__dirname, '../html', 'subscribe.html'));
+});
+
+export const controllers = [indexController, authController, playlistController];

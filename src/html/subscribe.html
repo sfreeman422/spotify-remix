@@ -1,0 +1,52 @@
+<html>
+  <head></head>
+  <style>
+    .error {
+      color: red;
+    }
+  </style>
+  <body>
+    <div>
+      <div id="subscribe">
+        <h1 id="message">Attempting to subscribe...</h1>
+      </div>
+    </div>
+    <script>
+      const accessToken = localStorage.getItem('spotify-remix-access-token');
+      const refreshToken = localStorage.getItem('spotify-remix-refresh-token');
+      console.log(accessToken);
+      console.log(refreshToken);
+      const queryParams = new URLSearchParams(window.location.search);
+      const playlistId = queryParams.get('playlistId');
+      fetch(`/playlist/${playlistId}/subscribe`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+        .then(x => {
+          if (x.status === 200) {
+            return x.json();
+          } else if (x.status === 204) {
+            return undefined;
+          }
+          return x;
+        })
+        .then(x => {
+          if (x) {
+            document.getElementById('message').innerHTML = 'Successfully subscribed! Sending you to your dashboard...';
+          } else {
+            document.getElementById('message').innerHTML =
+              'It looks like you are already subscribed to this playlist! Sending you to your dashboard...';
+          }
+          setTimeout(() => (window.location = `${window.location.protocol}//${window.location.host}/dashboard`), 2000);
+        })
+        .catch(e => {
+          document.getElementById('message').className = 'error';
+          document.getElementById('message').innerHTML =
+            'It looks like we were unable to subscribe to this playlist! Please try again.';
+          console.error(e);
+        });
+    </script>
+  </body>
+</html>
