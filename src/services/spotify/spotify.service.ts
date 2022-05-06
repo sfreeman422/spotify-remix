@@ -184,22 +184,30 @@ export class SpotifyService {
     const music: any[] = await this.getTopAndLikedSongs(members, songsPerUser);
     const playlist = this.roundRobinSort(music);
 
-    // Need to add rate limit error handling here with retry logic.
-    // https://developer.spotify.com/documentation/web-api/guides/rate-limits/
     return await Promise.all(
-      playlist.map(song => {
-        return axios.post(
-          `${this.basePlaylistUrl}/${playlistId}/tracks`,
-          {
-            uris: [song.uri || song.track.uri],
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${song.accessToken}`,
-            },
-          },
-        );
-      }),
+      playlist.map(
+        song =>
+          new Promise((resolve, reject) => {
+            setTimeout(
+              () =>
+                axios
+                  .post(
+                    `${this.basePlaylistUrl}/${playlistId}/tracks`,
+                    {
+                      uris: [song.uri || song.track.uri],
+                    },
+                    {
+                      headers: {
+                        Authorization: `Bearer ${song.accessToken}`,
+                      },
+                    },
+                  )
+                  .then(x => resolve(x))
+                  .catch(e => reject(e)),
+              500,
+            );
+          }),
+      ),
     );
   }
 
@@ -221,10 +229,11 @@ export class SpotifyService {
     return sortedArr;
   }
 
-  // This function sucks, but basically if we have under 10 ppl, use 48 songs total, if we have more than 10, use 5 songs each.
+  // This function sucks, but basically if we have under 10 ppl, use 48 songs total, if we have more than 10, use 6 songs each.
   getNumberOfItemsPerUser(numberOfUsers: number): number {
-    const minSongsPerUser = numberOfUsers * 6;
+    const minSongsPerUser = 6;
+    const songsPerUser = numberOfUsers * 6;
     const maxNumberOfSongs = 48;
-    return minSongsPerUser > maxNumberOfSongs ? minSongsPerUser : Math.round(maxNumberOfSongs / numberOfUsers);
+    return songsPerUser > maxNumberOfSongs ? minSongsPerUser : Math.round(maxNumberOfSongs / numberOfUsers);
   }
 }

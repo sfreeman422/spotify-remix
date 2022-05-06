@@ -72,7 +72,9 @@ export class AuthService {
   }
 
   async refreshToken(accessToken: string): Promise<TokenSet | undefined> {
+    console.log(accessToken);
     const user = await this.userService.getUser({ accessToken });
+    console.log(user);
     if (user) {
       const reqOptions = {
         url: 'https://accounts.spotify.com/api/token',

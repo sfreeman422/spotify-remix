@@ -28,13 +28,11 @@ app.use(
 app.use(bodyParser.json());
 app.use(controllers);
 
-axiosRetry(axios, {
-  retries: 10,
-  retryDelay: retryCount => retryCount * 2000,
-  retryCondition: err => (err?.response?.status ? err?.response?.status >= 403 : false),
-});
 // Retry logic interceptor
 axios.interceptors.response.use(undefined, error => {
+  console.log(error.response.status);
+  console.log(error.response.data);
+  console.log(error.request);
   if (error.config && error.response && error.response.status === 401) {
     console.log('refreshing token..');
     console.log(error.config.headers);
@@ -63,6 +61,12 @@ axios.interceptors.response.use(undefined, error => {
   }
 
   return Promise.reject(error);
+});
+
+axiosRetry(axios, {
+  retries: 10,
+  retryDelay: retryCount => retryCount * 2000,
+  retryCondition: err => (err?.response?.status ? err?.response?.status >= 403 : false),
 });
 
 const connectToDb = async (): Promise<void> => {
