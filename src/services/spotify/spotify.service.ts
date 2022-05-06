@@ -188,24 +188,20 @@ export class SpotifyService {
       playlist.map(
         song =>
           new Promise((resolve, reject) => {
-            setTimeout(
-              () =>
-                axios
-                  .post(
-                    `${this.basePlaylistUrl}/${playlistId}/tracks`,
-                    {
-                      uris: [song.uri || song.track.uri],
-                    },
-                    {
-                      headers: {
-                        Authorization: `Bearer ${song.accessToken}`,
-                      },
-                    },
-                  )
-                  .then(x => resolve(x))
-                  .catch(e => reject(e)),
-              500,
-            );
+            axios
+              .post(
+                `${this.basePlaylistUrl}/${playlistId}/tracks`,
+                {
+                  uris: [song.uri || song.track.uri],
+                },
+                {
+                  headers: {
+                    Authorization: `Bearer ${song.accessToken}`,
+                  },
+                },
+              )
+              .then(x => resolve(x))
+              .catch(e => reject(e));
           }),
       ),
     );

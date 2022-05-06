@@ -1,6 +1,5 @@
 # TODO:
 
-- Confirm that the retry logic is working properly.
 - Add better token checking on front end.
-- Determine why rate limiting is seemingly not getting 2-4 songs consistently - is it a data quality issue or is it a retry logic issue?
+- Determine why we get 502 / 500 errors for some songs, sometimes.
 - Better styling
