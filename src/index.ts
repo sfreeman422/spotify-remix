@@ -37,12 +37,14 @@ axiosRetry(axios, {
 axios.interceptors.response.use(undefined, error => {
   if (error.config && error.response && error.response.status === 401) {
     console.log('refreshing token..');
-    const accessToken = error.config.headers.authorization.split(' ')[1];
+    console.log(error.config.headers);
+    const accessToken = error.config.headers.Authorization.split(' ')[1];
     // This should handle 401 errors by refreshing our users token.
     // Not sure about these return undefined, but a lil drunk rn.
-    authService
+    return authService
       .refreshToken(accessToken)
       .then((tokens: TokenSet | undefined) => {
+        console.log(tokens);
         if (tokens && tokens.user) {
           const updatedUser = tokens.user;
           updatedUser.accessToken = tokens.accessToken;
@@ -53,7 +55,7 @@ axios.interceptors.response.use(undefined, error => {
       })
       .then((user: User | undefined) => {
         if (user) {
-          error.config.headers.authorization = user.accessToken;
+          error.config.headers.authorization = `Bearer ${user.accessToken}`;
           return axios.request(error.config);
         }
         return undefined;

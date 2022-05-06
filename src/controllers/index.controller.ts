@@ -13,4 +13,8 @@ indexController.get('/dashboard', (_req, res) => {
   res.sendFile(path.join(__dirname, '../html', 'dashboard.html'));
 });
 
+indexController.get('/playlist', (_req, res) => {
+  res.sendFile(path.join(__dirname, '../html', 'subscribe.html'));
+});
+
 export const controllers = [indexController, authController, playlistController];

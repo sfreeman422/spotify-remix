@@ -22,17 +22,19 @@ playlistController.get('/playlists', async (req, res) => {
   }
 });
 
-playlistController.get('/playlist/:playlistId/subscribe', (req, res) => {
+playlistController.put('/playlist/:playlistId/subscribe', (req, res) => {
   if (req.headers.authorization && req.params.playlistId) {
-    spotifyService.subscribeToPlaylist(req.headers.authorization, req.params.playlistId).then(x => {
+    const accessToken = req.headers.authorization.split(' ')[1];
+    spotifyService.subscribeToPlaylist(accessToken, req.params.playlistId).then(x => {
       if (x) {
         res.send(x);
       } else {
         res.status(204).send('You are already a member of this playlist.');
       }
     });
+  } else {
+    res.status(400).send('PlaylistId or Authorization header missing!');
   }
-  res.status(400).send('PlaylistId or Authorization header missing!');
 });
 
 // Should create a new playlist for the user that is public and available to be shared with others.

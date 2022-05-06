@@ -4,6 +4,11 @@
       body {
         background: black;
       }
+      
+      a{
+        word-wrap: break-word;
+      }
+
       .card {
         border-radius: 5px;
         border: solid 1px;
@@ -38,9 +43,26 @@
       <div id="playlists"></div>
     </div>
     <script>
-      const params = new URLSearchParams(window.location.search);
-      const accessToken = params.get('accessToken');
-      const refreshToken = params.get('refreshToken');
+      // Should mayube check token validity here.
+      const accessTokenString = "spotify-remix-access-token";
+      const refreshTokenString = "spotify-remix-refresh-token";
+      let accessToken = localStorage.getItem(accessTokenString);
+      let refreshToken = localStorage.getItem(refreshTokenString);
+      if (!!accessToken || !!refreshToken) {
+        const params = new URLSearchParams(window.location.search);
+        const possibleAccessToken = params.get('accessToken');
+        const possibleRefreshToken = params.get('refreshToken')
+
+        if(possibleAccessToken && possibleRefreshToken) {
+          accessToken = possibleAccessToken;
+          refreshToken = possibleRefreshToken;
+        }
+      }
+      if (accessToken && refreshToken) {
+        localStorage.setItem("spotify-remix-access-token", accessToken);
+        localStorage.setItem("spotify-remix-refresh-token", refreshToken);
+      }
+      
       let playlists;
 
       function getPlaylistsAndBuildDivs() {
@@ -54,7 +76,6 @@
           const playlistDiv = document.getElementById('playlists');
           playlists = x;
           if (x.orphanPlaylists && x.orphanPlaylists.length > 0) {
-            console.log(x.orphanPlaylists);
             const orphanedPlaylists = x.orphanPlaylists;
             playlistDiv.innerHTML += `<div>
               <h3 class="text-white">Orphaned Playlists</h3>
@@ -83,6 +104,10 @@
             <p>${item.tracks.total} tracks</p>
             <a href=${item.external_urls.spotify}>${item.external_urls.spotify}</a>
             <p>${item.description}</p>
+            <p>Invite your friends using this link:</p>
+            <a href="${window.location.protocol}//${window.location.host}/playlist?playlistId=${item.id}">
+              <span>${window.location.protocol}//${window.location.host}/playlist?playlistId=${item.id}</span>
+            </a>
             </div>`),
             );
           }
@@ -126,7 +151,6 @@
       getPlaylistsAndBuildDivs()
 
       function removeOrphanedPlaylists() {
-        console.log(playlists.orphanPlaylists);
         fetch(`/playlist`, {
             method: "DELETE",
             headers: {
@@ -153,11 +177,7 @@
       function subscribeToAPlaylist() {
         const code = document.getElementById("code").value;
         console.log(code);
-        fetch(`/playlist/${code}/subscribe`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`
-          }
-        }).then(x => x.json())
+        window.location = `${window.location.protocol}//${window.location.host}/playlist?playlistId=${code}`
       }
     </script>
   </body>

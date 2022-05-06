@@ -37,17 +37,20 @@ export class SpotifyService {
         },
       })
       .then(resp => {
-        // Primary source of truth.
-        const spotifyPlaylists: any[] = resp.data.items;
-        // Not working maybe.
-        const orphanPlaylists = playlists.filter(x => !spotifyPlaylists.find(y => x === y.id));
-        const managedPlaylists = spotifyPlaylists.filter(x => playlists.includes(x.id));
-        const unmanagedPlaylists = spotifyPlaylists.filter(x => !playlists.includes(x.id));
-        return {
-          unmanagedPlaylists,
-          orphanPlaylists,
-          managedPlaylists,
-        };
+        if (resp) {
+          // Primary source of truth.
+          const spotifyPlaylists: any[] = resp.data.items;
+          // Not working maybe.
+          const orphanPlaylists = playlists.filter(x => !spotifyPlaylists.find(y => x === y.id));
+          const managedPlaylists = spotifyPlaylists.filter(x => playlists.includes(x.id));
+          const unmanagedPlaylists = spotifyPlaylists.filter(x => !playlists.includes(x.id));
+          return {
+            unmanagedPlaylists,
+            orphanPlaylists,
+            managedPlaylists,
+          };
+        }
+        return {};
       })
       .catch(e => console.log(e));
   }
@@ -100,16 +103,21 @@ export class SpotifyService {
     });
 
     const playlist = await this.userService.getPlaylist(playlistId);
-    if (user?.length && playlist[0] && !user[0].memberPlaylists?.includes(playlist[0])) {
+    if (user?.length && playlist[0]) {
       const userWithPlaylist = user[0];
-      const newList: Playlist[] | undefined = userWithPlaylist.memberPlaylists
-        ? userWithPlaylist.memberPlaylists.map(x => x)
-        : userWithPlaylist.memberPlaylists;
-      if (newList) {
-        newList.push(playlist[0]);
+      const isUserAlreadyMember = userWithPlaylist.memberPlaylists?.map(x => x.playlistId).includes(playlistId);
+      if (isUserAlreadyMember) {
+        return undefined;
+      } else {
+        const newList: Playlist[] | undefined = userWithPlaylist.memberPlaylists
+          ? userWithPlaylist.memberPlaylists.map(x => x)
+          : userWithPlaylist.memberPlaylists;
+        if (newList) {
+          newList.push(playlist[0]);
+        }
+        userWithPlaylist.memberPlaylists = newList;
+        return this.userService.updateExistingUser(userWithPlaylist);
       }
-      userWithPlaylist.memberPlaylists = newList;
-      return this.userService.updateExistingUser(userWithPlaylist);
     }
     return undefined;
   }
