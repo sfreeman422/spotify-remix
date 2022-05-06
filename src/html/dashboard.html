@@ -79,10 +79,7 @@
               item =>
                 (document.getElementById('orphan-playlists').innerHTML += `
             <div class="card">
-            <h3>${item.name}</h3>
-            <p>${item.tracks.total} tracks</p>
-            <a href=${item.external_urls.spotify}>${item.external_urls.spotify}</a>
-            <p>${item.description}</p>
+            <h3>${item}</h3>
             </div>`),
             );
           }

@@ -172,24 +172,21 @@ export class SpotifyService {
     const music: any[] = await this.getTopAndLikedSongs(members, songsPerUser);
     const playlist = this.roundRobinSort(music);
 
-    console.log(playlist.length);
     // Need to add rate limit error handling here with retry logic.
     // https://developer.spotify.com/documentation/web-api/guides/rate-limits/
     return await Promise.all(
       playlist.map(song => {
-        return axios
-          .post(
-            `${this.basePlaylistUrl}/${playlistId}/tracks`,
-            {
-              uris: [song.uri],
+        return axios.post(
+          `${this.basePlaylistUrl}/${playlistId}/tracks`,
+          {
+            uris: [song.uri || song.track.uri],
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${song.accessToken}`,
             },
-            {
-              headers: {
-                Authorization: `Bearer ${song.accessToken}`,
-              },
-            },
-          )
-          .catch(_e => console.error('an error has occurred'));
+          },
+        );
       }),
     );
   }

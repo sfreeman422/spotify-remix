@@ -81,8 +81,6 @@ export class AuthService {
       console.error(e);
       throw new Error(e);
     });
-    console.log(tokens);
-    console.log(userData);
     return this.userService.saveUser(tokens.accessToken, tokens.refreshToken, userData.id);
   }
 }
