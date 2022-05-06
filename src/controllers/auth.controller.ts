@@ -1,5 +1,6 @@
 import express, { Router } from 'express';
 import { AuthService } from '../services/auth/auth.service';
+import { User } from '../shared/db/models/User';
 
 export const authController: Router = express.Router();
 
@@ -20,7 +21,25 @@ authController.get('/login/callback', (req, res) => {
     authService
       .getUserDataAndSaveUser(code as string)
       // We should maybe not put accessToken and refreshToken here but...
-      .then(x => res.redirect(`/dashboard?accessToken=${x.accessToken}&refreshToken=${x.refreshToken}`))
+      .then(x =>
+        res.redirect(`/dashboard?accessToken=${x.accessToken}&refreshToken=${x.refreshToken}&spotifyId=${x.spotifyId}`),
+      )
       .catch(e => res.status(500).send(e));
+  }
+});
+
+authController.get('/refresh', async (req, res) => {
+  const { authorization } = req.headers;
+  const { spotifyId } = req.query;
+  if (authorization && spotifyId) {
+    const accessToken = authorization.split(' ')[1];
+    const tokens: User | undefined = await authService.refreshTokens(accessToken, spotifyId as string);
+    if (tokens) {
+      res.send(tokens);
+    } else {
+      res.status(500).send('Unable to refresh token');
+    }
+  } else {
+    res.status(400).send('Missing authorization header or spotifyId');
   }
 });

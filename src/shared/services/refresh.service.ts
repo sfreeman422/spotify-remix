@@ -1,28 +1,33 @@
 import request from 'request';
 import { UserService } from '../../services/user/user.service';
 import { TokenSet } from '../../services/auth/auth.interfaces';
+import { User } from '../db/models/User';
 
 export class RefreshService {
   userService = new UserService();
-  currentlyRefreshing: Record<string, Promise<any> | undefined> = {};
+  currentlyRefreshing: Record<string, Promise<User | undefined> | undefined> = {};
 
-  // Some weird type stuff going on in here..
-  // Why do we need promise<any>
-  public refresh(accessToken: string): Promise<any> {
-    if (this.currentlyRefreshing[accessToken]) {
-      return this.currentlyRefreshing[accessToken] as Promise<any>;
+  public refresh(accessToken: string, spotifyId?: string): Promise<User | undefined> {
+    const identifier = spotifyId || accessToken;
+
+    if (this.currentlyRefreshing[identifier]) {
+      return this.currentlyRefreshing[identifier] as Promise<User>;
     } else {
-      this.currentlyRefreshing[accessToken] = this.refreshToken(accessToken);
+      this.currentlyRefreshing[identifier] = this.refreshToken(accessToken, spotifyId);
       // Hella ghetto dawg - deletes the key in currentlyRefreshing after 60 seconds.
-      setTimeout(() => delete this.currentlyRefreshing[accessToken], 60000);
-      return this.currentlyRefreshing[accessToken] as Promise<any>;
+      setTimeout(() => delete this.currentlyRefreshing[identifier], 60000);
+      return this.currentlyRefreshing[identifier] as Promise<User>;
     }
   }
 
-  private async refreshToken(accessToken: string): Promise<TokenSet | undefined> {
-    console.log(accessToken);
-    const user = await this.userService.getUser({ accessToken });
-    console.log(user);
+  private async refreshToken(accessToken: string, spotifyId?: string): Promise<User | undefined> {
+    let user: User | null;
+    if (spotifyId) {
+      user = await this.userService.getUser({ spotifyId });
+    } else {
+      user = await this.userService.getUser({ accessToken });
+    }
+
     if (user) {
       const reqOptions = {
         url: 'https://accounts.spotify.com/api/token',
@@ -46,7 +51,7 @@ export class RefreshService {
         request.post(reqOptions, (err, response, body) => {
           if (!err && response.statusCode === 200) {
             const accessToken = body.access_token;
-            const refreshToken = body.refresh_token;
+            const refreshToken = body.refresh_token || user?.refreshToken;
             resolve({ user, accessToken, refreshToken } as TokenSet);
           } else {
             reject(err);

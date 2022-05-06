@@ -4,6 +4,7 @@ import * as querystring from 'querystring';
 import request from 'request';
 import { v4 as uuidv4 } from 'uuid';
 import { User } from '../../shared/db/models/User';
+import { RefreshService } from '../../shared/services/refresh.service';
 import { SpotifyService } from '../spotify/spotify.service';
 import { UserService } from '../user/user.service';
 import { TokenSet } from './auth.interfaces';
@@ -11,6 +12,8 @@ import { TokenSet } from './auth.interfaces';
 export class AuthService {
   userService = new UserService();
   spotifyService = new SpotifyService();
+  refreshService = new RefreshService();
+
   loginWithScope(res: Response): void {
     const state = uuidv4();
     const playlistScopes = [
@@ -81,5 +84,9 @@ export class AuthService {
       throw new Error(e);
     });
     return this.userService.saveUser(tokens.accessToken, tokens.refreshToken, userData.id);
+  }
+
+  refreshTokens(accessToken: string, spotifyId: string): Promise<User | undefined> {
+    return this.refreshService.refresh(accessToken, spotifyId);
   }
 }
