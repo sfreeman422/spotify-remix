@@ -1,4 +1,6 @@
 import axios from 'axios';
+import { Playlist } from '../../shared/db/models/Playlist';
+import { User } from '../../shared/db/models/User';
 import { UserService } from '../user/user.service';
 import { SpotifyUserData } from './spotify.interface';
 
@@ -87,8 +89,25 @@ export class SpotifyService {
     console.log('not yet implemented');
   }
 
-  subscribeToPlaylist(_accessToken: string, _playlistId: string) {
-    console.log('not yet implemented');
+  async subscribeToPlaylist(accessToken: string, playlistId: string): Promise<User | undefined> {
+    const user = await this.userService.getUserWithRelations({
+      where: { accessToken },
+      relations: ['memberPlaylists'],
+    });
+
+    const playlist = await this.userService.getPlaylist(playlistId);
+    if (user.length && playlist[0]) {
+      const userWithPlaylist = user[0];
+      const newList: Playlist[] | undefined = userWithPlaylist.memberPlaylists
+        ? userWithPlaylist.memberPlaylists.map(x => x)
+        : userWithPlaylist.memberPlaylists;
+      if (newList) {
+        newList.push(playlist[0]);
+      }
+      userWithPlaylist.memberPlaylists = newList;
+      return this.userService.updateExistingUser(userWithPlaylist);
+    }
+    return user[0];
   }
 
   async getTopAndLikedSongs(members: any[], songsPerUser: number): Promise<any[]> {

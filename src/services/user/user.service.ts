@@ -1,4 +1,4 @@
-import { FindOptionsWhere } from 'typeorm';
+import { FindManyOptions, FindOptionsWhere } from 'typeorm';
 import { getDataSource } from '../../shared/db/AppDataSource';
 import { Playlist } from '../../shared/db/models/Playlist';
 import { User } from '../../shared/db/models/User';
@@ -21,6 +21,14 @@ export class UserService {
       user.spotifyId = spotifyId;
       return getDataSource().then(datasource => datasource.getRepository(User).save(user));
     }
+  }
+
+  public async getUserWithRelations(options: FindManyOptions<User>) {
+    return getDataSource().then(datasource => datasource.getRepository(User).find(options));
+  }
+
+  public async updateExistingUser(user: User): Promise<User> {
+    return getDataSource().then(datasource => datasource.getRepository(User).save(user));
   }
 
   public async savePlaylist(user: User, playlistId: string) {

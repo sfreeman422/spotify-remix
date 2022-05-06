@@ -33,6 +33,8 @@
     <h2 class="text-white">Dashboard</h2>
     <div>
       <button onclick="createPlaylist()">Create a New Remix Playlist</button>
+      <span>Code:</span><input type="text" id="code"></input><br>
+      <button onclick="subscribeToAPlaylist()">Follow a Remix</button>
       <div id="playlists"></div>
     </div>
     <script>
@@ -45,6 +47,17 @@
           body: JSON.stringify({}),
         });
       }
+
+      function subscribeToAPlaylist() {
+        const code = document.getElementById("code").value;
+        console.log(code);
+        fetch(`/playlist/${code}/subscribe`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          }
+        }).then(x => x.json())
+      }
+
       const params = new URLSearchParams(window.location.search);
       const accessToken = params.get('accessToken');
       const refreshToken = params.get('refreshToken');
