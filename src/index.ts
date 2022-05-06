@@ -6,9 +6,15 @@ import { createConnection, getConnectionOptions } from 'typeorm';
 import { controllers } from './controllers/index.controller';
 import axios from 'axios';
 import axiosRetry from 'axios-retry';
+import { AuthService } from './services/auth/auth.service';
+import { TokenSet } from './services/auth/auth.interfaces';
+import { UserService } from './services/user/user.service';
+import { User } from './shared/db/models/User';
 
 const app: Application = express();
 const PORT = process.env.PORT || 3000;
+const authService = new AuthService();
+const userService = new UserService();
 
 if (!process.env.PRODUCTION) {
   dotenv.config();
@@ -28,20 +34,34 @@ axiosRetry(axios, {
   retryCondition: err => (err?.response?.status ? err?.response?.status >= 403 : false),
 });
 // Retry logic interceptor
-// axios.interceptors.response.use(undefined, error => {
-//   console.error(error.response);
-//   if (error.config && error.response && error.response.status === 401) {
-//     // This should handle 401 errors by refreshing our users token.
-//     // return updateToken().then((token) => {
-//     //   error.config.headers.xxxx <= set the token
-//     //   return axios.request(config);
-//     // });
-//   } else if (error.config && error.response && error.response.status > 403) {
-//     return setTimeout(() => axios.request(error.config), 2000);
-//   }
+axios.interceptors.response.use(undefined, error => {
+  if (error.config && error.response && error.response.status === 401) {
+    console.log('refreshing token..');
+    const accessToken = error.config.headers.authorization.split(' ')[1];
+    // This should handle 401 errors by refreshing our users token.
+    // Not sure about these return undefined, but a lil drunk rn.
+    authService
+      .refreshToken(accessToken)
+      .then((tokens: TokenSet | undefined) => {
+        if (tokens && tokens.user) {
+          const updatedUser = tokens.user;
+          updatedUser.accessToken = tokens.accessToken;
+          updatedUser.refreshToken = tokens.refreshToken;
+          return userService.updateExistingUser(updatedUser);
+        }
+        return undefined;
+      })
+      .then((user: User | undefined) => {
+        if (user) {
+          error.config.headers.authorization = user.accessToken;
+          return axios.request(error.config);
+        }
+        return undefined;
+      });
+  }
 
-//   return Promise.reject(error);
-// });
+  return Promise.reject(error);
+});
 
 const connectToDb = async (): Promise<void> => {
   try {

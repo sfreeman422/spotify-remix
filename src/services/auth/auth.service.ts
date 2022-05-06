@@ -72,6 +72,40 @@ export class AuthService {
     });
   }
 
+  async refreshToken(accessToken: string): Promise<TokenSet | undefined> {
+    const user = await this.userService.getUser({ accessToken });
+    if (user) {
+      const reqOptions = {
+        url: 'https://accounts.spotify.com/api/token',
+        form: {
+          refresh_token: user.refreshToken,
+          grant_type: 'refresh_token',
+        },
+        headers: {
+          Authorization:
+            'Basic ' +
+            Buffer.from(process.env.SPOTIFY_CLIENT_ID + ':' + process.env.SPOTIFY_CLIENT_SECRET).toString('base64'),
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        json: true,
+      };
+
+      /// Wish we could use Axios here to remove the request dependency but I could not get Axios to play nice with application/x-www-form-urlencoded when hitting spotify api.
+      return new Promise((resolve, reject) => {
+        request.post(reqOptions, (err, response, body) => {
+          if (!err && response.statusCode === 200) {
+            const accessToken = body.access_token;
+            const refreshToken = body.refresh_token;
+            resolve({ user, accessToken, refreshToken });
+          } else {
+            reject(err);
+          }
+        });
+      });
+    }
+    return undefined;
+  }
+
   async getUserDataAndSaveUser(code: string): Promise<User> {
     const tokens = await this.getTokens(code).catch(e => {
       console.error(e);
