@@ -25,7 +25,11 @@ playlistController.get('/playlists', async (req, res) => {
 playlistController.get('/playlist/:playlistId/subscribe', (req, res) => {
   if (req.headers.authorization && req.params.playlistId) {
     spotifyService.subscribeToPlaylist(req.headers.authorization, req.params.playlistId).then(x => {
-      res.send(x);
+      if (x) {
+        res.send(x);
+      } else {
+        res.status(204).send('You are already a member of this playlist.');
+      }
     });
   }
   res.status(400).send('PlaylistId or Authorization header missing!');
@@ -48,12 +52,13 @@ playlistController.post('/playlist', (req, res) => {
 });
 
 // Should delete the given playlist by Id
-playlistController.delete('/playlist/:playlistId', (req, _res) => {
-  const { accessToken } = req.body;
-  return spotifyService.removeUserPlaylist(accessToken);
-});
-
-playlistController.post('/playlist/subscribe', (req, _res) => {
-  const { playlistId, accessToken } = req.body;
-  return spotifyService.subscribeToPlaylist(accessToken, playlistId);
+playlistController.delete('/playlist', (req, res) => {
+  const { playlists } = req.body;
+  const { authorization } = req.headers;
+  if (authorization && playlists) {
+    const accessToken = authorization.split(' ')[1];
+    res.send(spotifyService.removePlaylist(accessToken, playlists));
+  } else {
+    res.status(400).send('Missing authorization or playlists');
+  }
 });

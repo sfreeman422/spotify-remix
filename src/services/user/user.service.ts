@@ -45,6 +45,7 @@ export class UserService {
       const user = await datasource
         .getRepository(User)
         .find({ where: { accessToken: token }, relations: ['ownedPlaylists'] });
+      console.log(user);
       if (user?.[0]?.ownedPlaylists?.length) {
         return user[0].ownedPlaylists;
       }
@@ -55,5 +56,9 @@ export class UserService {
     return getDataSource().then(datasource =>
       datasource.getRepository(Playlist).find({ where: { playlistId }, relations: ['members'] }),
     );
+  }
+
+  public deletePlaylist(playlists: Playlist[]): Promise<Playlist[]> {
+    return getDataSource().then(datasource => datasource.getRepository(Playlist).remove(playlists));
   }
 }

@@ -81,8 +81,12 @@ export class SpotifyService {
     });
   }
 
-  removeUserPlaylist(_accessToken: string): void {
-    console.log('not yet implemented');
+  async removePlaylist(accessToken: string, playlists: string[]): Promise<Playlist[]> {
+    const ownedPlaylists = await this.userService.getAllOwnedPlaylists(accessToken);
+    const playlistsOwnedAndToBeDeleted: Playlist[] = ownedPlaylists.filter(x =>
+      playlists.some(y => x.playlistId === y),
+    );
+    return this.userService.deletePlaylist(playlistsOwnedAndToBeDeleted);
   }
 
   unsubscribeFromPlaylist(_accessToken: string, _playlistId: string): void {
@@ -96,7 +100,7 @@ export class SpotifyService {
     });
 
     const playlist = await this.userService.getPlaylist(playlistId);
-    if (user?.length && playlist[0]) {
+    if (user?.length && playlist[0] && !user[0].memberPlaylists?.includes(playlist[0])) {
       const userWithPlaylist = user[0];
       const newList: Playlist[] | undefined = userWithPlaylist.memberPlaylists
         ? userWithPlaylist.memberPlaylists.map(x => x)

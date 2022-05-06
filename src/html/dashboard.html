@@ -38,30 +38,13 @@
       <div id="playlists"></div>
     </div>
     <script>
-      function createPlaylist() {
-        fetch('/playlist', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({}),
-        });
-      }
-
-      function subscribeToAPlaylist() {
-        const code = document.getElementById("code").value;
-        console.log(code);
-        fetch(`/playlist/${code}/subscribe`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`
-          }
-        }).then(x => x.json())
-      }
-
       const params = new URLSearchParams(window.location.search);
       const accessToken = params.get('accessToken');
       const refreshToken = params.get('refreshToken');
-      fetch('/playlists', {
+      let playlists;
+
+      function getPlaylistsAndBuildDivs() {
+        fetch('/playlists', {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
@@ -69,10 +52,13 @@
         .then(x => x.json())
         .then(x => {
           const playlistDiv = document.getElementById('playlists');
-
+          playlists = x;
           if (x.orphanPlaylists && x.orphanPlaylists.length > 0) {
+            console.log(x.orphanPlaylists);
+            const orphanedPlaylists = x.orphanPlaylists;
             playlistDiv.innerHTML += `<div>
               <h3 class="text-white">Orphaned Playlists</h3>
+              <button onclick="removeOrphanedPlaylists()">Remove Orphaned Playlists</button>
               <div class="playlist" id="orphan-playlists"></div>
               </div>`;
             x.orphanPlaylists.map(
@@ -133,7 +119,46 @@
               'playlists',
             ).innerHtml = `<h1 class="text-white">No playlists found. Create a remix to get started.</h1>`;
           }
+          return x;
         });
+      }
+
+      getPlaylistsAndBuildDivs()
+
+      function removeOrphanedPlaylists() {
+        console.log(playlists.orphanPlaylists);
+        fetch(`/playlist`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              playlists: playlists.orphanPlaylists
+            })
+          }).then(x => {
+            getPlaylistsAndBuildDivs();
+          });
+      }
+      function createPlaylist() {
+        fetch('/playlist', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({}),
+        });
+      }
+
+      function subscribeToAPlaylist() {
+        const code = document.getElementById("code").value;
+        console.log(code);
+        fetch(`/playlist/${code}/subscribe`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          }
+        }).then(x => x.json())
+      }
     </script>
   </body>
 </html>
