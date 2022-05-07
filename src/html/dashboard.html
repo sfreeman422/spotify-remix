@@ -56,13 +56,13 @@
         const refreshTokenString = 'spotify-remix-refresh-token';
         let accessToken = localStorage.getItem(accessTokenString);
         let refreshToken = localStorage.getItem(refreshTokenString);
-        if (!!accessToken || !!refreshToken) {
-          const possibleAccessToken = params.get('accessToken');
-          const possibleRefreshToken = params.get('refreshToken'); 
+        if (!accessToken || !refreshToken) {
+          const paramAccessToken = params.get('accessToken');
+          const paramRefreshToken = params.get('refreshToken'); 
 
-          if (possibleAccessToken && possibleRefreshToken) {
-            accessToken = possibleAccessToken;
-            refreshToken = possibleRefreshToken;
+          if (paramAccessToken && paramRefreshToken) {
+            accessToken = paramAccessToken;
+            refreshToken = paramRefreshToken;
           }
         }
         if (accessToken && refreshToken) {
@@ -78,8 +78,11 @@
             localStorage.setItem('spotify-remix-refresh-token', x.refreshToken);
           })
           .catch(e => {
+            window.location = `${window.location.protocol}//${window.location.host}/login`;
             console.error('Unable to refresh tokens');
           });
+        } else {
+          window.location = `${window.location.protocol}//${window.location.host}/login`;
         }
       }
 
