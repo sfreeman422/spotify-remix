@@ -5,18 +5,18 @@ import { User } from '../db/models/User';
 
 export class RefreshService {
   userService = new UserService();
-  currentlyRefreshing: Record<string, Promise<User | undefined> | undefined> = {};
+  inflightRefreshes: Record<string, Promise<User | undefined> | undefined> = {};
 
   public refresh(accessToken: string, spotifyId?: string): Promise<User | undefined> {
     const identifier = spotifyId || accessToken;
 
-    if (this.currentlyRefreshing[identifier]) {
-      return this.currentlyRefreshing[identifier] as Promise<User>;
+    if (this.inflightRefreshes[identifier]) {
+      return this.inflightRefreshes[identifier] as Promise<User>;
     } else {
-      this.currentlyRefreshing[identifier] = this.refreshToken(accessToken, spotifyId);
-      // Hella ghetto dawg - deletes the key in currentlyRefreshing after 60 seconds.
-      setTimeout(() => delete this.currentlyRefreshing[identifier], 60000);
-      return this.currentlyRefreshing[identifier] as Promise<User>;
+      this.inflightRefreshes[identifier] = this.refreshToken(accessToken, spotifyId);
+      // Hella ghetto dawg - deletes the key in inflightRefreshes after 60 seconds.
+      setTimeout(() => delete this.inflightRefreshes[identifier], 60000);
+      return this.inflightRefreshes[identifier] as Promise<User>;
     }
   }
 
@@ -47,7 +47,7 @@ export class RefreshService {
       };
 
       /// Wish we could use Axios here to remove the request dependency but I could not get Axios to play nice with application/x-www-form-urlencoded when hitting spotify api.
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve: (tokenSet: TokenSet) => void, reject) => {
         request.post(reqOptions, (err, response, body) => {
           if (!err && response.statusCode === 200) {
             const accessToken = body.access_token;
@@ -57,9 +57,8 @@ export class RefreshService {
             reject(err);
           }
         });
-      }).then(tokens => {
-        const tokenSet = (tokens as unknown) as TokenSet;
-        console.log(tokens);
+      }).then((tokens: TokenSet) => {
+        const tokenSet = tokens;
         if (tokens && tokenSet.user) {
           const updatedUser = tokenSet.user;
           updatedUser.accessToken = tokenSet.accessToken;

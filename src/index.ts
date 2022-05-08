@@ -8,6 +8,7 @@ import axios from 'axios';
 import axiosRetry from 'axios-retry';
 import { User } from './shared/db/models/User';
 import { RefreshService } from './shared/services/refresh.service';
+import { access } from 'fs';
 
 const app: Application = express();
 const PORT = process.env.PORT || 3000;
@@ -33,9 +34,8 @@ axios.interceptors.response.use(undefined, error => {
   console.log(error.config.data);
   console.log(error.config['axios-retry']);
   if (error.config && error.response && error.response.status === 401) {
-    console.log('refreshing token..');
-    console.log(error.config.headers);
     const accessToken = error.config.headers.Authorization.split(' ')[1];
+    console.log(`Refreshing token: ${accessToken}`);
     // This should handle 401 errors by refreshing our users token.
     // Not sure about these return undefined, but a lil drunk rn.
     return refreshService.refresh(accessToken).then((user: User | undefined) => {
