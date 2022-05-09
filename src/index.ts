@@ -6,15 +6,12 @@ import { createConnection, getConnectionOptions } from 'typeorm';
 import { controllers } from './controllers/index.controller';
 import axios from 'axios';
 import axiosRetry from 'axios-retry';
-import { AuthService } from './services/auth/auth.service';
-import { TokenSet } from './services/auth/auth.interfaces';
-import { UserService } from './services/user/user.service';
 import { User } from './shared/db/models/User';
+import { RefreshService } from './shared/services/refresh.service';
 
 const app: Application = express();
 const PORT = process.env.PORT || 3000;
-const authService = new AuthService();
-const userService = new UserService();
+const refreshService = new RefreshService();
 
 if (!process.env.PRODUCTION) {
   dotenv.config();
@@ -30,34 +27,23 @@ app.use(controllers);
 
 // Retry logic interceptor
 axios.interceptors.response.use(undefined, error => {
-  console.log(error.response.status);
+  console.log('HTTP Request Failure:');
   console.log(error.response.data);
-  console.log(error.request);
+  console.log(error.config.url);
+  console.log(error.config.data);
+  console.log(error.config['axios-retry']);
   if (error.config && error.response && error.response.status === 401) {
-    console.log('refreshing token..');
-    console.log(error.config.headers);
     const accessToken = error.config.headers.Authorization.split(' ')[1];
+    console.log(`Refreshing token: ${accessToken}`);
     // This should handle 401 errors by refreshing our users token.
     // Not sure about these return undefined, but a lil drunk rn.
-    return authService
-      .refreshToken(accessToken)
-      .then((tokens: TokenSet | undefined) => {
-        console.log(tokens);
-        if (tokens && tokens.user) {
-          const updatedUser = tokens.user;
-          updatedUser.accessToken = tokens.accessToken;
-          updatedUser.refreshToken = tokens.refreshToken;
-          return userService.updateExistingUser(updatedUser);
-        }
-        return undefined;
-      })
-      .then((user: User | undefined) => {
-        if (user) {
-          error.config.headers.authorization = `Bearer ${user.accessToken}`;
-          return axios.request(error.config);
-        }
-        return undefined;
-      });
+    return refreshService.refresh(accessToken).then((user: User | undefined) => {
+      if (user) {
+        error.config.headers.authorization = `Bearer ${user.accessToken}`;
+        return axios.request(error.config);
+      }
+      return undefined;
+    });
   }
 
   return Promise.reject(error);

@@ -99,7 +99,7 @@ export class SpotifyService {
   async subscribeToPlaylist(accessToken: string, playlistId: string): Promise<User | undefined> {
     const user = await this.userService.getUserWithRelations({
       where: { accessToken },
-      relations: ['memberPlaylists'],
+      relations: ['memberPlaylists', 'ownedPlaylists'],
     });
 
     const playlist = await this.userService.getPlaylist(playlistId);
@@ -188,24 +188,20 @@ export class SpotifyService {
       playlist.map(
         song =>
           new Promise((resolve, reject) => {
-            setTimeout(
-              () =>
-                axios
-                  .post(
-                    `${this.basePlaylistUrl}/${playlistId}/tracks`,
-                    {
-                      uris: [song.uri || song.track.uri],
-                    },
-                    {
-                      headers: {
-                        Authorization: `Bearer ${song.accessToken}`,
-                      },
-                    },
-                  )
-                  .then(x => resolve(x))
-                  .catch(e => reject(e)),
-              500,
-            );
+            axios
+              .post(
+                `${this.basePlaylistUrl}/${playlistId}/tracks`,
+                {
+                  uris: [song.uri || song.track.uri],
+                },
+                {
+                  headers: {
+                    Authorization: `Bearer ${song.accessToken}`,
+                  },
+                },
+              )
+              .then(x => resolve(x))
+              .catch(e => reject(e));
           }),
       ),
     );

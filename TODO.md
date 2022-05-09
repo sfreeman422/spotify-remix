@@ -1,6 +1,7 @@
 # TODO:
 
-- Confirm that the retry logic is working properly.
-- Add better token checking on front end.
-- Determine why rate limiting is seemingly not getting 2-4 songs consistently - is it a data quality issue or is it a retry logic issue?
+- Make sure subscribing to a playlist works properly
+- Get more data for users (perhaps store responses in DB to make it easier in future)
+- Write the cronjob
+- Determine why we get 502 / 500 errors for some songs, sometimes.
 - Better styling
