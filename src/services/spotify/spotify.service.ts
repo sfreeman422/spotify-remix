@@ -29,26 +29,41 @@ export class SpotifyService {
   }
 
   async getUserPlaylists(accessToken: string): Promise<any> {
-    const playlists = await (await this.userService.getAllOwnedPlaylists(accessToken)).map(x => x.playlistId);
+    const playlists = await this.userService.getUserWithRelations({
+      where: { accessToken },
+      relations: ['memberPlaylists', 'ownedPlaylists'],
+    });
     return axios
       .get(`${this.baseSelfUrl}/playlists`, {
         headers: {
-          Authorization: accessToken,
+          Authorization: `Bearer ${accessToken}`,
         },
       })
       .then(resp => {
         if (resp) {
           // Primary source of truth.
           const spotifyPlaylists: any[] = resp.data.items;
-          // Not working maybe.
-          const orphanPlaylists = playlists.filter(x => !spotifyPlaylists.find(y => x === y.id));
-          const managedPlaylists = spotifyPlaylists.filter(x => playlists.includes(x.id));
-          const unmanagedPlaylists = spotifyPlaylists.filter(x => !playlists.includes(x.id));
-          return {
-            unmanagedPlaylists,
-            orphanPlaylists,
-            managedPlaylists,
-          };
+
+          if (playlists) {
+            const ownedAndSubbedPlaylists = playlists[0]?.memberPlaylists
+              ?.concat(playlists[0]?.ownedPlaylists || [])
+              .map(x => x.playlistId);
+            // Need to work on this section
+            const createdPlaylists = playlists[0]?.ownedPlaylists?.map(x => x.playlistId);
+            const memberPlaylists = playlists[0]?.memberPlaylists
+              ?.map(x => x.playlistId)
+              ?.filter(x => createdPlaylists?.includes(x));
+            // Not working maybe.
+            const orphanPlaylists = ownedAndSubbedPlaylists?.filter(x => !spotifyPlaylists.find(y => x === y.id));
+            const ownedPlaylists = spotifyPlaylists.filter(x => createdPlaylists?.includes(x.id));
+            const subscribedPlaylists = spotifyPlaylists.filter(x => memberPlaylists?.includes(x.id));
+            return {
+              ownedPlaylists,
+              orphanPlaylists,
+              subscribedPlaylists,
+            };
+          }
+          return {};
         }
         return {};
       })

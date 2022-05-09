@@ -114,12 +114,12 @@
               );
             }
 
-            if (x.managedPlaylists && x.managedPlaylists.length > 0) {
+            if (x.ownedPlaylists && x.ownedPlaylists.length > 0) {
               playlistDiv.innerHTML += `<div>
-                    <h3 class="text-white">Managed Playlists</h3>
+                    <h3 class="text-white">Your Playlists</h3>
                     <div class="playlist" id="managed-playlists"></div>
                     </div>`;
-              x.managedPlaylists.map(
+              x.ownedPlaylists.map(
                 item =>
                   (document.getElementById('managed-playlists').innerHTML += `
                   <div class="card">
@@ -135,25 +135,8 @@
               );
             }
 
-            if (x.unmanagedPlaylists && x.unmanagedPlaylists.length > 0) {
-              playlistDiv.innerHTML += `<div>
-                    <h3 class="text-white">Unmanaged Playlists</h3>
-                    <div class="playlist" id="unmanaged-playlists"></div>
-                    </div>`;
-              x.unmanagedPlaylists.map(
-                item =>
-                  (document.getElementById('unmanaged-playlists').innerHTML += `
-                  <div class="card">
-                  <h3>${item.name}</h3>
-                  <p>${item.tracks.total} tracks</p>
-                  <a href=${item.external_urls.spotify}>${item.external_urls.spotify}</a>
-                  <p>${item.description}</p>
-                  </div>`),
-              );
-            }
-
-            if (x.items && x.items.length > 0) {
-              x.items.map(
+            if (x.subbedPlaylists && x.subbedPlaylists.length > 0) {
+              x.subbedPlaylists.map(
                 item =>
                   (document.getElementById('playlists').innerHTML += `<div class="card">
                   <h3>${item.name}</h3>

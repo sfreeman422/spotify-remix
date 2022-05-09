@@ -5,13 +5,11 @@ export const playlistController: Router = express.Router();
 
 const spotifyService = new SpotifyService();
 
-// Should show all of the playlists that a user is subscribed to?
-// Maybe should only be subset of playlists that we manage?
 playlistController.get('/playlists', async (req, res) => {
-  const { authorization } = req.headers;
-  if (authorization) {
+  const accessToken = req.headers.authorization?.split(' ')[1];
+  if (accessToken) {
     spotifyService
-      .getUserPlaylists(authorization)
+      .getUserPlaylists(accessToken)
       .then(x => res.send(x))
       .catch(e => {
         console.log(e);
@@ -22,16 +20,29 @@ playlistController.get('/playlists', async (req, res) => {
   }
 });
 
-playlistController.put('/playlist/:playlistId/subscribe', (req, res) => {
-  if (req.headers.authorization && req.params.playlistId) {
-    const accessToken = req.headers.authorization.split(' ')[1];
-    spotifyService.subscribeToPlaylist(accessToken, req.params.playlistId).then(x => {
-      if (x) {
-        res.send(x);
-      } else {
-        res.status(204).send('You are already a member of this playlist.');
-      }
+playlistController.put('/playlist/:playlistId/subscribe', async (req, res) => {
+  const accessToken = req?.headers?.authorization?.split(' ')[1];
+  const { playlistId } = req.params;
+
+  if (accessToken && playlistId) {
+    const subscribedUser = await spotifyService.subscribeToPlaylist(accessToken, playlistId).catch(e => {
+      console.error(e);
+      res.status(500).send('Unable to subscribe to the playlist. Please try again later.');
     });
+    if (subscribedUser) {
+      // refresh the playlist;
+      spotifyService
+        .populatePlaylist(playlistId)
+        .then(_ => {
+          res.status(200).send('Successfully subscribed and populated the playlist.');
+        })
+        .catch(e => {
+          console.error(e);
+          res.status(500).send('Unable to populate the playlist. Please try again later');
+        });
+    } else {
+      res.status(204).send('You are already a member of this playlist.');
+    }
   } else {
     res.status(400).send('PlaylistId or Authorization header missing!');
   }
