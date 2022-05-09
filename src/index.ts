@@ -8,7 +8,6 @@ import axios from 'axios';
 import axiosRetry from 'axios-retry';
 import { User } from './shared/db/models/User';
 import { RefreshService } from './shared/services/refresh.service';
-import { access } from 'fs';
 
 const app: Application = express();
 const PORT = process.env.PORT || 3000;

@@ -99,7 +99,7 @@ export class SpotifyService {
   async subscribeToPlaylist(accessToken: string, playlistId: string): Promise<User | undefined> {
     const user = await this.userService.getUserWithRelations({
       where: { accessToken },
-      relations: ['memberPlaylists'],
+      relations: ['memberPlaylists', 'ownedPlaylists'],
     });
 
     const playlist = await this.userService.getPlaylist(playlistId);
