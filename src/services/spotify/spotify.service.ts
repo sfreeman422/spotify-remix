@@ -48,12 +48,10 @@ export class SpotifyService {
             const ownedAndSubbedPlaylists = playlists[0]?.memberPlaylists
               ?.concat(playlists[0]?.ownedPlaylists || [])
               .map(x => x.playlistId);
-            // Need to work on this section
             const createdPlaylists = playlists[0]?.ownedPlaylists?.map(x => x.playlistId);
             const memberPlaylists = playlists[0]?.memberPlaylists
               ?.map(x => x.playlistId)
               ?.filter(x => createdPlaylists?.includes(x));
-            // Not working maybe.
             const orphanPlaylists = ownedAndSubbedPlaylists?.filter(x => !spotifyPlaylists.find(y => x === y.id));
             const ownedPlaylists = spotifyPlaylists.filter(x => createdPlaylists?.includes(x.id));
             const subscribedPlaylists = spotifyPlaylists.filter(x => memberPlaylists?.includes(x.id));
