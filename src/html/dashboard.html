@@ -4,8 +4,8 @@
       body {
         background: black;
       }
-      
-      a{
+
+      a {
         word-wrap: break-word;
       }
 
@@ -41,10 +41,6 @@
     <h1><span class="text-white">Spotify</span><span class="text-green">Remix</span></h1>
     <h2 class="text-white">Dashboard</h2>
     <div>
-      <button id="create-playlist-button" onclick="createPlaylist()">Create a New Remix Playlist</button>
-      <br>
-      <span class="text-white">Code:</span><input type="text" id="code"></input><br>
-      <button onclick="subscribeToAPlaylist()">Follow a Remix</button>
       <div id="playlists"></div>
     </div>
     <script>
@@ -59,7 +55,7 @@
         let refreshToken = localStorage.getItem(refreshTokenString);
         if (!accessToken || !refreshToken) {
           const paramAccessToken = params.get('accessToken');
-          const paramRefreshToken = params.get('refreshToken'); 
+          const paramRefreshToken = params.get('refreshToken');
 
           if (paramAccessToken && paramRefreshToken) {
             accessToken = paramAccessToken;
@@ -72,16 +68,16 @@
               Authorization: `Bearer ${accessToken}`,
             },
           })
-          .then(x => x.json())
-          .then(x => {
-            console.log(x);
-            localStorage.setItem('spotify-remix-access-token', x.accessToken);
-            localStorage.setItem('spotify-remix-refresh-token', x.refreshToken);
-          })
-          .catch(e => {
-            window.location = `${window.location.protocol}//${window.location.host}/login`;
-            console.error('Unable to refresh tokens');
-          });
+            .then(x => x.json())
+            .then(x => {
+              console.log(x);
+              localStorage.setItem('spotify-remix-access-token', x.accessToken);
+              localStorage.setItem('spotify-remix-refresh-token', x.refreshToken);
+            })
+            .catch(e => {
+              window.location = `${window.location.protocol}//${window.location.host}/login`;
+              console.error('Unable to refresh tokens');
+            });
         } else {
           window.location = `${window.location.protocol}//${window.location.host}/login`;
         }
@@ -101,7 +97,7 @@
             playlists = x;
             if (x.orphanPlaylists && x.orphanPlaylists.length > 0) {
               playlistDiv.innerHTML += `<div>
-                    <h3 class="text-white">Orphaned Playlists</h3>
+                    <h3 class="text-white">Orphaned Remixes</h3>
                     <button onclick="removeOrphanedPlaylists()">Remove Orphaned Playlists</button>
                     <div class="playlist" id="orphan-playlists"></div>
                     </div>`;
@@ -116,7 +112,8 @@
 
             if (x.ownedPlaylists && x.ownedPlaylists.length > 0) {
               playlistDiv.innerHTML += `<div>
-                    <h3 class="text-white">Your Playlists</h3>
+                    <h3 class="text-white">Your Remixes</h3>
+                    <button id="create-playlist-button" onclick="createPlaylist()">Create a New Remix Playlist</button>
                     <div class="playlist" id="managed-playlists"></div>
                     </div>`;
               x.ownedPlaylists.map(
@@ -135,14 +132,25 @@
               );
             }
 
+            document.getElementById('playlists').innerHTML += `<div>
+                    <h3 class="text-white">Your Followed Remixes</h3>
+                    <span class="text-white">Code:</span><input type="text" id="code"></input><br>
+                    <button onclick="subscribeToAPlaylist()">Follow a Remix</button>
+                    <div class="playlist" id="subbed-playlists"></div>
+                    </div>`;
+
             if (x.subbedPlaylists && x.subbedPlaylists.length > 0) {
               x.subbedPlaylists.map(
                 item =>
-                  (document.getElementById('playlists').innerHTML += `<div class="card">
+                  (document.getElementById('subbed-playlists').innerHTML += `<div class="card">
                   <h3>${item.name}</h3>
                   <p>${item.tracks.total} tracks</p>
                   <a href=${item.external_urls.spotify}>${item.external_urls.spotify}</a>
                   <p>${item.description}</p>
+                  <p>Invite your friends using this link:</p>
+                  <a href="${window.location.protocol}//${window.location.host}/playlist?playlistId=${item.id}">
+                    <span>${window.location.protocol}//${window.location.host}/playlist?playlistId=${item.id}</span>
+                  </a>
                   </div>`),
               );
             } else {
@@ -172,7 +180,8 @@
       function createPlaylist() {
         const accessToken = localStorage.getItem('spotify-remix-access-token');
         const playlistButton = document.getElementById('create-playlist-button');
-        playlistButton.innerHTML = "<span class='text-blue'>Loading... (This may take awhile, please do not exit the page.)</span>";
+        playlistButton.innerHTML =
+          "<span class='text-blue'>Loading... (This may take awhile, please do not exit the page.)</span>";
         playlistButton.disabled = true;
         fetch('/playlist', {
           method: 'POST',
