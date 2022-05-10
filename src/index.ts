@@ -73,6 +73,6 @@ const connectToDb = async (): Promise<void> => {
 };
 
 app.listen(PORT, (e?: Error) => {
-  e ? console.error(e) : console.log('Listening on port 3000');
+  e ? console.error(e) : console.log(`Listening on port ${PORT}`);
   connectToDb();
 });
