@@ -9,13 +9,12 @@ import axiosRetry from 'axios-retry';
 import { User } from './shared/db/models/User';
 import { RefreshService } from './shared/services/refresh.service';
 
-const app: Application = express();
-const PORT = process.env.PORT ? process.env.PORT : 3000;
-const refreshService = new RefreshService();
-
 if (!process.env.PRODUCTION) {
   dotenv.config();
 }
+const app: Application = express();
+const PORT = process.env.PORT ? process.env.PORT : 3000;
+const refreshService = new RefreshService();
 
 app.use(
   bodyParser.urlencoded({
