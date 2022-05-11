@@ -37,7 +37,7 @@ export interface SpotifyExternalIds {
   isrc: string;
 }
 
-export interface SpotifyItem {
+export interface SpotifyTrack {
   album: SpotifyAlbum;
   artists: SpotifyArtist[];
   available_markets: string[];
@@ -57,8 +57,13 @@ export interface SpotifyItem {
   uri: string;
 }
 
-export interface SpotifyTopTracksResponse {
-  items: SpotifyItem[];
+export interface SpotifyLikedSong {
+  added_at: Date;
+  track: SpotifyTrack;
+}
+
+export interface SpotifyResponse<T> {
+  items: T;
   total: number;
   limit: number;
   offset: number;

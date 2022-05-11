@@ -2,7 +2,7 @@ import axios, { AxiosResponse } from 'axios';
 import { Playlist } from '../../shared/db/models/Playlist';
 import { User } from '../../shared/db/models/User';
 import { UserService } from '../user/user.service';
-import { SpotifyItem, SpotifyTopTracksResponse } from './spotify-top-tracks.interface';
+import { SpotifyLikedSong, SpotifyResponse, SpotifyTrack } from './spotify.generated.interface';
 import { SongWithUserData, SpotifyUserData } from './spotify.interface';
 
 export class SpotifyService {
@@ -136,45 +136,53 @@ export class SpotifyService {
     return undefined;
   }
 
-  async getTopAndLikedSongs(members: any[], songsPerUser: number): Promise<any[]> {
+  async getTopAndLikedSongs(members: User[], songsPerUser: number): Promise<SongWithUserData[]> {
     return members?.length
       ? await Promise.all(
-          members.map(async member => {
+          members.map(async (member: User) => {
             const userMusic = await Promise.all([
               axios
-                .get<SpotifyTopTracksResponse>(`${this.baseSelfUrl}/top/tracks?limit=50&time_range=short_term`, {
+                .get<SpotifyResponse<SpotifyTrack[]>>(`${this.baseSelfUrl}/top/tracks?limit=50&time_range=short_term`, {
                   headers: {
                     Authorization: `Bearer ${member.accessToken}`,
                   },
                 })
-                .then<SongWithUserData[]>((x: AxiosResponse<SpotifyTopTracksResponse>) =>
+                .then<SongWithUserData[]>((x: AxiosResponse<SpotifyResponse<SpotifyTrack[]>>) =>
                   x.data.items.map(
-                    (song: SpotifyItem): SongWithUserData => ({
+                    (song: SpotifyTrack): SongWithUserData => ({
                       ...song,
                       accessToken: member.accessToken,
                       refreshToken: member.refreshToken,
                     }),
                   ),
                 )
-                .catch(e => console.error(e)),
+                .catch(e => {
+                  console.error(e);
+                  throw new Error(e);
+                }),
               axios
-                .get(`${this.baseSelfUrl}/tracks?limit=50`, {
+                .get<SpotifyResponse<SpotifyLikedSong[]>>(`${this.baseSelfUrl}/tracks?limit=50`, {
                   headers: {
                     Authorization: `Bearer ${member.accessToken}`,
                   },
                 })
-                .then(x =>
-                  x.data.items.map((song: any) => ({
-                    ...song,
-                    accessToken: member.accessToken,
-                    refreshToken: member.refreshToken,
-                  })),
+                .then<SongWithUserData[]>((x: AxiosResponse<SpotifyResponse<SpotifyLikedSong[]>>): SongWithUserData[] =>
+                  x.data.items.map(
+                    (song: SpotifyLikedSong): SongWithUserData =>
+                      Object.assign(song.track, {
+                        accessToken: member.accessToken,
+                        refreshToken: member.refreshToken,
+                      }),
+                  ),
                 )
-                .catch(e => console.error(e)),
+                .catch(e => {
+                  console.error(e);
+                  throw new Error(e);
+                }),
             ]);
 
-            const allMusic = userMusic.flat();
-            const playlistSongs = [];
+            const allMusic: SongWithUserData[] = userMusic.flat();
+            const playlistSongs: SongWithUserData[] = [];
             const randomNumbers: Record<number, boolean> = {};
             let count = 0;
             while (count < songsPerUser) {
@@ -187,7 +195,7 @@ export class SpotifyService {
             }
             return playlistSongs;
           }),
-        )
+        ).then(x => x.flat())
       : [];
   }
 
@@ -197,18 +205,18 @@ export class SpotifyService {
     });
     const songsPerUser = this.getNumberOfItemsPerUser(members.length);
     // For each member, get most recently played + liked tracks and limit to the number of songs each user should provide.
-    const music: any[] = await this.getTopAndLikedSongs(members, songsPerUser);
-    const playlist = this.roundRobinSort(music);
+    const music: SongWithUserData[] = await this.getTopAndLikedSongs(members, songsPerUser);
+    const orderedPlaylist: SongWithUserData[] = this.roundRobinSort(music);
 
     return await Promise.all(
-      playlist.map(
+      orderedPlaylist.map(
         song =>
           new Promise((resolve, reject) => {
             axios
               .post(
                 `${this.basePlaylistUrl}/${playlistId}/tracks`,
                 {
-                  uris: [song.uri || song.track.uri],
+                  uris: [song.uri],
                 },
                 {
                   headers: {
