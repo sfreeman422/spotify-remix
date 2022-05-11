@@ -68,6 +68,66 @@ export interface SpotifyResponse<T> {
   limit: number;
   offset: number;
   href: string;
-  previous?: any;
-  next?: any;
+  previous?: string;
+  next?: string;
+}
+
+export interface SpotifyPlaylistOwner {
+  display_name: string;
+  external_urls: SpotifyExternalUrls;
+  href: string;
+  id: string;
+  type: string;
+  uri: string;
+}
+
+export interface SpotifyPlaylistTracks {
+  href: string;
+  total: number;
+}
+
+export interface SpotifyPlaylist {
+  collaborative: boolean;
+  description: string;
+  external_urls: SpotifyExternalUrls;
+  href: string;
+  id: string;
+  images: SpotifyImage[];
+  name: string;
+  owner: SpotifyPlaylistOwner;
+  primary_color?: any;
+  public: boolean;
+  snapshot_id: string;
+  tracks: SpotifyPlaylistTracks;
+  type: string;
+  uri: string;
+}
+
+export interface SpotifyUserDataExplicitContent {
+  filter_enabled: boolean;
+  filter_locked: boolean;
+}
+
+export interface SpotifyUserDataExternalUrls {
+  spotify: string;
+}
+
+export interface SpotifyUserDataFollowers {
+  href: string;
+  total: number;
+}
+
+export interface SpotifyUserData {
+  country: string;
+  display_name: string;
+  email: string;
+  explicit_content: SpotifyUserDataExplicitContent;
+  external_urls: SpotifyUserDataExternalUrls;
+  followers: SpotifyUserDataFollowers;
+  href: string;
+  id: string;
+  images: string[];
+  product: string;
+  type: string;
+  uri: string;
 }

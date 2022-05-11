@@ -2,8 +2,14 @@ import axios, { AxiosResponse } from 'axios';
 import { Playlist } from '../../shared/db/models/Playlist';
 import { User } from '../../shared/db/models/User';
 import { UserService } from '../user/user.service';
-import { SpotifyLikedSong, SpotifyResponse, SpotifyTrack } from './spotify.generated.interface';
-import { SongWithUserData, SpotifyUserData } from './spotify.interface';
+import {
+  SpotifyLikedSong,
+  SpotifyPlaylist,
+  SpotifyResponse,
+  SpotifyTrack,
+  SpotifyUserData,
+} from './spotify.generated.interface';
+import { PlaylistData, SongWithUserData } from './spotify.interface';
 
 export class SpotifyService {
   baseUrl = 'https://api.spotify.com/v1';
@@ -29,44 +35,48 @@ export class SpotifyService {
       });
   }
 
-  async getUserPlaylists(accessToken: string): Promise<any> {
-    const playlists = await this.userService.getUserWithRelations({
+  async getUserPlaylists(accessToken: string): Promise<PlaylistData> {
+    const user = await this.userService.getUserWithRelations({
       where: { accessToken },
       relations: ['memberPlaylists', 'ownedPlaylists'],
     });
     return axios
-      .get(`${this.baseSelfUrl}/playlists`, {
+      .get<SpotifyResponse<SpotifyPlaylist[]>>(`${this.baseSelfUrl}/playlists`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
       })
-      .then(resp => {
-        if (resp) {
-          // Primary source of truth.
-          const spotifyPlaylists: any[] = resp.data.items;
+      .then(
+        (resp: AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>): PlaylistData => {
+          if (resp) {
+            // Primary source of truth.
+            const spotifyPlaylists: SpotifyPlaylist[] = resp.data.items;
 
-          if (playlists) {
-            const ownedAndSubbedPlaylists = playlists[0]?.memberPlaylists
-              ?.concat(playlists[0]?.ownedPlaylists || [])
-              .map(x => x.playlistId);
-            const createdPlaylists = playlists[0]?.ownedPlaylists?.map(x => x.playlistId);
-            const memberPlaylists = playlists[0]?.memberPlaylists
-              ?.map(x => x.playlistId)
-              ?.filter(x => createdPlaylists?.includes(x));
-            const orphanPlaylists = ownedAndSubbedPlaylists?.filter(x => !spotifyPlaylists.find(y => x === y.id));
-            const ownedPlaylists = spotifyPlaylists.filter(x => createdPlaylists?.includes(x.id));
-            const subscribedPlaylists = spotifyPlaylists.filter(x => memberPlaylists?.includes(x.id));
-            return {
-              ownedPlaylists,
-              orphanPlaylists,
-              subscribedPlaylists,
-            };
+            if (user) {
+              const ownedAndSubbedPlaylists =
+                user[0]?.memberPlaylists?.concat(user[0]?.ownedPlaylists || [])?.map(x => x.playlistId) || [];
+              const createdPlaylists = user[0]?.ownedPlaylists?.map(x => x.playlistId) || [];
+              const memberPlaylists =
+                user[0]?.memberPlaylists?.map(x => x.playlistId)?.filter(x => createdPlaylists?.includes(x)) || [];
+
+              const orphanPlaylists = ownedAndSubbedPlaylists.filter(x => !spotifyPlaylists.find(y => x === y.id));
+              const ownedPlaylists = spotifyPlaylists.filter(x => createdPlaylists?.includes(x.id));
+              const subscribedPlaylists = spotifyPlaylists.filter(x => memberPlaylists?.includes(x.id));
+              return {
+                ownedPlaylists,
+                orphanPlaylists,
+                subscribedPlaylists,
+              };
+            }
+            return { ownedPlaylists: [], orphanPlaylists: [], subscribedPlaylists: [] };
           }
-          return {};
-        }
-        return {};
-      })
-      .catch(e => console.log(e));
+          return { ownedPlaylists: [], orphanPlaylists: [], subscribedPlaylists: [] };
+        },
+      )
+      .catch(e => {
+        console.log(e);
+        throw new Error(e);
+      });
   }
 
   createUserPlaylist(accessToken: string): Promise<any> {
@@ -231,11 +241,11 @@ export class SpotifyService {
     );
   }
 
-  roundRobinSort(arr: any[]): any[] {
+  roundRobinSort(arr: SongWithUserData[]): SongWithUserData[] {
     const allSongs = arr;
-    let sortedArr: any[] = [];
+    let sortedArr: SongWithUserData[] = [];
     while (allSongs.length > 0) {
-      const orderedSet: any[] = [];
+      const orderedSet: SongWithUserData[] = [];
       for (let i = 0; i < allSongs.length; i += 1) {
         const found = orderedSet.find(element => element.accessToken === allSongs[i].accessToken);
         if (!found) {
