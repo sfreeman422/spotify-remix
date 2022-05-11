@@ -36,7 +36,7 @@ export class SpotifyService {
   }
 
   async getUserPlaylists(accessToken: string): Promise<PlaylistData> {
-    const user = await this.userService.getUserWithRelations({
+    const user: User[] | undefined = await this.userService.getUserWithRelations({
       where: { accessToken },
       relations: ['memberPlaylists', 'ownedPlaylists'],
     });
