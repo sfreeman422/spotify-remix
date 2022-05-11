@@ -1,4 +1,5 @@
 import { User } from '../../shared/db/models/User';
+import { SpotifyItem } from './spotify-top-tracks.interface';
 
 export interface SpotifyUserDataExplicitContent {
   filter_enabled: boolean;
@@ -38,4 +39,9 @@ export interface MemberMusic {
 export interface MemberPlaylistItem {
   user: User;
   tracks: any[];
+}
+
+export interface SongWithUserData extends SpotifyItem {
+  accessToken: string;
+  refreshToken: string;
 }

@@ -1,8 +1,9 @@
-import axios from 'axios';
+import axios, { AxiosResponse } from 'axios';
 import { Playlist } from '../../shared/db/models/Playlist';
 import { User } from '../../shared/db/models/User';
 import { UserService } from '../user/user.service';
-import { SpotifyUserData } from './spotify.interface';
+import { SpotifyItem, SpotifyTopTracksResponse } from './spotify-top-tracks.interface';
+import { SongWithUserData, SpotifyUserData } from './spotify.interface';
 
 export class SpotifyService {
   baseUrl = 'https://api.spotify.com/v1';
@@ -141,17 +142,19 @@ export class SpotifyService {
           members.map(async member => {
             const userMusic = await Promise.all([
               axios
-                .get(`${this.baseSelfUrl}/top/tracks?limit=50&time_range=short_term`, {
+                .get<SpotifyTopTracksResponse>(`${this.baseSelfUrl}/top/tracks?limit=50&time_range=short_term`, {
                   headers: {
                     Authorization: `Bearer ${member.accessToken}`,
                   },
                 })
-                .then(x =>
-                  x.data.items.map((song: any) => ({
-                    ...song,
-                    accessToken: member.accessToken,
-                    refreshToken: member.refreshToken,
-                  })),
+                .then<SongWithUserData[]>((x: AxiosResponse<SpotifyTopTracksResponse>) =>
+                  x.data.items.map(
+                    (song: SpotifyItem): SongWithUserData => ({
+                      ...song,
+                      accessToken: member.accessToken,
+                      refreshToken: member.refreshToken,
+                    }),
+                  ),
                 )
                 .catch(e => console.error(e)),
               axios
