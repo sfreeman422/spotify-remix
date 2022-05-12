@@ -135,7 +135,9 @@ export class SpotifyService {
         const subscribedSpotifyPlaylist = await axios
           .post(
             `${this.basePlaylistUrl}/${playlistId}/followers`,
-            {},
+            {
+              public: true,
+            },
             {
               headers: {
                 Authorization: `Bearer ${accessToken}`,
