@@ -49,7 +49,6 @@ export class SpotifyService {
       .then(
         (resp: AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>): PlaylistData => {
           if (resp) {
-            // Primary source of truth.
             const spotifyPlaylists: SpotifyPlaylist[] = resp.data.items;
 
             if (user) {
