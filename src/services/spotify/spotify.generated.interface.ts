@@ -57,6 +57,11 @@ export interface SpotifyTrack {
   uri: string;
 }
 
+export interface SpotifyPlaylistItemInfoTrack extends SpotifyTrack {
+  episode: boolean;
+  track: boolean;
+}
+
 export interface SpotifyLikedSong {
   added_at: Date;
   track: SpotifyTrack;
@@ -130,4 +135,24 @@ export interface SpotifyUserData {
   product: string;
   type: string;
   uri: string;
+}
+export interface SpotifyPlaylistItemInfoVideoThumbnail {
+  url?: string;
+}
+
+export interface SpotifyPlaylistItemInfoAddedBy {
+  external_urls: SpotifyExternalUrls;
+  href: string;
+  id: string;
+  type: string;
+  uri: string;
+}
+
+export interface SpotifyPlaylistItemInfo {
+  added_at: Date;
+  added_by: SpotifyPlaylistItemInfoAddedBy;
+  is_local: boolean;
+  primary_color?: any;
+  track: SpotifyPlaylistItemInfoTrack;
+  video_thumbnail: SpotifyPlaylistItemInfoVideoThumbnail;
 }

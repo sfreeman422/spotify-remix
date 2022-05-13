@@ -1,4 +1,5 @@
-import { Column, Entity, JoinTable, ManyToMany, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinTable, ManyToMany, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Song } from './Song';
 import { User } from './User';
 
 @Entity()
@@ -24,4 +25,11 @@ export class Playlist {
   )
   @JoinTable()
   public members!: User[];
+
+  @OneToMany(
+    () => Song,
+    song => song.playlist,
+    { cascade: true },
+  )
+  public history!: Song[];
 }
