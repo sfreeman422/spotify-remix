@@ -1,9 +1,8 @@
 from errno import errorcode
+import requests
 import mysql.connector
 import os
 import time
-import json
-from urllib import request
 
 print("Beginning refresh job...")
 start = time.time()
@@ -34,8 +33,11 @@ print(playlists)
 print('Playlists retrieved!')
 
 for playlist in playlists:
-  url = "http://localhost:80/refresh/{playlistId}".format(playlistId=playlist['playlistId'])
-  response = request.urlopen(url)
-  data = json.loads(response.read())
+  url = "http://localhost:3000/refresh/{playlistId}".format(playlistId=playlist['playlistId'])
+  headers = { "Authorization": os.getenv('SPOTIFY_REMIX_API_KEY')}
+  response = requests.post(url, headers=headers)
+  if (response.status_code > 200):
+    print('{statusCode} Failure during playlist refresh for {playlistId}'.format(statusCode=response.status_code, playlistId=playlist["playlistId"]))
+    print(response.json())
 
 print("Completed refresh job in {time} seconds!".format(time=time.time() - start))

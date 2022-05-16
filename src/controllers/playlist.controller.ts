@@ -76,10 +76,13 @@ playlistController.delete('/playlist', (req, res) => {
   }
 });
 
-playlistController.get('/refresh/:playlistId', async (req, res) => {
+playlistController.post('/refresh/:playlistId', async (req, res) => {
   const { playlistId } = req.params;
+  const { authorization } = req.headers;
 
-  if (playlistId) {
+  console.log(authorization);
+
+  if (playlistId && authorization === process.env.SPOTIFY_REMIX_API_KEY) {
     const refreshedPlaylist = await spotifyService.populatePlaylist(playlistId).catch(e => {
       console.error(e);
       res.status(500).send('Unable to subscribe to the playlist. Please try again later.');
@@ -88,6 +91,6 @@ playlistController.get('/refresh/:playlistId', async (req, res) => {
       res.status(200).send('Successfully refreshed the playlist.');
     }
   } else {
-    res.status(400).send('PlaylistId missing!');
+    res.status(400).send('PlaylistId or authorization header missing!');
   }
 });
