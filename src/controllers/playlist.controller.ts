@@ -75,3 +75,19 @@ playlistController.delete('/playlist', (req, res) => {
     res.status(400).send('Missing authorization or playlists');
   }
 });
+
+playlistController.get('/refresh/:playlistId', async (req, res) => {
+  const { playlistId } = req.params;
+
+  if (playlistId) {
+    const refreshedPlaylist = await spotifyService.populatePlaylist(playlistId).catch(e => {
+      console.error(e);
+      res.status(500).send('Unable to subscribe to the playlist. Please try again later.');
+    });
+    if (refreshedPlaylist) {
+      res.status(200).send('Successfully refreshed the playlist.');
+    }
+  } else {
+    res.status(400).send('PlaylistId missing!');
+  }
+});

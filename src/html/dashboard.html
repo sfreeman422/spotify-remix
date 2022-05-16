@@ -110,12 +110,13 @@
               );
             }
 
-            if (x.ownedPlaylists && x.ownedPlaylists.length > 0) {
-              playlistDiv.innerHTML += `<div>
+            playlistDiv.innerHTML += `<div>
                     <h3 class="text-white">Your Remixes</h3>
                     <button id="create-playlist-button" onclick="createPlaylist()">Create a New Remix Playlist</button>
                     <div class="playlist" id="managed-playlists"></div>
                     </div>`;
+
+            if (x.ownedPlaylists && x.ownedPlaylists.length > 0) {
               x.ownedPlaylists.map(
                 item =>
                   (document.getElementById('managed-playlists').innerHTML += `
