@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
-//import { isWithinInterval, subDays } from 'date-fns';
+import { isWithinInterval, subHours } from 'date-fns';
 import { Playlist } from '../../shared/db/models/Playlist';
 import { Song } from '../../shared/db/models/Song';
 import { User } from '../../shared/db/models/User';
@@ -181,8 +181,12 @@ export class SpotifyService {
   async getAllMusic(members: User[], songsPerUser: number, history: Song[]): Promise<SongWithUserData[]> {
     // Get only the top songs first, these are likely more relevant.
     let allMusic: SongWithUserData[] = await this.getTopSongs(members);
-    // Filter these songs based on what we have already seen in this playlist within the last week.
-    const historyAsStrings: string[] = history.map(x => x.spotifyUrl);
+    // Filter these songs based on what we have already seen in this playlist within the last 12 hours.
+    // We chose 12 hours because we want to allow the same songs to show up if a playlist is being frequently joined,
+    // But we dont want it to show up if its already been seen within the past day.
+    const historyAsStrings: string[] = history
+      .filter(song => !isWithinInterval(song.createdAt, { start: subHours(new Date(), 12), end: new Date() }))
+      .map(x => x.spotifyUrl);
 
     allMusic = allMusic.filter(x => !historyAsStrings.includes(x.uri));
 
