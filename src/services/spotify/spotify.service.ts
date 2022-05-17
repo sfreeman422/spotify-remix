@@ -266,7 +266,7 @@ export class SpotifyService {
     // Populate the playlists with our songs.
     const populatePlaylistIdentifier = `populate-playlist-${playlistId}`;
     // This can be done MUCH faster if we did not care about order in the playlist.
-    // We wouldsimply promise.all alal of these requests and fire them all of in paralele
+    // We wouldsimply promise.all alal of these requests and fire them all of in parallel
     orderedPlaylist.forEach(song => {
       this.queueService.queue(populatePlaylistIdentifier, () =>
         axios
