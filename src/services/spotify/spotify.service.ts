@@ -262,9 +262,12 @@ export class SpotifyService {
 
   private deQueuePopulatePlaylist(playlistId: string): Promise<void> {
     if (Object.keys(this.populateQueue).includes(playlistId) && this.populateQueue[playlistId].length > 0) {
-      const fn = this.populateQueue[playlistId].shift();
+      const fn = this.populateQueue[playlistId][0];
       if (fn) {
-        return fn(playlistId).then((_: Song[]) => this.deQueuePopulatePlaylist(playlistId));
+        return fn(playlistId).then((_: Song[]) => {
+          this.populateQueue[playlistId].splice(0, 1);
+          return this.deQueuePopulatePlaylist(playlistId);
+        });
       } else {
         return new Promise((resolve, _reject) => {
           resolve();
