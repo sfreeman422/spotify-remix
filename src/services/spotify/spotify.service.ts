@@ -19,7 +19,7 @@ export class SpotifyService {
   baseSelfUrl = `${this.baseUrl}/me`;
   baseUserUrl = `${this.baseUrl}/users`;
   basePlaylistUrl = `${this.baseUrl}/playlists`;
-  populateQueue: Record<string, ((playlistId: string) => Promise<Song[]>)[]> = {};
+  populateQueue: Record<string, (() => Promise<Song[]>)[]> = {};
 
   userService = new UserService();
 
@@ -251,9 +251,9 @@ export class SpotifyService {
   // May want to create a queue class so that we can queue other things - specifically adding songs to the playlist in the right order.
   private queuePopulatePlaylist(playlistId: string): ((playlistId: string) => Promise<Song[]>)[] {
     if (this.populateQueue[playlistId] && this.populateQueue[playlistId].length > 0) {
-      this.populateQueue[playlistId].push((playlistId: string): Promise<Song[]> => this.populatePlaylist(playlistId));
+      this.populateQueue[playlistId].push((): Promise<Song[]> => this.populatePlaylist(playlistId));
     } else {
-      this.populateQueue[playlistId] = [(playlistId: string): Promise<Song[]> => this.populatePlaylist(playlistId)];
+      this.populateQueue[playlistId] = [(): Promise<Song[]> => this.populatePlaylist(playlistId)];
     }
     console.log(this.populateQueue);
     console.log(this.populateQueue[playlistId]);
@@ -266,7 +266,7 @@ export class SpotifyService {
     if (Object.keys(this.populateQueue).includes(playlistId) && this.populateQueue[playlistId].length > 0) {
       const fn = this.populateQueue[playlistId][0];
       if (fn) {
-        return fn(playlistId).then((_: Song[]) => {
+        return fn().then((_: Song[]) => {
           this.populateQueue[playlistId].splice(0, 1);
           return this.deQueuePopulatePlaylist(playlistId);
         });
