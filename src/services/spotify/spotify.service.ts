@@ -138,7 +138,7 @@ export class SpotifyService {
         return undefined;
       } else {
         const subscribedSpotifyPlaylist = await axios
-          .post(
+          .put(
             `${this.basePlaylistUrl}/${playlistId}/followers`,
             {
               public: true,
