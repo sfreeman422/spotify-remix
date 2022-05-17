@@ -15,7 +15,7 @@
       function getAndSetTokens(accessToken, refreshToken) {
         return fetch(`/refresh`, {
           headers: {
-            Authorzation: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${accessToken}`,
             refreshToken,
           },
         })
@@ -57,7 +57,7 @@
             }
             setTimeout(
               () => (window.location = `${window.location.protocol}//${window.location.host}/dashboard`),
-              2000,
+              5000,
             );
           })
           .catch(e => {
