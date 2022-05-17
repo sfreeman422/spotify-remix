@@ -1,6 +1,5 @@
 import express, { Router } from 'express';
 import { AuthService } from '../services/auth/auth.service';
-import { User } from '../shared/db/models/User';
 
 export const authController: Router = express.Router();
 
@@ -42,12 +41,15 @@ authController.get('/refresh', async (req, res) => {
   const { spotifyId } = req.query;
   if (authorization && spotifyId) {
     const accessToken = authorization.split(' ')[1];
-    const tokens: User | undefined = await authService.refreshTokens(accessToken, spotifyId as string);
-    if (tokens) {
-      res.send(tokens);
-    } else {
-      res.status(500).send('Unable to refresh token');
-    }
+    authService
+      .refreshTokens(accessToken, spotifyId as string)
+      .then(x => {
+        res.send(x);
+      })
+      .catch(e => {
+        console.error(e);
+        res.status(500).send(e);
+      });
   } else {
     res.status(400).send('Missing authorization header or spotifyId');
   }

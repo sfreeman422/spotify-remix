@@ -137,7 +137,7 @@ export class SpotifyService {
       if (isUserAlreadyMember) {
         return undefined;
       } else {
-        const subscribedSpotifyPlaylist = await axios
+        return await axios
           .put(
             `${this.basePlaylistUrl}/${playlistId}/followers`,
             {
@@ -149,20 +149,20 @@ export class SpotifyService {
               },
             },
           )
+          .then(_ => {
+            const newList: Playlist[] | undefined = userWithPlaylist.memberPlaylists
+              ? userWithPlaylist.memberPlaylists.map(x => x)
+              : userWithPlaylist.memberPlaylists;
+            if (newList) {
+              newList.push(playlist[0]);
+            }
+            userWithPlaylist.memberPlaylists = newList;
+            return this.userService.updateExistingUser(userWithPlaylist);
+          })
           .catch(e => {
             console.error(e);
             throw new Error(e);
           });
-        if (subscribedSpotifyPlaylist) {
-          const newList: Playlist[] | undefined = userWithPlaylist.memberPlaylists
-            ? userWithPlaylist.memberPlaylists.map(x => x)
-            : userWithPlaylist.memberPlaylists;
-          if (newList) {
-            newList.push(playlist[0]);
-          }
-          userWithPlaylist.memberPlaylists = newList;
-          return this.userService.updateExistingUser(userWithPlaylist);
-        }
       }
     }
     return undefined;

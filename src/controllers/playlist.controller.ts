@@ -5,7 +5,7 @@ export const playlistController: Router = express.Router();
 
 const spotifyService = new SpotifyService();
 
-playlistController.get('/playlists', async (req, res) => {
+playlistController.get('/playlists', (req, res) => {
   const accessToken = req.headers.authorization?.split(' ')[1];
   if (accessToken) {
     spotifyService
@@ -13,34 +13,39 @@ playlistController.get('/playlists', async (req, res) => {
       .then(x => res.send(x))
       .catch(e => {
         console.log(e);
-        res.send(e);
+        res.status(500).send(e);
       });
   } else {
     res.status(400).send('Missing access token!');
   }
 });
 
-playlistController.put('/playlist/:playlistId/subscribe', async (req, res) => {
+playlistController.put('/playlist/:playlistId/subscribe', (req, res) => {
   const accessToken = req?.headers?.authorization?.split(' ')[1];
   const { playlistId } = req.params;
 
   if (accessToken && playlistId) {
-    const subscribedUser = await spotifyService.subscribeToPlaylist(accessToken, playlistId).catch(e => {
-      console.error(e);
-      res.status(500).send('Unable to subscribe to the playlist. Please try again later.');
-    });
-    if (subscribedUser) {
-      spotifyService
-        .refreshPlaylist(playlistId)
-        .then(_ => console.log('Successfully refresh playlist', playlistId))
-        .catch(e => {
-          console.error('Unable to refresh playlist', playlistId);
-          console.error(e);
-        });
-      res.status(200).send('Successfully subscribed to the playlist! A refresh will occur shortly...');
-    } else {
-      res.status(204).send('You are already a member of this playlist.');
-    }
+    spotifyService
+      .subscribeToPlaylist(accessToken, playlistId)
+      .then(subscribedUser => {
+        if (subscribedUser) {
+          // Intentionally not returning this as it might take awhile.
+          spotifyService
+            .refreshPlaylist(playlistId)
+            .then(_ => console.log('Successfully refresh playlist', playlistId))
+            .catch(e => {
+              console.error('Unable to refresh playlist', playlistId);
+              console.error(e);
+            });
+          res.status(200).send('Successfully subscribed to the playlist! A refresh will occur shortly...');
+        } else {
+          res.status(204).send('You are already a member of this playlist.');
+        }
+      })
+      .catch(e => {
+        console.error(e);
+        res.status(500).send('Unable to subscribe to the playlist. Please try again later.');
+      });
   } else {
     res.status(400).send('PlaylistId or Authorization header missing!');
   }
