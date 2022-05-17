@@ -37,7 +37,7 @@ playlistController.put('/playlist/:playlistId/subscribe', async (req, res) => {
           console.error('Unable to refresh playlist', playlistId);
           console.error(e);
         });
-      res.status(200).send('Successfully subscribed to the playlist!');
+      res.status(200).send('Successfully subscribed to the playlist! A refresh will occur shortly...');
     } else {
       res.status(204).send('You are already a member of this playlist.');
     }

@@ -2,12 +2,12 @@ import 'reflect-metadata'; // Necessary for TypeORM entities.
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
 import express, { Application } from 'express';
-import { createConnection, getConnectionOptions } from 'typeorm';
 import { controllers } from './controllers/index.controller';
 import axios from 'axios';
 import axiosRetry from 'axios-retry';
 import { User } from './shared/db/models/User';
 import { RefreshService } from './shared/services/refresh.service';
+import { getDataSource } from './shared/db/AppDataSource';
 
 if (!process.env.PRODUCTION) {
   dotenv.config();
@@ -55,24 +55,9 @@ axiosRetry(axios, {
   retryCondition: err => (err?.response?.status && err.response.status >= 403) || err?.response?.status === undefined,
 });
 
-const connectToDb = async (): Promise<void> => {
-  try {
-    const options = await getConnectionOptions();
-    createConnection(options)
-      .then(connection => {
-        if (connection.isConnected) {
-          console.log(`Connected to MySQL DB: ${options.database}`);
-        } else {
-          throw Error('Unable to connect to database');
-        }
-      })
-      .catch(e => console.error(e));
-  } catch (e) {
-    console.error(e);
-  }
-};
-
 app.listen(PORT, (e?: Error) => {
   e ? console.error(e) : console.log(`Listening on port ${PORT}`);
-  connectToDb();
+  getDataSource()
+    .then(_ => console.log('Connected to DB'))
+    .catch(e => console.error(e));
 });
