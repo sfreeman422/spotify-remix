@@ -15,8 +15,8 @@ export class RefreshService {
   userService = new UserService();
   inflightRefreshes: Record<string, Promise<User | undefined> | undefined> = {};
 
-  public refresh(accessToken: string, spotifyId?: string): Promise<User | undefined> {
-    const identifier = spotifyId || accessToken;
+  public refresh(accessToken: string, refreshToken?: string, spotifyId?: string): Promise<User | undefined> {
+    const identifier = spotifyId || refreshToken || accessToken;
 
     if (this.inflightRefreshes[identifier]) {
       return this.inflightRefreshes[identifier] as Promise<User>;

@@ -37,12 +37,15 @@ authController.get('/login/callback', (req, res) => {
 });
 
 authController.get('/refresh', async (req, res) => {
-  const { authorization } = req.headers;
+  const { authorization, refreshToken } = req.headers;
   const { spotifyId } = req.query;
-  if (authorization && spotifyId) {
+  console.log(authorization);
+  console.log(refreshToken);
+  console.log(spotifyId);
+  if (authorization && refreshToken && spotifyId) {
     const accessToken = authorization.split(' ')[1];
     authService
-      .refreshTokens(accessToken, spotifyId as string)
+      .refreshTokens(accessToken, refreshToken as string, spotifyId as string)
       .then(x => {
         res.send(x);
       })
