@@ -21,6 +21,7 @@
         })
           .then(x => x.json())
           .then(tokens => {
+            console.log(tokens);
             localStorage.setItem('spotify-remix-access-token', tokens.accessToken);
             localStorage.setItem('spotify-remix-refresh-token', tokens.refreshToken);
             return tokens;
