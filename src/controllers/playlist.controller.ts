@@ -51,7 +51,7 @@ playlistController.post('/playlist', (req, res) => {
   if (authorization) {
     spotifyService
       .createUserPlaylist(authorization)
-      .then(x => res.send(x.data))
+      .then(_ => res.send())
       .catch(e => {
         console.error(e);
         res.status(500).send(e);

@@ -261,6 +261,8 @@ export class SpotifyService {
   }
 
   private deQueuePopulatePlaylist(playlistId: string): Promise<void> {
+    console.log('dequeueing for ', playlistId);
+    console.log(this.populateQueue[playlistId]);
     if (Object.keys(this.populateQueue).includes(playlistId) && this.populateQueue[playlistId].length > 0) {
       const fn = this.populateQueue[playlistId][0];
       if (fn) {
