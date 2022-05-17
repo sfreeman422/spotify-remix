@@ -66,6 +66,7 @@
           return fetch(`/refresh?spotifyId=${spotifyId}`, {
             headers: {
               Authorization: `Bearer ${accessToken}`,
+              refreshToken,
             },
           })
             .then(x => x.json())
