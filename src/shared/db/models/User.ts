@@ -27,6 +27,9 @@ export class User {
   )
   public ownedPlaylists?: Playlist[];
 
-  @ManyToMany(() => Playlist)
+  @ManyToMany(
+    () => Playlist,
+    playlist => playlist.members,
+  )
   public memberPlaylists?: Playlist[];
 }
