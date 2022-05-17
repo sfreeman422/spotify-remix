@@ -12,7 +12,8 @@ try:
       host="localhost",
       user="root",
       password=os.getenv('TYPEORM_PASSWORD'),
-      database="spotifyRemixDB"
+      database="spotifyRemixDB",
+      auth_plugin='mysql_native_password'
     )
 except mysql.connector.Error as err:
   if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
