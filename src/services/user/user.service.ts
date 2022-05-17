@@ -59,7 +59,15 @@ export class UserService {
   }
 
   public deletePlaylist(playlists: Playlist[]): Promise<Playlist[]> {
-    return getDataSource().then(datasource => datasource.getRepository(Playlist).remove(playlists));
+    return getDataSource().then(async datasource => {
+      const songs: Song[] = await datasource
+        .getRepository(Song)
+        .find({ where: playlists.map(playlist => ({ playlist })) });
+      return datasource
+        .getRepository(Song)
+        .remove(songs)
+        .then(_ => datasource.getRepository(Playlist).remove(playlists));
+    });
   }
 
   public saveSong(playlist: Playlist, songUri: string): Promise<Playlist> {

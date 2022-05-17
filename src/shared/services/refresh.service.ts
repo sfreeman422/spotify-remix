@@ -4,6 +4,14 @@ import { TokenSet } from '../../services/auth/auth.interfaces';
 import { User } from '../db/models/User';
 
 export class RefreshService {
+  public static getInstance(): RefreshService {
+    if (!RefreshService.instance) {
+      RefreshService.instance = new RefreshService();
+    }
+    return RefreshService.instance;
+  }
+  private static instance: RefreshService;
+
   userService = new UserService();
   inflightRefreshes: Record<string, Promise<User | undefined> | undefined> = {};
 

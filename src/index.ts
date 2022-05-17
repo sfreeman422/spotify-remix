@@ -2,19 +2,19 @@ import 'reflect-metadata'; // Necessary for TypeORM entities.
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
 import express, { Application } from 'express';
-import { createConnection, getConnectionOptions } from 'typeorm';
 import { controllers } from './controllers/index.controller';
 import axios from 'axios';
 import axiosRetry from 'axios-retry';
 import { User } from './shared/db/models/User';
 import { RefreshService } from './shared/services/refresh.service';
+import { getDataSource } from './shared/db/AppDataSource';
 
 if (!process.env.PRODUCTION) {
   dotenv.config();
 }
 const app: Application = express();
 const PORT = process.env.PORT ? process.env.PORT : 3000;
-const refreshService = new RefreshService();
+const refreshService = RefreshService.getInstance();
 
 app.use(
   bodyParser.urlencoded({
@@ -27,10 +27,11 @@ app.use(controllers);
 // Retry logic interceptor
 axios.interceptors.response.use(undefined, error => {
   console.log('HTTP Request Failure:');
-  console.log(error.response.data);
-  console.log(error.config.url);
-  console.log(error.config.data);
-  console.log(error.config['axios-retry']);
+  console.log('status: ', error?.response?.status);
+  console.log('data: ', error?.response?.data);
+  console.log('url: ', error?.config?.url);
+  console.log('config.data: ', error?.config?.data);
+  console.log(error?.config?.['axios-retry']);
   if (error.config && error.response && error.response.status === 401) {
     const accessToken = error.config.headers.Authorization.split(' ')[1];
     console.log(`Refreshing token: ${accessToken}`);
@@ -50,28 +51,13 @@ axios.interceptors.response.use(undefined, error => {
 
 axiosRetry(axios, {
   retries: 10,
-  retryDelay: retryCount => retryCount * 2000,
-  retryCondition: err => (err?.response?.status ? err?.response?.status >= 403 : false),
+  retryDelay: retryCount => retryCount * 1000,
+  retryCondition: err => (err?.response?.status && err.response.status >= 403) || err?.response?.status === undefined,
 });
-
-const connectToDb = async (): Promise<void> => {
-  try {
-    const options = await getConnectionOptions();
-    createConnection(options)
-      .then(connection => {
-        if (connection.isConnected) {
-          console.log(`Connected to MySQL DB: ${options.database}`);
-        } else {
-          throw Error('Unable to connect to database');
-        }
-      })
-      .catch(e => console.error(e));
-  } catch (e) {
-    console.error(e);
-  }
-};
 
 app.listen(PORT, (e?: Error) => {
   e ? console.error(e) : console.log(`Listening on port ${PORT}`);
-  connectToDb();
+  getDataSource()
+    .then(_ => console.log('Connected to DB'))
+    .catch(e => console.error(e));
 });

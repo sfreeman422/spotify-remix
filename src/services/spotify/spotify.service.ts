@@ -1,8 +1,9 @@
 import axios, { AxiosResponse } from 'axios';
-//import { isWithinInterval, subDays } from 'date-fns';
+import { isWithinInterval, subHours } from 'date-fns';
 import { Playlist } from '../../shared/db/models/Playlist';
 import { Song } from '../../shared/db/models/Song';
 import { User } from '../../shared/db/models/User';
+import { QueueService } from '../../shared/services/queue.service';
 import { UserService } from '../user/user.service';
 import {
   SpotifyLikedSong,
@@ -21,6 +22,7 @@ export class SpotifyService {
   basePlaylistUrl = `${this.baseUrl}/playlists`;
 
   userService = new UserService();
+  queueService = QueueService.getInstance();
 
   getUserData(accessToken: string): Promise<SpotifyUserData> {
     return axios
@@ -102,7 +104,7 @@ export class SpotifyService {
           .then(playlist => {
             return this.userService
               .savePlaylist(user, playlist.data.id)
-              .then(playlist => this.populatePlaylist(playlist.playlistId));
+              .then(playlist => this.refreshPlaylist(playlist.playlistId));
           });
       } else {
         throw new Error('Unable to find user');
@@ -181,8 +183,12 @@ export class SpotifyService {
   async getAllMusic(members: User[], songsPerUser: number, history: Song[]): Promise<SongWithUserData[]> {
     // Get only the top songs first, these are likely more relevant.
     let allMusic: SongWithUserData[] = await this.getTopSongs(members);
-    // Filter these songs based on what we have already seen in this playlist within the last week.
-    const historyAsStrings: string[] = history.map(x => x.spotifyUrl);
+    // Filter these songs based on what we have already seen in this playlist within the last 12 hours.
+    // We chose 12 hours because we want to allow the same songs to show up if a playlist is being frequently joined,
+    // But we dont want it to show up if its already been seen within the past day.
+    const historyAsStrings: string[] = history
+      .filter(song => !isWithinInterval(song.createdAt, { start: subHours(new Date(), 12), end: new Date() }))
+      .map(x => x.spotifyUrl);
 
     allMusic = allMusic.filter(x => !historyAsStrings.includes(x.uri));
 
@@ -231,7 +237,20 @@ export class SpotifyService {
     });
   }
 
-  async populatePlaylist(playlistId: string): Promise<Song[]> {
+  refreshPlaylist(playlistId: string): Promise<void> {
+    const identifier = `playlist-${playlistId}`;
+    const queue = this.queueService.queue<Playlist[]>(identifier, () => this.populatePlaylist(playlistId));
+    if (queue.length === 1) {
+      return this.queueService.dequeue(identifier);
+    } else {
+      return new Promise((resolve, _reject) => {
+        console.log('Added refresh to the queue. Will refresh ');
+        resolve();
+      });
+    }
+  }
+
+  private async populatePlaylist(playlistId: string): Promise<Playlist[]> {
     const playlist = await this.userService.getPlaylist(playlistId).then(playlist => {
       return playlist[0];
     });
@@ -244,7 +263,6 @@ export class SpotifyService {
     const playlistTracks: SpotifyPlaylistItemInfo[] = await this.getPlaylistTracks(playlistId, owner.accessToken);
     // Remove all songs from the playlist.
     await this.removeAllPlaylistTracks(playlistId, owner.accessToken, playlistTracks);
-    // Populate the playlists with our songs.
     return await Promise.all(
       orderedPlaylist.map(song =>
         axios
@@ -265,6 +283,8 @@ export class SpotifyService {
     );
   }
 
+  // Note: This sort is a "best effort" to maintain order within the playlist.
+  // If a failure occurs or one request completes sooner than another the order will not be maintained.
   roundRobinSort(arr: SongWithUserData[]): SongWithUserData[] {
     const allSongs = arr;
     let sortedArr: SongWithUserData[] = [];

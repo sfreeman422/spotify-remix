@@ -12,7 +12,7 @@ import { TokenSet } from './auth.interfaces';
 export class AuthService {
   userService = new UserService();
   spotifyService = new SpotifyService();
-  refreshService = new RefreshService();
+  refreshService = RefreshService.getInstance();
 
   loginWithScope(res: Response): void {
     const state = uuidv4();
