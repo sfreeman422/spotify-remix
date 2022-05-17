@@ -124,7 +124,7 @@ export class SpotifyService {
     console.log('not yet implemented');
   }
 
-  async subscribeToPlaylist(accessToken: string, playlistId: string): Promise<User | undefined> {
+  async subscribeToPlaylist(accessToken: string, playlistId: string): Promise<Playlist | undefined> {
     const user = await this.userService.getUserWithRelations({
       where: { accessToken },
       relations: ['memberPlaylists', 'ownedPlaylists'],
@@ -153,16 +153,7 @@ export class SpotifyService {
               },
             },
           )
-          .then(_ => {
-            const newList: Playlist[] | undefined = userWithPlaylist.memberPlaylists
-              ? userWithPlaylist.memberPlaylists.map(x => x)
-              : [];
-            if (newList) {
-              newList.push(playlist[0]);
-            }
-            userWithPlaylist.memberPlaylists = newList;
-            return this.userService.updateExistingUser(userWithPlaylist);
-          })
+          .then(_ => this.userService.updatePlaylistMembers(user[0], playlist[0]))
           .catch(e => {
             console.error(e);
             throw new Error(e);
