@@ -1,4 +1,4 @@
-import { Column, Entity, JoinTable, ManyToMany, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, ManyToMany, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { Song } from './Song';
 import { User } from './User';
 
@@ -23,7 +23,6 @@ export class Playlist {
     () => User,
     user => user.memberPlaylists,
   )
-  @JoinTable()
   public members!: User[];
 
   @OneToMany(
