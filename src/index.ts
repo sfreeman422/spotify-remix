@@ -14,7 +14,7 @@ if (!process.env.PRODUCTION) {
 }
 const app: Application = express();
 const PORT = process.env.PORT ? process.env.PORT : 3000;
-const refreshService = new RefreshService();
+const refreshService = RefreshService.getInstance();
 
 app.use(
   bodyParser.urlencoded({
