@@ -30,12 +30,9 @@ playlistController.put('/playlist/:playlistId/subscribe', async (req, res) => {
       res.status(500).send('Unable to subscribe to the playlist. Please try again later.');
     });
     if (subscribedUser) {
-      // refresh the playlist;
       spotifyService
-        .populatePlaylist(playlistId)
-        .then(_ => {
-          res.status(200).send('Successfully subscribed and populated the playlist.');
-        })
+        .refreshPlaylist(playlistId)
+        .then(_ => res.status(200).send('Successfully subscribed and populated the playlist.'))
         .catch(e => {
           console.error(e);
           res.status(500).send('Unable to populate the playlist. Please try again later');
@@ -76,20 +73,24 @@ playlistController.delete('/playlist', (req, res) => {
   }
 });
 
-playlistController.post('/refresh/:playlistId', async (req, res) => {
+playlistController.post('/refresh/:playlistId', (req, res) => {
   const { playlistId } = req.params;
   const { authorization } = req.headers;
 
   console.log(authorization);
+  console.log(process.env.SPOTIFY_REMIX_API_KEY);
+  console.log(playlistId);
 
   if (playlistId && authorization === process.env.SPOTIFY_REMIX_API_KEY) {
-    const refreshedPlaylist = await spotifyService.populatePlaylist(playlistId).catch(e => {
-      console.error(e);
-      res.status(500).send('Unable to subscribe to the playlist. Please try again later.');
-    });
-    if (refreshedPlaylist) {
-      res.status(200).send('Successfully refreshed the playlist.');
-    }
+    spotifyService
+      .refreshPlaylist(playlistId)
+      .then(_ => {
+        res.status(200).send('Successfully refreshed the playlist.');
+      })
+      .catch(e => {
+        console.error(e);
+        res.status(500).send('Unable to refresh to the playlist. Please try again later.');
+      });
   } else {
     res.status(400).send('PlaylistId or authorization header missing!');
   }

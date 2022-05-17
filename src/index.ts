@@ -27,10 +27,10 @@ app.use(controllers);
 // Retry logic interceptor
 axios.interceptors.response.use(undefined, error => {
   console.log('HTTP Request Failure:');
-  console.log(error.response.data);
-  console.log(error.config.url);
-  console.log(error.config.data);
-  console.log(error.config['axios-retry']);
+  console.log(error?.response?.data);
+  console.log(error?.config?.url);
+  console.log(error?.config?.data);
+  console.log(error?.config?.['axios-retry']);
   if (error.config && error.response && error.response.status === 401) {
     const accessToken = error.config.headers.Authorization.split(' ')[1];
     console.log(`Refreshing token: ${accessToken}`);
@@ -50,7 +50,7 @@ axios.interceptors.response.use(undefined, error => {
 
 axiosRetry(axios, {
   retries: 10,
-  retryDelay: retryCount => retryCount * 2000,
+  retryDelay: retryCount => retryCount * 1000,
   retryCondition: err => (err?.response?.status ? err?.response?.status >= 403 : false),
 });
 

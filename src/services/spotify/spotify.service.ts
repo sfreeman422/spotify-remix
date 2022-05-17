@@ -19,6 +19,7 @@ export class SpotifyService {
   baseSelfUrl = `${this.baseUrl}/me`;
   baseUserUrl = `${this.baseUrl}/users`;
   basePlaylistUrl = `${this.baseUrl}/playlists`;
+  populateQueue: Record<string, ((playlistId: string) => Promise<Song[]>)[]> = {};
 
   userService = new UserService();
 
@@ -102,7 +103,7 @@ export class SpotifyService {
           .then(playlist => {
             return this.userService
               .savePlaylist(user, playlist.data.id)
-              .then(playlist => this.populatePlaylist(playlist.playlistId));
+              .then(playlist => this.refreshPlaylist(playlist.playlistId));
           });
       } else {
         throw new Error('Unable to find user');
@@ -235,7 +236,49 @@ export class SpotifyService {
     });
   }
 
-  async populatePlaylist(playlistId: string): Promise<Song[]> {
+  refreshPlaylist(playlistId: string): Promise<void> {
+    const queue = this.queuePopulatePlaylist(playlistId);
+    if (queue.length === 1) {
+      return this.deQueuePopulatePlaylist(playlistId);
+    } else {
+      return new Promise((resolve, _reject) => {
+        console.log('Added refresh to the queue. Will refresh ');
+        resolve();
+      });
+    }
+  }
+
+  // May want to create a queue class so that we can queue other things - specifically adding songs to the playlist in the right order.
+  private queuePopulatePlaylist(playlistId: string): ((playlistId: string) => Promise<Song[]>)[] {
+    if (this.populateQueue[playlistId] && this.populateQueue[playlistId].length > 0) {
+      this.populateQueue[playlistId].push((playlistId: string): Promise<Song[]> => this.populatePlaylist(playlistId));
+    } else {
+      this.populateQueue[playlistId] = [(playlistId: string): Promise<Song[]> => this.populatePlaylist(playlistId)];
+    }
+    console.log(this.populateQueue);
+    console.log(this.populateQueue[playlistId]);
+    return this.populateQueue[playlistId];
+  }
+
+  private deQueuePopulatePlaylist(playlistId: string): Promise<void> {
+    if (Object.keys(this.populateQueue).includes(playlistId) && this.populateQueue[playlistId].length > 0) {
+      const fn = this.populateQueue[playlistId].shift();
+      if (fn) {
+        return fn(playlistId).then((_: Song[]) => this.deQueuePopulatePlaylist(playlistId));
+      } else {
+        return new Promise((resolve, _reject) => {
+          resolve();
+        });
+      }
+    } else {
+      return new Promise((resolve, _reject) => {
+        delete this.populateQueue[playlistId];
+        resolve();
+      });
+    }
+  }
+
+  private async populatePlaylist(playlistId: string): Promise<Song[]> {
     const playlist = await this.userService.getPlaylist(playlistId).then(playlist => {
       return playlist[0];
     });
