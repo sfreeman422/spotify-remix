@@ -3,6 +3,7 @@ import { isWithinInterval, subHours } from 'date-fns';
 import { Playlist } from '../../shared/db/models/Playlist';
 import { Song } from '../../shared/db/models/Song';
 import { User } from '../../shared/db/models/User';
+import { QueueService } from '../../shared/services/queue.service';
 import { UserService } from '../user/user.service';
 import {
   SpotifyLikedSong,
@@ -19,9 +20,9 @@ export class SpotifyService {
   baseSelfUrl = `${this.baseUrl}/me`;
   baseUserUrl = `${this.baseUrl}/users`;
   basePlaylistUrl = `${this.baseUrl}/playlists`;
-  populateQueue: Record<string, (() => Promise<Song[]>)[]> = {};
 
   userService = new UserService();
+  queueService = QueueService.getInstance();
 
   getUserData(accessToken: string): Promise<SpotifyUserData> {
     return axios
@@ -237,47 +238,13 @@ export class SpotifyService {
   }
 
   refreshPlaylist(playlistId: string): Promise<void> {
-    const queue = this.queuePopulatePlaylist(playlistId);
+    const identifier = `playlist-${playlistId}`;
+    const queue = this.queueService.queue<Song[]>(identifier, () => this.populatePlaylist(playlistId));
     if (queue.length === 1) {
-      return this.deQueuePopulatePlaylist(playlistId);
+      return this.queueService.dequeue(identifier);
     } else {
       return new Promise((resolve, _reject) => {
         console.log('Added refresh to the queue. Will refresh ');
-        resolve();
-      });
-    }
-  }
-
-  // May want to create a queue class so that we can queue other things - specifically adding songs to the playlist in the right order.
-  private queuePopulatePlaylist(playlistId: string): ((playlistId: string) => Promise<Song[]>)[] {
-    if (this.populateQueue[playlistId] && this.populateQueue[playlistId].length > 0) {
-      this.populateQueue[playlistId].push((): Promise<Song[]> => this.populatePlaylist(playlistId));
-    } else {
-      this.populateQueue[playlistId] = [(): Promise<Song[]> => this.populatePlaylist(playlistId)];
-    }
-    console.log(this.populateQueue);
-    console.log(this.populateQueue[playlistId]);
-    return this.populateQueue[playlistId];
-  }
-
-  private deQueuePopulatePlaylist(playlistId: string): Promise<void> {
-    console.log('dequeueing for ', playlistId);
-    console.log(this.populateQueue[playlistId]);
-    if (Object.keys(this.populateQueue).includes(playlistId) && this.populateQueue[playlistId].length > 0) {
-      const fn = this.populateQueue[playlistId][0];
-      if (fn) {
-        return fn().then((_: Song[]) => {
-          this.populateQueue[playlistId].splice(0, 1);
-          return this.deQueuePopulatePlaylist(playlistId);
-        });
-      } else {
-        return new Promise((resolve, _reject) => {
-          resolve();
-        });
-      }
-    } else {
-      return new Promise((resolve, _reject) => {
-        delete this.populateQueue[playlistId];
         resolve();
       });
     }
