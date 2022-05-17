@@ -239,7 +239,7 @@ export class SpotifyService {
 
   refreshPlaylist(playlistId: string): Promise<void> {
     const identifier = `playlist-${playlistId}`;
-    const queue = this.queueService.queue<Song[]>(identifier, () => this.populatePlaylist(playlistId));
+    const queue = this.queueService.queue<void>(identifier, () => this.populatePlaylist(playlistId));
     if (queue.length === 1) {
       return this.queueService.dequeue(identifier);
     } else {
@@ -250,7 +250,7 @@ export class SpotifyService {
     }
   }
 
-  private async populatePlaylist(playlistId: string): Promise<Song[]> {
+  private async populatePlaylist(playlistId: string): Promise<void> {
     const playlist = await this.userService.getPlaylist(playlistId).then(playlist => {
       return playlist[0];
     });
@@ -264,8 +264,11 @@ export class SpotifyService {
     // Remove all songs from the playlist.
     await this.removeAllPlaylistTracks(playlistId, owner.accessToken, playlistTracks);
     // Populate the playlists with our songs.
-    return await Promise.all(
-      orderedPlaylist.map(song =>
+    const populatePlaylistIdentifier = `populate-playlist-${playlistId}`;
+    // This can be done MUCH faster if we did not care about order in the playlist.
+    // We wouldsimply promise.all alal of these requests and fire them all of in paralele
+    orderedPlaylist.forEach(song => {
+      this.queueService.queue(populatePlaylistIdentifier, () =>
         axios
           .post(
             `${this.basePlaylistUrl}/${playlistId}/tracks`,
@@ -280,8 +283,10 @@ export class SpotifyService {
           )
           .then(_ => this.userService.saveSong(playlist, song.uri))
           .catch(e => e),
-      ),
-    );
+      );
+    });
+    // Throw each song into a queue to keep order
+    return await this.queueService.dequeue(populatePlaylistIdentifier);
   }
 
   roundRobinSort(arr: SongWithUserData[]): SongWithUserData[] {

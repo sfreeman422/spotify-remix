@@ -32,11 +32,12 @@ playlistController.put('/playlist/:playlistId/subscribe', async (req, res) => {
     if (subscribedUser) {
       spotifyService
         .refreshPlaylist(playlistId)
-        .then(_ => res.status(200).send('Successfully subscribed and populated the playlist.'))
+        .then(_ => console.log('Successfully refresh playlist', playlistId))
         .catch(e => {
+          console.error('Unable to refresh playlist', playlistId);
           console.error(e);
-          res.status(500).send('Unable to populate the playlist. Please try again later');
         });
+      res.status(200).send('Successfully subscribed to the playlist!');
     } else {
       res.status(204).send('You are already a member of this playlist.');
     }
