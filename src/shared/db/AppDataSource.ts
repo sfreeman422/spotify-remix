@@ -16,6 +16,7 @@ export const getDataSource = async (): Promise<DataSource> => {
       password: process.env.TYPEORM_PASSWORD,
       database: 'spotifyRemixDB',
       entities: [path.join(__dirname, 'models', '*.ts')],
+      synchronize: true,
     }).initialize();
     return AppDataSource;
   }
