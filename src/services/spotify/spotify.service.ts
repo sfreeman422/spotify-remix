@@ -131,6 +131,10 @@ export class SpotifyService {
     });
 
     const playlist = await this.userService.getPlaylist(playlistId);
+    console.log(playlistId);
+    console.log(accessToken);
+    console.log(user?.[0]);
+    console.log(playlist[0]);
     if (user?.length && playlist[0]) {
       const userWithPlaylist = user[0];
       const isUserAlreadyMember = userWithPlaylist.memberPlaylists?.map(x => x.playlistId).includes(playlistId);
