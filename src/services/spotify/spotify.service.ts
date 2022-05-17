@@ -239,7 +239,7 @@ export class SpotifyService {
 
   refreshPlaylist(playlistId: string): Promise<void> {
     const identifier = `playlist-${playlistId}`;
-    const queue = this.queueService.queue<void>(identifier, () => this.populatePlaylist(playlistId));
+    const queue = this.queueService.queue<Playlist[]>(identifier, () => this.populatePlaylist(playlistId));
     if (queue.length === 1) {
       return this.queueService.dequeue(identifier);
     } else {
@@ -250,7 +250,7 @@ export class SpotifyService {
     }
   }
 
-  private async populatePlaylist(playlistId: string): Promise<void> {
+  private async populatePlaylist(playlistId: string): Promise<Playlist[]> {
     const playlist = await this.userService.getPlaylist(playlistId).then(playlist => {
       return playlist[0];
     });
@@ -263,12 +263,8 @@ export class SpotifyService {
     const playlistTracks: SpotifyPlaylistItemInfo[] = await this.getPlaylistTracks(playlistId, owner.accessToken);
     // Remove all songs from the playlist.
     await this.removeAllPlaylistTracks(playlistId, owner.accessToken, playlistTracks);
-    // Populate the playlists with our songs.
-    const populatePlaylistIdentifier = `populate-playlist-${playlistId}`;
-    // This can be done MUCH faster if we did not care about order in the playlist.
-    // We wouldsimply promise.all alal of these requests and fire them all of in parallel
-    orderedPlaylist.forEach(song => {
-      this.queueService.queue(populatePlaylistIdentifier, () =>
+    return await Promise.all(
+      orderedPlaylist.map(song =>
         axios
           .post(
             `${this.basePlaylistUrl}/${playlistId}/tracks`,
@@ -283,12 +279,12 @@ export class SpotifyService {
           )
           .then(_ => this.userService.saveSong(playlist, song.uri))
           .catch(e => e),
-      );
-    });
-    // Throw each song into a queue to keep order
-    return await this.queueService.dequeue(populatePlaylistIdentifier);
+      ),
+    );
   }
 
+  // Note: This sort is a "best effort" to maintain order within the playlist.
+  // If a failure occurs or one request completes sooner than another the order will not be maintained.
   roundRobinSort(arr: SongWithUserData[]): SongWithUserData[] {
     const allSongs = arr;
     let sortedArr: SongWithUserData[] = [];
