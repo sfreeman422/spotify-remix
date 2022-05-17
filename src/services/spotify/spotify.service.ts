@@ -156,7 +156,7 @@ export class SpotifyService {
           .then(_ => {
             const newList: Playlist[] | undefined = userWithPlaylist.memberPlaylists
               ? userWithPlaylist.memberPlaylists.map(x => x)
-              : userWithPlaylist.memberPlaylists;
+              : [];
             if (newList) {
               newList.push(playlist[0]);
             }
