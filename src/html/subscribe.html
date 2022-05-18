@@ -73,6 +73,9 @@
       const queryParams = new URLSearchParams(window.location.search);
       const playlistId = queryParams.get('playlistId');
 
+      console.log(accessToken);
+      console.log(refreshToken);
+
       getAndSetTokens(accessToken, refreshToken).then(x => {
         subscribeToPlaylist(playlistId, x.accessToken);
       });
