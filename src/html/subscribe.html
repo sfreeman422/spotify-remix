@@ -12,41 +12,69 @@
       </div>
     </div>
     <script>
+      function getAndSetTokens(accessToken, refreshToken) {
+        return fetch(`/refresh`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            refreshToken,
+          },
+        })
+          .then(x => x.json())
+          .then(tokens => {
+            localStorage.setItem('spotify-remix-access-token', tokens.accessToken);
+            localStorage.setItem('spotify-remix-refresh-token', tokens.refreshToken);
+            return tokens;
+          })
+          .catch(e => {
+            window.location = `${window.location.protocol}//${window.location.host}/login`;
+            console.error('Unable to refresh tokens');
+          });
+      }
+
+      function subscribeToPlaylist(playlistId, accessToken) {
+        return fetch(`/playlist/${playlistId}/subscribe`, {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        })
+          .then(x => {
+            if (x.status === 200) {
+              return x.json();
+            } else if (x.status === 204) {
+              return undefined;
+            }
+            return x;
+          })
+          .then(x => {
+            if (x.message) {
+              document.getElementById('message').innerHTML =
+                'Successfully subscribed! Sending you to your dashboard...';
+            } else {
+              document.getElementById('message').innerHTML =
+                'It looks like you are already subscribed to this playlist! Sending you to your dashboard...';
+            }
+            setTimeout(
+              () => (window.location = `${window.location.protocol}//${window.location.host}/dashboard`),
+              5000,
+            );
+          })
+          .catch(e => {
+            document.getElementById('message').className = 'error';
+            document.getElementById('message').innerHTML =
+              'It looks like we were unable to subscribe to this playlist! Please try again.';
+            console.error(e);
+          });
+      }
+
       const accessToken = localStorage.getItem('spotify-remix-access-token');
       const refreshToken = localStorage.getItem('spotify-remix-refresh-token');
-      console.log(accessToken);
-      console.log(refreshToken);
       const queryParams = new URLSearchParams(window.location.search);
       const playlistId = queryParams.get('playlistId');
-      fetch(`/playlist/${playlistId}/subscribe`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      })
-        .then(x => {
-          if (x.status === 200) {
-            return x.json();
-          } else if (x.status === 204) {
-            return undefined;
-          }
-          return x;
-        })
-        .then(x => {
-          if (x) {
-            document.getElementById('message').innerHTML = 'Successfully subscribed! Sending you to your dashboard...';
-          } else {
-            document.getElementById('message').innerHTML =
-              'It looks like you are already subscribed to this playlist! Sending you to your dashboard...';
-          }
-          setTimeout(() => (window.location = `${window.location.protocol}//${window.location.host}/dashboard`), 2000);
-        })
-        .catch(e => {
-          document.getElementById('message').className = 'error';
-          document.getElementById('message').innerHTML =
-            'It looks like we were unable to subscribe to this playlist! Please try again.';
-          console.error(e);
-        });
+
+      getAndSetTokens(accessToken, refreshToken).then(x => {
+        subscribeToPlaylist(playlistId, x.accessToken);
+      });
     </script>
   </body>
 </html>

@@ -1,7 +1,8 @@
 # TODO:
 
-- Consider whether serially adding songs is actually better than just batch adding.
-- Make sure subscribing to a playlist works properly
 - Get all songs in liked playlist recursively
+- Add ability to unsubscribe from a playlist
+- Consider unsubscribing users who no longer follow a given playlist
+- Consider a way to easily clean up orphaned playlists
 - Better styling
 - Performance profiling

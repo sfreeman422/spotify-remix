@@ -22,6 +22,7 @@ export class Playlist {
   @ManyToMany(
     () => User,
     user => user.memberPlaylists,
+    { cascade: true },
   )
   @JoinTable()
   public members!: User[];

@@ -27,10 +27,6 @@
         color: green;
       }
 
-      .text-blue {
-        color: blueviolet;
-      }
-
       .playlist {
         display: flex;
         flex-wrap: wrap;
@@ -66,17 +62,18 @@
           return fetch(`/refresh?spotifyId=${spotifyId}`, {
             headers: {
               Authorization: `Bearer ${accessToken}`,
+              refreshToken,
             },
           })
             .then(x => x.json())
             .then(x => {
-              console.log(x);
               localStorage.setItem('spotify-remix-access-token', x.accessToken);
               localStorage.setItem('spotify-remix-refresh-token', x.refreshToken);
             })
             .catch(e => {
               window.location = `${window.location.protocol}//${window.location.host}/login`;
               console.error('Unable to refresh tokens');
+              console.error(e);
             });
         } else {
           window.location = `${window.location.protocol}//${window.location.host}/login`;
@@ -135,13 +132,11 @@
 
             document.getElementById('playlists').innerHTML += `<div>
                     <h3 class="text-white">Your Followed Remixes</h3>
-                    <span class="text-white">Code:</span><input type="text" id="code"></input><br>
-                    <button onclick="subscribeToAPlaylist()">Follow a Remix</button>
                     <div class="playlist" id="subbed-playlists"></div>
                     </div>`;
 
-            if (x.subbedPlaylists && x.subbedPlaylists.length > 0) {
-              x.subbedPlaylists.map(
+            if (x.subscribedPlaylists && x.subscribedPlaylists.length > 0) {
+              x.subscribedPlaylists.map(
                 item =>
                   (document.getElementById('subbed-playlists').innerHTML += `<div class="card">
                   <h3>${item.name}</h3>
@@ -181,8 +176,7 @@
       function createPlaylist() {
         const accessToken = localStorage.getItem('spotify-remix-access-token');
         const playlistButton = document.getElementById('create-playlist-button');
-        playlistButton.innerHTML =
-          "<span class='text-blue'>Loading... (This may take awhile, please do not exit the page.)</span>";
+        playlistButton.innerHTML = '<span>Loading... (This may take awhile, please do not exit the page.)</span>';
         playlistButton.disabled = true;
         fetch('/playlist', {
           method: 'POST',
@@ -195,12 +189,6 @@
           playlistButton.disabled = false;
           getPlaylistsAndBuildDivs();
         });
-      }
-
-      function subscribeToAPlaylist() {
-        const code = document.getElementById('code').value;
-        console.log(code);
-        window.location = `${window.location.protocol}//${window.location.host}/playlist?playlistId=${code}`;
       }
 
       getAndSetTokens().then(() => getPlaylistsAndBuildDivs());

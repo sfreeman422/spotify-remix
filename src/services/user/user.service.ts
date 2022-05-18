@@ -70,6 +70,13 @@ export class UserService {
     });
   }
 
+  public updatePlaylistMembers(user: User, playlist: Playlist): Promise<Playlist> {
+    return getDataSource().then(db => {
+      playlist.members.push(user);
+      return db.getRepository(Playlist).save(playlist);
+    });
+  }
+
   public saveSong(playlist: Playlist, songUri: string): Promise<Playlist> {
     return getDataSource().then(ds => {
       const song = new Song();

@@ -31,6 +31,7 @@ export class AuthService {
       'user-read-private',
     ];
     const scope = playlistScopes.concat(userScopes).join(' ');
+    console.log('redirecting to spotify login');
     res.redirect(
       'https://accounts.spotify.com/authorize?' +
         querystring.stringify({
@@ -86,7 +87,7 @@ export class AuthService {
     return this.userService.saveUser(tokens.accessToken, tokens.refreshToken, userData.id);
   }
 
-  refreshTokens(accessToken: string, spotifyId: string): Promise<User | undefined> {
-    return this.refreshService.refresh(accessToken, spotifyId);
+  refreshTokens(accessToken: string, refreshToken?: string, spotifyId?: string): Promise<User | undefined> {
+    return this.refreshService.refresh(accessToken, refreshToken, spotifyId);
   }
 }

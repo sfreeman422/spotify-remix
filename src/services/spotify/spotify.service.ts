@@ -55,17 +55,15 @@ export class SpotifyService {
         (resp: AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>): PlaylistData => {
           if (resp) {
             const spotifyPlaylists: SpotifyPlaylist[] = resp.data.items;
-
             if (user) {
-              const ownedAndSubbedPlaylists =
-                user[0]?.memberPlaylists?.concat(user[0]?.ownedPlaylists || [])?.map(x => x.playlistId) || [];
               const createdPlaylists = user[0]?.ownedPlaylists?.map(x => x.playlistId) || [];
               const memberPlaylists =
-                user[0]?.memberPlaylists?.map(x => x.playlistId)?.filter(x => createdPlaylists?.includes(x)) || [];
+                user[0]?.memberPlaylists?.map(x => x.playlistId)?.filter(x => !createdPlaylists?.includes(x)) || [];
 
-              const orphanPlaylists = ownedAndSubbedPlaylists.filter(x => !spotifyPlaylists.find(y => x === y.id));
+              const orphanPlaylists = createdPlaylists.filter(x => !spotifyPlaylists.find(y => x === y.id));
               const ownedPlaylists = spotifyPlaylists.filter(x => createdPlaylists?.includes(x.id));
               const subscribedPlaylists = spotifyPlaylists.filter(x => memberPlaylists?.includes(x.id));
+
               return {
                 ownedPlaylists,
                 orphanPlaylists,
@@ -124,7 +122,7 @@ export class SpotifyService {
     console.log('not yet implemented');
   }
 
-  async subscribeToPlaylist(accessToken: string, playlistId: string): Promise<User | undefined> {
+  async subscribeToPlaylist(accessToken: string, playlistId: string): Promise<Playlist | undefined> {
     const user = await this.userService.getUserWithRelations({
       where: { accessToken },
       relations: ['memberPlaylists', 'ownedPlaylists'],
@@ -137,8 +135,8 @@ export class SpotifyService {
       if (isUserAlreadyMember) {
         return undefined;
       } else {
-        const subscribedSpotifyPlaylist = await axios
-          .post(
+        return await axios
+          .put(
             `${this.basePlaylistUrl}/${playlistId}/followers`,
             {
               public: true,
@@ -149,20 +147,11 @@ export class SpotifyService {
               },
             },
           )
+          .then(_ => this.userService.updatePlaylistMembers(user[0], playlist[0]))
           .catch(e => {
             console.error(e);
             throw new Error(e);
           });
-        if (subscribedSpotifyPlaylist) {
-          const newList: Playlist[] | undefined = userWithPlaylist.memberPlaylists
-            ? userWithPlaylist.memberPlaylists.map(x => x)
-            : userWithPlaylist.memberPlaylists;
-          if (newList) {
-            newList.push(playlist[0]);
-          }
-          userWithPlaylist.memberPlaylists = newList;
-          return this.userService.updateExistingUser(userWithPlaylist);
-        }
       }
     }
     return undefined;
@@ -244,7 +233,6 @@ export class SpotifyService {
       return this.queueService.dequeue(identifier);
     } else {
       return new Promise((resolve, _reject) => {
-        console.log('Added refresh to the queue. Will refresh ');
         resolve();
       });
     }

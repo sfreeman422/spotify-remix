@@ -15,26 +15,35 @@ export class RefreshService {
   userService = new UserService();
   inflightRefreshes: Record<string, Promise<User | undefined> | undefined> = {};
 
-  public refresh(accessToken: string, spotifyId?: string): Promise<User | undefined> {
-    const identifier = spotifyId || accessToken;
+  public refresh(accessToken: string, refreshToken?: string, spotifyId?: string): Promise<User | undefined> {
+    const identifier = spotifyId || refreshToken || accessToken;
 
     if (this.inflightRefreshes[identifier]) {
       return this.inflightRefreshes[identifier] as Promise<User>;
     } else {
-      this.inflightRefreshes[identifier] = this.refreshToken(accessToken, spotifyId);
+      this.inflightRefreshes[identifier] = this.refreshToken(accessToken, refreshToken, spotifyId);
       // Hella ghetto dawg - deletes the key in inflightRefreshes after 60 seconds.
       setTimeout(() => delete this.inflightRefreshes[identifier], 60000);
       return this.inflightRefreshes[identifier] as Promise<User>;
     }
   }
 
-  private async refreshToken(accessToken: string, spotifyId?: string): Promise<User | undefined> {
+  private async refreshToken(
+    accessToken: string,
+    refreshToken?: string,
+    spotifyId?: string,
+  ): Promise<User | undefined> {
     let user: User | null;
     if (spotifyId) {
       user = await this.userService.getUser({ spotifyId });
+    } else if (refreshToken) {
+      user = await this.userService.getUser({ refreshToken });
     } else {
       user = await this.userService.getUser({ accessToken });
     }
+
+    console.log('Refreshing token for user:');
+    console.log(user);
 
     if (user) {
       const reqOptions = {
