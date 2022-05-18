@@ -299,22 +299,31 @@ export class SpotifyService {
     return songsPerUser > maxNumberOfSongs ? minSongsPerUser : Math.round(maxNumberOfSongs / numberOfUsers);
   }
 
-  // This should be recursive if necessary.
-  private getTopSongsByUser(user: User): Promise<SongWithUserData[]> {
+  private getTopSongsByUser(
+    user: User,
+    url = `${this.baseSelfUrl}/top/tracks?limit=50&time_range=short_term`,
+  ): Promise<SongWithUserData[]> {
     return axios
-      .get<SpotifyResponse<SpotifyTrack[]>>(`${this.baseSelfUrl}/top/tracks?limit=50&time_range=short_term`, {
+      .get<SpotifyResponse<SpotifyTrack[]>>(url, {
         headers: {
           Authorization: `Bearer ${user.accessToken}`,
         },
       })
-      .then<SongWithUserData[]>((x: AxiosResponse<SpotifyResponse<SpotifyTrack[]>>) =>
-        x.data.items.map(
-          (song: SpotifyTrack): SongWithUserData => ({
-            ...song,
-            accessToken: user.accessToken,
-            refreshToken: user.refreshToken,
-          }),
-        ),
+      .then<SongWithUserData[]>(
+        (x: AxiosResponse<SpotifyResponse<SpotifyTrack[]>>): Promise<SongWithUserData[]> => {
+          const songs = x.data.items.map(
+            (song: SpotifyTrack): SongWithUserData => ({
+              ...song,
+              accessToken: user.accessToken,
+              refreshToken: user.refreshToken,
+            }),
+          );
+
+          if (x.data.next) {
+            return this.getTopSongsByUser(user, x.data.next).then(nextSongs => songs.concat(nextSongs));
+          }
+          return new Promise((resolve, _reject) => resolve(songs));
+        },
       )
       .catch(e => {
         console.error(e);
