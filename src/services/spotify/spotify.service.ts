@@ -55,9 +55,6 @@ export class SpotifyService {
         (resp: AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>): PlaylistData => {
           if (resp) {
             const spotifyPlaylists: SpotifyPlaylist[] = resp.data.items;
-            console.log(resp.data.items);
-            console.log(user);
-            console.log(user?.[0]);
             if (user) {
               const createdPlaylists = user[0]?.ownedPlaylists?.map(x => x.playlistId) || [];
               const memberPlaylists =
