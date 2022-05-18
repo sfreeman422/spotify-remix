@@ -17,4 +17,7 @@ export class Song {
 
   @Column({ type: 'longtext' })
   public spotifyUrl!: string;
+
+  @Column({ type: 'longtext' })
+  public userId!: string;
 }

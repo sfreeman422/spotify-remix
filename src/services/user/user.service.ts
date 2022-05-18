@@ -3,6 +3,7 @@ import { getDataSource } from '../../shared/db/AppDataSource';
 import { Playlist } from '../../shared/db/models/Playlist';
 import { Song } from '../../shared/db/models/Song';
 import { User } from '../../shared/db/models/User';
+import { SongWithUserData } from '../spotify/spotify.interface';
 // TODO: Add error handling for getDataSource.
 export class UserService {
   public async getUser(findOptions: FindOptionsWhere<User> | FindOptionsWhere<User>[]): Promise<User | null> {
@@ -77,16 +78,20 @@ export class UserService {
     });
   }
 
-  public saveSong(playlist: Playlist, songUri: string): Promise<Playlist> {
+  public saveSongs(playlist: Playlist, songsWithUserData: SongWithUserData[]): Promise<Playlist> {
     return getDataSource().then(ds => {
-      const song = new Song();
-      song.playlist = playlist;
-      song.spotifyUrl = songUri;
+      const songs = songsWithUserData.map(x => {
+        const song = new Song();
+        song.playlist = playlist;
+        song.spotifyUrl = x.uri;
+        song.userId = x.spotifyId;
+        return song;
+      });
 
       const history = playlist.history.map(x => x);
-      history.push(song);
+      const newHistory = history.concat(songs);
 
-      const updatedPlaylist = Object.assign(playlist, { history });
+      const updatedPlaylist = Object.assign(playlist, { history: newHistory });
 
       return ds.getRepository(Playlist).save(updatedPlaylist);
     });

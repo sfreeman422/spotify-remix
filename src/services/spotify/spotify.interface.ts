@@ -1,8 +1,7 @@
 import { SpotifyPlaylist, SpotifyTrack } from './spotify.generated.interface';
 
 export interface SongWithUserData extends SpotifyTrack {
-  accessToken: string;
-  refreshToken: string;
+  spotifyId: string;
 }
 
 export interface PlaylistData {
