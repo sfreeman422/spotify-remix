@@ -12,7 +12,7 @@
       </div>
     </div>
     <script>
-      function getAndSetTokens(accessToken, refreshToken) {
+      function getAndSetTokens(accessToken, refreshToken, playlistId) {
         return fetch(`/refresh`, {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -26,6 +26,10 @@
             return tokens;
           })
           .catch(e => {
+            localStorage.setItem(
+              'spotify-remix-redirect-to',
+              `${window.location.protocol}//${window.location.host}/playlist?playlistId=${playlistId}`,
+            );
             window.location = `${window.location.protocol}//${window.location.host}/login`;
             console.error('Unable to refresh tokens');
           });
@@ -50,15 +54,19 @@
             if (x && x.message) {
               document.getElementById('message').innerHTML =
                 'Successfully subscribed! Sending you to your dashboard...';
+              setTimeout(
+                () => (window.location = `${window.location.protocol}//${window.location.host}/dashboard`),
+                3000,
+              );
             } else {
               document.getElementById('message').innerHTML =
                 'It looks like you are already subscribed to this playlist! Sending you to this playlists history';
+              setTimeout(
+                () =>
+                  (window.location = `${window.location.protocol}//${window.location.host}/history?playlistId=${playlistId}`),
+                3000,
+              );
             }
-            setTimeout(
-              () =>
-                (window.location = `${window.location.protocol}//${window.location.host}/history?playlistId=${playlistId}`),
-              3000,
-            );
           })
           .catch(e => {
             document.getElementById('message').className = 'error';
@@ -73,7 +81,7 @@
       const queryParams = new URLSearchParams(window.location.search);
       const playlistId = queryParams.get('playlistId');
 
-      getAndSetTokens(accessToken, refreshToken).then(x => {
+      getAndSetTokens(accessToken, refreshToken, playlistId).then(x => {
         subscribeToPlaylist(playlistId, x.accessToken);
       });
     </script>
