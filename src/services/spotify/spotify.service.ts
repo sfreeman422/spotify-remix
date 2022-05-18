@@ -110,14 +110,6 @@ export class SpotifyService {
     });
   }
 
-  async removePlaylist(accessToken: string, playlists: string[]): Promise<Playlist[]> {
-    const ownedPlaylists = await this.userService.getAllOwnedPlaylists(accessToken);
-    const playlistsOwnedAndToBeDeleted: Playlist[] = ownedPlaylists.filter(x =>
-      playlists.some(y => x.playlistId === y),
-    );
-    return this.userService.deletePlaylist(playlistsOwnedAndToBeDeleted);
-  }
-
   unsubscribeFromPlaylist(_accessToken: string, _playlistId: string): void {
     console.log('not yet implemented');
   }
