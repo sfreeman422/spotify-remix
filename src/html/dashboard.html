@@ -27,10 +27,6 @@
         color: green;
       }
 
-      .text-blue {
-        color: blueviolet;
-      }
-
       .playlist {
         display: flex;
         flex-wrap: wrap;
@@ -71,7 +67,6 @@
           })
             .then(x => x.json())
             .then(x => {
-              console.log(x);
               localStorage.setItem('spotify-remix-access-token', x.accessToken);
               localStorage.setItem('spotify-remix-refresh-token', x.refreshToken);
             })
@@ -181,8 +176,7 @@
       function createPlaylist() {
         const accessToken = localStorage.getItem('spotify-remix-access-token');
         const playlistButton = document.getElementById('create-playlist-button');
-        playlistButton.innerHTML =
-          "<span class='text-blue'>Loading... (This may take awhile, please do not exit the page.)</span>";
+        playlistButton.innerHTML = '<span>Loading... (This may take awhile, please do not exit the page.)</span>';
         playlistButton.disabled = true;
         fetch('/playlist', {
           method: 'POST',

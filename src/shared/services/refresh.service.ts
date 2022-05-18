@@ -42,7 +42,7 @@ export class RefreshService {
       user = await this.userService.getUser({ accessToken });
     }
 
-    console.log('refresh token user');
+    console.log('Refreshing token for user:');
     console.log(user);
 
     if (user) {

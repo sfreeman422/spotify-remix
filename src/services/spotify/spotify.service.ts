@@ -131,10 +131,6 @@ export class SpotifyService {
     });
 
     const playlist = await this.userService.getPlaylist(playlistId);
-    console.log(playlistId);
-    console.log(accessToken);
-    console.log(user?.[0]);
-    console.log(playlist[0]);
     if (user?.length && playlist[0]) {
       const userWithPlaylist = user[0];
       const isUserAlreadyMember = userWithPlaylist.memberPlaylists?.map(x => x.playlistId).includes(playlistId);
@@ -239,7 +235,6 @@ export class SpotifyService {
       return this.queueService.dequeue(identifier);
     } else {
       return new Promise((resolve, _reject) => {
-        console.log('Added refresh to the queue. Will refresh ');
         resolve();
       });
     }

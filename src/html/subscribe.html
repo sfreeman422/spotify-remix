@@ -21,7 +21,6 @@
         })
           .then(x => x.json())
           .then(tokens => {
-            console.log(tokens);
             localStorage.setItem('spotify-remix-access-token', tokens.accessToken);
             localStorage.setItem('spotify-remix-refresh-token', tokens.refreshToken);
             return tokens;
@@ -40,7 +39,6 @@
           },
         })
           .then(x => {
-            console.log(x);
             if (x.status === 200) {
               return x.json();
             } else if (x.status === 204) {
@@ -73,9 +71,6 @@
       const refreshToken = localStorage.getItem('spotify-remix-refresh-token');
       const queryParams = new URLSearchParams(window.location.search);
       const playlistId = queryParams.get('playlistId');
-
-      console.log(accessToken);
-      console.log(refreshToken);
 
       getAndSetTokens(accessToken, refreshToken).then(x => {
         subscribeToPlaylist(playlistId, x.accessToken);

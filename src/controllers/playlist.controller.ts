@@ -83,10 +83,6 @@ playlistController.post('/refresh/:playlistId', (req, res) => {
   const { playlistId } = req.params;
   const { authorization } = req.headers;
 
-  console.log(authorization);
-  console.log(process.env.SPOTIFY_REMIX_API_KEY);
-  console.log(playlistId);
-
   if (playlistId && authorization === process.env.SPOTIFY_REMIX_API_KEY) {
     spotifyService
       .refreshPlaylist(playlistId)

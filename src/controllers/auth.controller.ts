@@ -7,7 +7,7 @@ const authService = new AuthService();
 
 // Used to initiate authorization workflow for spotify.
 authController.get('/login', (_req, res) => {
-  console.log('/login hit');
+  console.log('authController /login route hit');
   authService.loginWithScope(res);
 });
 
@@ -17,7 +17,7 @@ authController.get('/login/callback', (req, res) => {
   if (state === null) {
     res.status(500).send('State mismatch');
   } else {
-    console.log('/login/callback hit');
+    console.log('authController /login/callback route hit');
     // This should eventually route to a page where a user can see what playlist they spotify / own.
     authService
       .getUserDataAndSaveUser(code as string)
@@ -40,9 +40,6 @@ authController.get('/refresh', async (req, res) => {
   const { authorization, refreshtoken } = req.headers;
   const { spotifyId } = req.query;
   const accessToken = authorization ? authorization.split(' ')[1] : undefined;
-  console.log('auth', authorization);
-  console.log('refreshToken', refreshtoken);
-  console.log('spotifyId', spotifyId);
   if (accessToken && (spotifyId || refreshtoken)) {
     authService
       .refreshTokens(accessToken, refreshtoken as string, spotifyId as string)
