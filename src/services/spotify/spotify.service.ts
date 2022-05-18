@@ -100,6 +100,25 @@ export class SpotifyService {
             },
           )
           .then(playlist => {
+            return axios
+              .put(
+                `${this.basePlaylistUrl}/${playlist.data.id}`,
+                {
+                  description: `Subscribe and get info about this playlist at ${process.env.SPOTIFY_REMIX_BASE_URL}/playlist?playlistId=${playlist.data.id}`,
+                },
+                {
+                  headers: {
+                    Authorization: accessToken,
+                    'Content-Type': 'application/json',
+                  },
+                },
+              )
+              .then(_ => {
+                console.log(_);
+                return playlist;
+              });
+          })
+          .then(playlist => {
             return this.userService
               .savePlaylist(user, playlist.data.id)
               .then(playlist => this.refreshPlaylist(playlist.playlistId));
@@ -192,7 +211,7 @@ export class SpotifyService {
     const randomNumbers: Record<number, boolean> = {};
 
     let count = 0;
-    while (count < songsPerUser) {
+    while (count < songsPerUser * members.length) {
       const randomNumber = Math.floor(Math.random() * (allMusic.length - 1));
       if (!randomNumbers[randomNumber]) {
         randomNumbers[randomNumber] = true;
