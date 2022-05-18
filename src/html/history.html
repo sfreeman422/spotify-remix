@@ -49,10 +49,14 @@
   <body>
     <h1><span class="text-white">Spotify</span><span class="text-green">Remix</span></h1>
     <h2 class="text-white">History</h2>
+    <button onclick="goToDashboard()"></button>
     <div>
       <div id="playlists"></div>
     </div>
     <script>
+      function goToDashboard() {
+        window.location = `${window.location.protocol}//${window.location.host}/dashboard`;
+      }
       let history;
       const params = new URLSearchParams(window.location.search);
       const playlistId = params.get('playlistId');

@@ -43,6 +43,16 @@
       let playlists;
 
       function getAndSetTokens() {
+        const redirectTo = localStorage.getItem('spotify-remix-redirect-to');
+        if (redirectTo) {
+          const params = new URLSearchParams(window.location.search);
+          const accessToken = params.get('accessToken');
+          const refreshToken = params.get('refreshToken');
+          localStorage.setItem('spotify-remix-access-token', accessToken);
+          localStorage.setItem('spotify-remix-refresh-token', refreshToken);
+          localStorage.removeItem('spotify-remix-redirect-to');
+          window.location = redirectTo;
+        }
         const params = new URLSearchParams(window.location.search);
         const spotifyId = params.get('spotifyId');
         const accessTokenString = 'spotify-remix-access-token';
