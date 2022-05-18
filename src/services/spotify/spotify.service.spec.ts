@@ -1,3 +1,4 @@
+import { SongWithUserData } from './spotify.interface';
 import { SpotifyService } from './spotify.service';
 
 describe('SpotifyService', () => {
@@ -12,54 +13,54 @@ describe('SpotifyService', () => {
       const unsorted = [
         {
           accessToken: '1',
-          track: '1',
+          uri: '1',
         },
         {
           accessToken: '1',
-          track: '1',
+          uri: '1',
         },
         {
           accessToken: '3',
-          track: '3',
+          uri: '3',
         },
         {
           accessToken: '3',
-          track: '3',
+          uri: '3',
         },
         {
           accessToken: '2',
-          track: '2',
+          uri: '2',
         },
         {
           accessToken: '1',
-          track: '1',
+          uri: '1',
         },
-      ];
+      ] as SongWithUserData[];
 
       const sorted = [
         {
           accessToken: '1',
-          track: '1',
+          uri: '1',
         },
         {
           accessToken: '3',
-          track: '3',
+          uri: '3',
         },
         {
           accessToken: '2',
-          track: '2',
+          uri: '2',
         },
         {
           accessToken: '1',
-          track: '1',
+          uri: '1',
         },
         {
           accessToken: '3',
-          track: '3',
+          uri: '3',
         },
         {
           accessToken: '1',
-          track: '1',
+          uri: '1',
         },
       ];
       expect(spotifyService.roundRobinSort(unsorted)).toStrictEqual(sorted);
@@ -69,32 +70,32 @@ describe('SpotifyService', () => {
       const unsorted = [
         {
           accessToken: '1',
-          track: '1',
+          uri: '1',
         },
         {
           accessToken: '1',
-          track: '1',
+          uri: '1',
         },
         {
           accessToken: '1',
-          track: '1',
+          uri: '1',
         },
-      ];
+      ] as SongWithUserData[];
 
       const sorted = [
         {
           accessToken: '1',
-          track: '1',
+          uri: '1',
         },
         {
           accessToken: '1',
-          track: '1',
+          uri: '1',
         },
         {
           accessToken: '1',
-          track: '1',
+          uri: '1',
         },
-      ];
+      ] as SongWithUserData[];
       expect(spotifyService.roundRobinSort(unsorted)).toStrictEqual(sorted);
     });
   });

@@ -322,22 +322,28 @@ export class SpotifyService {
       });
   }
 
-  // This should be recursive if necessary.
-  private getLikedSongsByUser(user: User): Promise<SongWithUserData[]> {
+  private getLikedSongsByUser(user: User, url = `${this.baseSelfUrl}/tracks?limit=50`): Promise<SongWithUserData[]> {
     return axios
-      .get<SpotifyResponse<SpotifyLikedSong[]>>(`${this.baseSelfUrl}/tracks?limit=50`, {
+      .get<SpotifyResponse<SpotifyLikedSong[]>>(url, {
         headers: {
           Authorization: `Bearer ${user.accessToken}`,
         },
       })
-      .then<SongWithUserData[]>((x: AxiosResponse<SpotifyResponse<SpotifyLikedSong[]>>): SongWithUserData[] =>
-        x.data.items.map(
-          (song: SpotifyLikedSong): SongWithUserData =>
-            Object.assign(song.track, {
-              accessToken: user.accessToken,
-              refreshToken: user.refreshToken,
-            }),
-        ),
+      .then<SongWithUserData[]>(
+        (x: AxiosResponse<SpotifyResponse<SpotifyLikedSong[]>>): Promise<SongWithUserData[]> => {
+          const songs = x.data.items.map(
+            (song: SpotifyLikedSong): SongWithUserData =>
+              Object.assign(song.track, {
+                accessToken: user.accessToken,
+                refreshToken: user.refreshToken,
+              }),
+          );
+
+          if (x.data.next) {
+            return this.getLikedSongsByUser(user, x.data.next).then(nextSongs => songs.concat(nextSongs));
+          }
+          return new Promise((resolve, _reject) => resolve(songs));
+        },
       )
       .catch(e => {
         console.error(e);
