@@ -43,10 +43,7 @@ export class UserService {
 
   public async getAllOwnedPlaylists(accessToken: string): Promise<Playlist[]> {
     return getDataSource().then(async datasource => {
-      const token = accessToken.split(' ')[1];
-      const user = await datasource
-        .getRepository(User)
-        .find({ where: { accessToken: token }, relations: ['ownedPlaylists'] });
+      const user = await datasource.getRepository(User).find({ where: { accessToken }, relations: ['ownedPlaylists'] });
       if (user?.[0]?.ownedPlaylists?.length) {
         return user[0].ownedPlaylists;
       }
