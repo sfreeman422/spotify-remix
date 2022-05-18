@@ -57,6 +57,7 @@ authController.get('/refresh', async (req, res) => {
     console.log('returning 400');
     console.log('isAuthorization', !!authorization);
     console.log('isSpotifyId', !!spotifyId);
+    console.log('isRefreshToken', !!refreshToken);
     res.status(400).send('Missing authorization header or spotifyId');
   }
 });
