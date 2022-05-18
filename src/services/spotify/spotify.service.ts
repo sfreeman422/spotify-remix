@@ -59,26 +59,13 @@ export class SpotifyService {
             console.log(user);
             console.log(user?.[0]);
             if (user) {
-              const ownedAndSubbedPlaylists =
-                user[0]?.memberPlaylists?.concat(user[0]?.ownedPlaylists || [])?.map(x => x.playlistId) || [];
-              console.log('ownedAndSubbedPlaylists');
-              console.log(ownedAndSubbedPlaylists);
               const createdPlaylists = user[0]?.ownedPlaylists?.map(x => x.playlistId) || [];
-              console.log('createdPlaylists');
-              console.log(createdPlaylists);
               const memberPlaylists =
                 user[0]?.memberPlaylists?.map(x => x.playlistId)?.filter(x => !createdPlaylists?.includes(x)) || [];
-              console.log(memberPlaylists);
 
-              const orphanPlaylists = ownedAndSubbedPlaylists.filter(x => !spotifyPlaylists.find(y => x === y.id));
+              const orphanPlaylists = createdPlaylists.filter(x => !spotifyPlaylists.find(y => x === y.id));
               const ownedPlaylists = spotifyPlaylists.filter(x => createdPlaylists?.includes(x.id));
               const subscribedPlaylists = spotifyPlaylists.filter(x => memberPlaylists?.includes(x.id));
-              console.log('orphanPlaylists');
-              console.log(orphanPlaylists);
-              console.log('ownedPlaylists');
-              console.log(ownedPlaylists);
-              console.log('subscribedPlaylists');
-              console.log(subscribedPlaylists);
 
               return {
                 ownedPlaylists,
