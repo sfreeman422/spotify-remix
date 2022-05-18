@@ -34,7 +34,7 @@ print(playlists)
 print('Playlists retrieved!')
 
 for playlist in playlists:
-  url = "http://localhost:3000/refresh/{playlistId}".format(playlistId=playlist['playlistId'])
+  url = "http://stevefreeman.io/refresh/{playlistId}".format(playlistId=playlist['playlistId'])
   headers = { "Authorization": os.getenv('SPOTIFY_REMIX_API_KEY')}
   response = requests.post(url, headers=headers)
   if (response.status_code > 200):
