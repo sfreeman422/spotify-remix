@@ -4,10 +4,8 @@ import mysql.connector
 import os
 import time
 
-print("Beginning refresh job...")
 start = time.time()
 try:
-  print("Connecting to mysql DB...")
   cnx = mydb = mysql.connector.connect(
       host="localhost",
       user="root",
