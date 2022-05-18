@@ -113,10 +113,7 @@ export class SpotifyService {
                   },
                 },
               )
-              .then(_ => {
-                console.log(_);
-                return playlist;
-              });
+              .then(_ => playlist);
           })
           .then(playlist => {
             return this.userService
