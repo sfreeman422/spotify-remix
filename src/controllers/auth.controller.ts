@@ -40,9 +40,9 @@ authController.get('/refresh', async (req, res) => {
   const { authorization, refreshToken } = req.headers;
   const { spotifyId } = req.query;
   const accessToken = authorization ? authorization.split(' ')[1] : undefined;
-  console.log(authorization);
-  console.log(refreshToken);
-  console.log(spotifyId);
+  console.log('auth', authorization);
+  console.log('refreshToken', refreshToken);
+  console.log('spotifyId', spotifyId);
   if (accessToken && (spotifyId || refreshToken)) {
     authService
       .refreshTokens(accessToken, refreshToken as string, spotifyId as string)
