@@ -20,4 +20,13 @@ export class Song {
 
   @Column({ type: 'longtext' })
   public userId!: string;
+
+  @Column({ type: 'longtext' })
+  public title!: string;
+
+  @Column({ type: 'longtext' })
+  public artist!: string;
+
+  @Column({ type: 'longtext' })
+  public album!: string;
 }

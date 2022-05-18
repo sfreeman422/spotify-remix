@@ -97,3 +97,13 @@ playlistController.post('/refresh/:playlistId', (req, res) => {
     res.status(400).send('PlaylistId or authorization header missing!');
   }
 });
+
+playlistController.get('/playlist/:playlistId/history', (req, res) => {
+  const { playlistId } = req.params;
+
+  if (playlistId) {
+    spotifyService.getPlaylistHistory(playlistId).then(x => res.send(x));
+  } else {
+    res.status(400).send('PlaylistId or authorization header missing!');
+  }
+});

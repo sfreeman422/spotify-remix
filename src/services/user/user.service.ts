@@ -85,6 +85,9 @@ export class UserService {
         song.playlist = playlist;
         song.spotifyUrl = x.uri;
         song.userId = x.spotifyId;
+        song.title = x.name;
+        song.artist = x.artists.map(x => x.name).join(', ');
+        song.album = x.album.name;
         return song;
       });
 
@@ -95,5 +98,13 @@ export class UserService {
 
       return ds.getRepository(Playlist).save(updatedPlaylist);
     });
+  }
+
+  public getPlaylistHistory(playlistId: string): Promise<Song[]> {
+    return getDataSource()
+      .then(ds => ds.getRepository(Playlist).find({ where: { playlistId }, relations: ['history'] }))
+      .then(x =>
+        x ? x[0].history.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) : [],
+      );
   }
 }

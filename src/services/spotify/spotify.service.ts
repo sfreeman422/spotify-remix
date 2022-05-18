@@ -353,4 +353,8 @@ export class SpotifyService {
         throw new Error(e);
       });
   }
+
+  getPlaylistHistory(playlistId: string): Promise<Song[]> {
+    return this.userService.getPlaylistHistory(playlistId);
+  }
 }
