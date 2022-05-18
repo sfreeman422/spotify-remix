@@ -37,15 +37,15 @@ authController.get('/login/callback', (req, res) => {
 });
 
 authController.get('/refresh', async (req, res) => {
-  const { authorization, refreshToken } = req.headers;
+  const { authorization, refreshtoken } = req.headers;
   const { spotifyId } = req.query;
   const accessToken = authorization ? authorization.split(' ')[1] : undefined;
   console.log('auth', authorization);
-  console.log('refreshToken', refreshToken);
+  console.log('refreshToken', refreshtoken);
   console.log('spotifyId', spotifyId);
-  if (accessToken && (spotifyId || refreshToken)) {
+  if (accessToken && (spotifyId || refreshtoken)) {
     authService
-      .refreshTokens(accessToken, refreshToken as string, spotifyId as string)
+      .refreshTokens(accessToken, refreshtoken as string, spotifyId as string)
       .then(x => {
         res.send(x);
       })
@@ -57,7 +57,7 @@ authController.get('/refresh', async (req, res) => {
     console.log('returning 400');
     console.log('isAuthorization', !!authorization);
     console.log('isSpotifyId', !!spotifyId);
-    console.log('isRefreshToken', !!refreshToken);
+    console.log('isRefreshToken', !!refreshtoken);
     res.status(400).send('Missing authorization header or spotifyId');
   }
 });
