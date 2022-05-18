@@ -67,6 +67,18 @@ playlistController.post('/playlist', (req, res) => {
   }
 });
 
+// Should delete the given playlist by Id
+playlistController.delete('/playlist', (req, res) => {
+  const { playlists } = req.body;
+  const { authorization } = req.headers;
+  if (authorization && playlists) {
+    const accessToken = authorization.split(' ')[1];
+    res.send(spotifyService.removePlaylist(accessToken, playlists));
+  } else {
+    res.status(400).send('Missing authorization or playlists');
+  }
+});
+
 playlistController.post('/refresh/:playlistId', (req, res) => {
   const { playlistId } = req.params;
   const { authorization } = req.headers;
