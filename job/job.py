@@ -23,15 +23,10 @@ except mysql.connector.Error as err:
   else:
     print(err)
 
-print("Connected!")
 mycursor = cnx.cursor(dictionary=True, buffered=True)
-
-print('Retrieving distinct playlists...')
 mycursor.execute("SELECT DISTINCT(playlistId) FROM playlist;")
 
 playlists = mycursor.fetchall()
-print(playlists)
-print('Playlists retrieved!')
 
 for playlist in playlists:
   url = "http://stevefreeman.io/refresh/{playlistId}".format(playlistId=playlist['playlistId'])
@@ -40,5 +35,3 @@ for playlist in playlists:
   if (response.status_code > 200):
     print('{statusCode} Failure during playlist refresh for {playlistId}'.format(statusCode=response.status_code, playlistId=playlist["playlistId"]))
     print(response.json())
-
-print("Completed refresh job in {time} seconds!".format(time=time.time() - start))
