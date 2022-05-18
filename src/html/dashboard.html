@@ -137,8 +137,6 @@
 
             document.getElementById('playlists').innerHTML += `<div>
                     <h3 class="text-white">Your Followed Remixes</h3>
-                    <span class="text-white">Code:</span><input type="text" id="code"></input><br>
-                    <button onclick="subscribeToAPlaylist()">Follow a Remix</button>
                     <div class="playlist" id="subbed-playlists"></div>
                     </div>`;
 
@@ -197,12 +195,6 @@
           playlistButton.disabled = false;
           getPlaylistsAndBuildDivs();
         });
-      }
-
-      function subscribeToAPlaylist() {
-        const code = document.getElementById('code').value;
-        console.log(code);
-        window.location = `${window.location.protocol}//${window.location.host}/playlist?playlistId=${code}`;
       }
 
       getAndSetTokens().then(() => getPlaylistsAndBuildDivs());
