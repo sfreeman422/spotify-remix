@@ -55,7 +55,9 @@ export class SpotifyService {
         (resp: AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>): PlaylistData => {
           if (resp) {
             const spotifyPlaylists: SpotifyPlaylist[] = resp.data.items;
-
+            console.log(resp.data.items);
+            console.log(user);
+            console.log(user?.[0]);
             if (user) {
               const ownedAndSubbedPlaylists =
                 user[0]?.memberPlaylists?.concat(user[0]?.ownedPlaylists || [])?.map(x => x.playlistId) || [];
@@ -66,6 +68,11 @@ export class SpotifyService {
               const orphanPlaylists = ownedAndSubbedPlaylists.filter(x => !spotifyPlaylists.find(y => x === y.id));
               const ownedPlaylists = spotifyPlaylists.filter(x => createdPlaylists?.includes(x.id));
               const subscribedPlaylists = spotifyPlaylists.filter(x => memberPlaylists?.includes(x.id));
+
+              console.log(orphanPlaylists);
+              console.log(ownedPlaylists);
+              console.log(subscribedPlaylists);
+
               return {
                 ownedPlaylists,
                 orphanPlaylists,
