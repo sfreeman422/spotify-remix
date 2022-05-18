@@ -20,4 +20,9 @@ indexController.get('/playlist', (_req, res) => {
   res.sendFile(path.join(__dirname, '../html', 'subscribe.html'));
 });
 
+indexController.get('/history', (_req, res) => {
+  console.log('indexController /history route hit');
+  res.sendFile(path.join(__dirname, '../html', 'history.html'));
+});
+
 export const controllers = [indexController, authController, playlistController];

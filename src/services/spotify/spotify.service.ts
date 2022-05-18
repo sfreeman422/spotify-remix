@@ -100,6 +100,22 @@ export class SpotifyService {
             },
           )
           .then(playlist => {
+            return axios
+              .put(
+                `${this.basePlaylistUrl}/${playlist.data.id}`,
+                {
+                  description: `Subscribe and get info about this playlist at ${process.env.SPOTIFY_REMIX_BASE_URL}/playlist?playlistId=${playlist.data.id}`,
+                },
+                {
+                  headers: {
+                    Authorization: accessToken,
+                    'Content-Type': 'application/json',
+                  },
+                },
+              )
+              .then(_ => playlist);
+          })
+          .then(playlist => {
             return this.userService
               .savePlaylist(user, playlist.data.id)
               .then(playlist => this.refreshPlaylist(playlist.playlistId));
@@ -192,7 +208,7 @@ export class SpotifyService {
     const randomNumbers: Record<number, boolean> = {};
 
     let count = 0;
-    while (count < songsPerUser) {
+    while (count < songsPerUser * members.length) {
       const randomNumber = Math.floor(Math.random() * (allMusic.length - 1));
       if (!randomNumbers[randomNumber]) {
         randomNumbers[randomNumber] = true;
@@ -251,24 +267,20 @@ export class SpotifyService {
     const playlistTracks: SpotifyPlaylistItemInfo[] = await this.getPlaylistTracks(playlistId, owner.accessToken);
     // Remove all songs from the playlist.
     await this.removeAllPlaylistTracks(playlistId, owner.accessToken, playlistTracks);
-    return await Promise.all(
-      orderedPlaylist.map(song =>
-        axios
-          .post(
-            `${this.basePlaylistUrl}/${playlistId}/tracks`,
-            {
-              uris: [song.uri],
-            },
-            {
-              headers: {
-                Authorization: `Bearer ${song.accessToken}`,
-              },
-            },
-          )
-          .then(_ => this.userService.saveSong(playlist, song.uri))
-          .catch(e => e),
-      ),
-    );
+    return axios
+      .post(
+        `${this.basePlaylistUrl}/${playlistId}/tracks`,
+        {
+          uris: orderedPlaylist.map(song => song.uri),
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${owner.accessToken}`,
+          },
+        },
+      )
+      .then(_ => this.userService.saveSongs(playlist, orderedPlaylist))
+      .catch(e => e);
   }
 
   // Note: This sort is a "best effort" to maintain order within the playlist.
@@ -279,7 +291,7 @@ export class SpotifyService {
     while (allSongs.length > 0) {
       const orderedSet: SongWithUserData[] = [];
       for (let i = 0; i < allSongs.length; i += 1) {
-        const found = orderedSet.find(element => element.accessToken === allSongs[i].accessToken);
+        const found = orderedSet.find(element => element.spotifyId === allSongs[i].spotifyId);
         if (!found) {
           orderedSet.push(allSongs[i]);
           allSongs.splice(i, 1);
@@ -314,8 +326,7 @@ export class SpotifyService {
           const songs = x.data.items.map(
             (song: SpotifyTrack): SongWithUserData => ({
               ...song,
-              accessToken: user.accessToken,
-              refreshToken: user.refreshToken,
+              spotifyId: user.spotifyId,
             }),
           );
 
@@ -343,8 +354,7 @@ export class SpotifyService {
           const songs = x.data.items.map(
             (song: SpotifyLikedSong): SongWithUserData =>
               Object.assign(song.track, {
-                accessToken: user.accessToken,
-                refreshToken: user.refreshToken,
+                spotifyId: user.spotifyId,
               }),
           );
 
@@ -358,5 +368,9 @@ export class SpotifyService {
         console.error(e);
         throw new Error(e);
       });
+  }
+
+  getPlaylistHistory(playlistId: string): Promise<Song[]> {
+    return this.userService.getPlaylistHistory(playlistId);
   }
 }

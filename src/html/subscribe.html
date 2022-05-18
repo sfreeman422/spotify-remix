@@ -47,16 +47,17 @@
             return x;
           })
           .then(x => {
-            if (x.message) {
+            if (x && x.message) {
               document.getElementById('message').innerHTML =
                 'Successfully subscribed! Sending you to your dashboard...';
             } else {
               document.getElementById('message').innerHTML =
-                'It looks like you are already subscribed to this playlist! Sending you to your dashboard...';
+                'It looks like you are already subscribed to this playlist! Sending you to this playlists history';
             }
             setTimeout(
-              () => (window.location = `${window.location.protocol}//${window.location.host}/dashboard`),
-              5000,
+              () =>
+                (window.location = `${window.location.protocol}//${window.location.host}/history?playlistId=${playlistId}`),
+              3000,
             );
           })
           .catch(e => {
