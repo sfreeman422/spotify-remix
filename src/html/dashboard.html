@@ -78,6 +78,7 @@
             .catch(e => {
               window.location = `${window.location.protocol}//${window.location.host}/login`;
               console.error('Unable to refresh tokens');
+              console.error(e);
             });
         } else {
           window.location = `${window.location.protocol}//${window.location.host}/login`;

@@ -49,7 +49,7 @@
             return x;
           })
           .then(x => {
-            if (x) {
+            if (x.message) {
               document.getElementById('message').innerHTML =
                 'Successfully subscribed! Sending you to your dashboard...';
             } else {
