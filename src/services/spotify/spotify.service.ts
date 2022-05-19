@@ -207,16 +207,39 @@ export class SpotifyService {
     const playlistSongs: SongWithUserData[] = [];
     const randomNumbers: Record<number, boolean> = {};
 
-    let count = 0;
-    while (count < songsPerUser * members.length) {
-      const randomNumber = Math.floor(Math.random() * (allMusic.length - 1));
-      if (!randomNumbers[randomNumber]) {
-        randomNumbers[randomNumber] = true;
-        playlistSongs.push(allMusic[randomNumber]);
-        count += 1;
+    // For each user in the playlist, get their songs then perform the logic belog
+    const grouped = this.groupByUser(allMusic);
+
+    console.log(grouped);
+
+    Object.keys(grouped).forEach(key => {
+      const userSongs = grouped[key];
+
+      if (userSongs.length <= songsPerUser) {
+        // Add all songs beacuse we have less or equal to songsPerUser;
+        userSongs.forEach(song => playlistSongs.push(song));
+      } else {
+        let count = 0;
+        while (count < songsPerUser) {
+          const randomNumber = Math.floor(Math.random() * (allMusic.length - 1));
+          if (!randomNumbers[randomNumber]) {
+            randomNumbers[randomNumber] = true;
+            playlistSongs.push(allMusic[randomNumber]);
+            count += 1;
+          }
+        }
       }
-    }
+    });
     return playlistSongs;
+  }
+
+  // Ideally this would be generic and accept a key param so that this can be used elsewhere but i was struggling with making it generic
+  // Due to typescript limitations about indexing song with string;
+  groupByUser(arr: SongWithUserData[]): Record<string, SongWithUserData[]> {
+    return arr.reduce((userMap: Record<string, SongWithUserData[]>, song: SongWithUserData) => {
+      (userMap[song['spotifyId']] = userMap[song['spotifyId']] || []).push(song);
+      return userMap;
+    }, {});
   }
 
   getPlaylistTracks(playlistId: string, accessToken: string): Promise<SpotifyPlaylistItemInfo[]> {
