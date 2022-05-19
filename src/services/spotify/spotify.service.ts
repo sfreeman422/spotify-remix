@@ -179,12 +179,6 @@ export class SpotifyService {
       : [];
   }
 
-  async getLikedSongs(members: User[]): Promise<SongsByUser[]> {
-    return members?.length
-      ? await Promise.all(members.map(async (member: User) => this.getLikedSongsByUser(member)))
-      : [];
-  }
-
   async getAllMusic(members: User[], songsPerUser: number, history: Song[]): Promise<SongWithUserData[]> {
     // Filter these songs based on what we have already seen in this playlist within the last 12 hours.
     // We chose 12 hours because we want to allow the same songs to show up if a playlist is being frequently joined,
