@@ -191,7 +191,7 @@ export class SpotifyService {
     let allMusic: SongsByUser[] = await this.getTopSongs(members).then((allTopSongs: SongsByUser[]) => {
       return allTopSongs.map(x => {
         const newSongsByUser = Object.assign({}, x);
-        newSongsByUser.songs = newSongsByUser.songs.filter(x => !historyAsStrings.includes(x.uri));
+        newSongsByUser.topSongs = newSongsByUser.topSongs.filter(x => !historyAsStrings.includes(x.uri));
         return newSongsByUser;
       });
     });
@@ -199,10 +199,10 @@ export class SpotifyService {
     // Get liked songs for users if necessary else just return the songs we already have..
     allMusic = await Promise.all(
       allMusic.map(async (x: SongsByUser) => {
-        if (x.songs.length < songsPerUser) {
+        if (x.topSongs.length < songsPerUser) {
           const newSongsByUser: SongsByUser = Object.assign({}, x);
           return this.getLikedSongsByUser(x.user).then(y => {
-            newSongsByUser.songs = newSongsByUser.songs.concat(y.songs).filter(x => !historyAsStrings.includes(x.uri));
+            newSongsByUser.likedSongs = y?.likedSongs?.filter(x => !historyAsStrings.includes(x.uri)) || [];
             return newSongsByUser;
           });
         }
@@ -215,18 +215,30 @@ export class SpotifyService {
     const playlistSongs: SongWithUserData[] = [];
 
     allMusic.forEach((songsByUser: SongsByUser) => {
-      const userSongs = songsByUser.songs;
-      // Add all songs beacuse we have less or equal to songsPerUser;
-      if (userSongs.length <= songsPerUser) {
-        userSongs.forEach(song => playlistSongs.push(song));
+      const userTopSongs = songsByUser.topSongs;
+      const userLikedSongs = songsByUser.likedSongs || [];
+      if (userTopSongs.length <= songsPerUser) {
+        // Add all top songs first.
+        userTopSongs.forEach(song => playlistSongs.push(song));
+        // Then search for the remaining songs in liked songs
+        let count = userTopSongs.length;
+        const randomNumbers: Record<number, boolean> = {};
+        while (count < songsPerUser) {
+          const randomNumber = Math.floor(Math.random() * (userLikedSongs.length - 1));
+          if (!randomNumbers[randomNumber]) {
+            randomNumbers[randomNumber] = true;
+            playlistSongs.push(userLikedSongs[randomNumber]);
+            count += 1;
+          }
+        }
       } else {
         const randomNumbers: Record<number, boolean> = {};
         let count = 0;
         while (count < songsPerUser) {
-          const randomNumber = Math.floor(Math.random() * (userSongs.length - 1));
+          const randomNumber = Math.floor(Math.random() * (userTopSongs.length - 1));
           if (!randomNumbers[randomNumber]) {
             randomNumbers[randomNumber] = true;
-            playlistSongs.push(userSongs[randomNumber]);
+            playlistSongs.push(userTopSongs[randomNumber]);
             count += 1;
           }
         }
@@ -350,10 +362,10 @@ export class SpotifyService {
           if (x.data.next) {
             return this.getTopSongsByUser(user, x.data.next).then((data: SongsByUser) => ({
               user: user,
-              songs: songs.concat(data.songs),
+              topSongs: songs.concat(data.topSongs),
             }));
           }
-          return new Promise((resolve, _reject) => resolve({ user, songs }));
+          return new Promise((resolve, _reject) => resolve({ user, topSongs: songs }));
         },
       )
       .catch(e => {
@@ -381,10 +393,11 @@ export class SpotifyService {
           if (x.data.next) {
             return this.getLikedSongsByUser(user, x.data.next).then(data => ({
               user,
-              songs: songs.concat(data.songs),
+              topSongs: [], // Dont love this.
+              likedSongs: songs.concat(data.likedSongs || []),
             }));
           }
-          return new Promise((resolve, _reject) => resolve({ user, songs }));
+          return new Promise((resolve, _reject) => resolve({ user, topSongs: [], likedSongs: songs }));
         },
       )
       .catch(e => {

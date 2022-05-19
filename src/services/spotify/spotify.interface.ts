@@ -13,5 +13,6 @@ export interface PlaylistData {
 
 export interface SongsByUser {
   user: User;
-  songs: SongWithUserData[];
+  topSongs: SongWithUserData[];
+  likedSongs?: SongWithUserData[];
 }
