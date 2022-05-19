@@ -13,7 +13,7 @@ import {
   SpotifyTrack,
   SpotifyUserData,
 } from './spotify.generated.interface';
-import { PlaylistData, SongWithUserData } from './spotify.interface';
+import { PlaylistData, SongsByUser, SongWithUserData } from './spotify.interface';
 
 export class SpotifyService {
   baseUrl = 'https://api.spotify.com/v1';
@@ -173,21 +173,19 @@ export class SpotifyService {
     return undefined;
   }
 
-  async getTopSongs(members: User[]): Promise<SongWithUserData[]> {
+  async getTopSongs(members: User[]): Promise<SongsByUser[]> {
     return members?.length
-      ? await (await Promise.all(members.map(async (member: User) => this.getTopSongsByUser(member)))).flat()
+      ? await Promise.all(members.map(async (member: User) => this.getTopSongsByUser(member)))
       : [];
   }
 
-  async getLikedSongs(members: User[]): Promise<SongWithUserData[]> {
+  async getLikedSongs(members: User[]): Promise<SongsByUser[]> {
     return members?.length
-      ? await (await Promise.all(members.map(async (member: User) => this.getLikedSongsByUser(member)))).flat()
+      ? await Promise.all(members.map(async (member: User) => this.getLikedSongsByUser(member)))
       : [];
   }
 
   async getAllMusic(members: User[], songsPerUser: number, history: Song[]): Promise<SongWithUserData[]> {
-    // Get only the top songs first, these are likely more relevant.
-    let allMusic: SongWithUserData[] = await this.getTopSongs(members);
     // Filter these songs based on what we have already seen in this playlist within the last 12 hours.
     // We chose 12 hours because we want to allow the same songs to show up if a playlist is being frequently joined,
     // But we dont want it to show up if its already been seen within the past day.
@@ -195,51 +193,53 @@ export class SpotifyService {
       .filter(song => !isWithinInterval(song.createdAt, { start: subHours(new Date(), 12), end: new Date() }))
       .map(x => x.spotifyUrl);
 
-    allMusic = allMusic.filter(x => !historyAsStrings.includes(x.uri));
+    // Get only the top songs first, these are likely more relevant.
+    let allMusic: SongsByUser[] = await this.getTopSongs(members).then((allTopSongs: SongsByUser[]) => {
+      return allTopSongs.map(x => {
+        const newSongsByUser = Object.assign({}, x);
+        newSongsByUser.songs = newSongsByUser.songs.filter(x => !historyAsStrings.includes(x.uri));
+        return newSongsByUser;
+      });
+    });
 
-    // If we dont have enough songs, get the liked songs, filter for the songs that we already got in our top tracks and concat.
-    if (allMusic.length < songsPerUser * members.length) {
-      let likedSongs: SongWithUserData[] = await this.getLikedSongs(members);
-      likedSongs = likedSongs.filter(x => !allMusic.includes(x));
-      allMusic = allMusic.concat(likedSongs);
-    }
+    // Get liked songs for users if necessary else just return the songs we already have..
+    allMusic = await Promise.all(
+      allMusic.map(async (x: SongsByUser) => {
+        if (x.songs.length < songsPerUser) {
+          const newSongsByUser: SongsByUser = Object.assign({}, x);
+          return this.getLikedSongsByUser(x.user).then(y => {
+            newSongsByUser.songs = newSongsByUser.songs.concat(y.songs).filter(x => !historyAsStrings.includes(x.uri));
+            return newSongsByUser;
+          });
+        }
+        return x;
+      }),
+    );
+
+    // Build out the playlist data.
 
     const playlistSongs: SongWithUserData[] = [];
-    const randomNumbers: Record<number, boolean> = {};
 
-    // For each user in the playlist, get their songs then perform the logic belog
-    const grouped = this.groupByUser(allMusic);
-
-    console.log(grouped);
-
-    Object.keys(grouped).forEach(key => {
-      const userSongs = grouped[key];
-
+    allMusic.forEach((songsByUser: SongsByUser) => {
+      const userSongs = songsByUser.songs;
+      // Add all songs beacuse we have less or equal to songsPerUser;
       if (userSongs.length <= songsPerUser) {
-        // Add all songs beacuse we have less or equal to songsPerUser;
         userSongs.forEach(song => playlistSongs.push(song));
       } else {
+        const randomNumbers: Record<number, boolean> = {};
         let count = 0;
         while (count < songsPerUser) {
-          const randomNumber = Math.floor(Math.random() * (allMusic.length - 1));
+          const randomNumber = Math.floor(Math.random() * (userSongs.length - 1));
           if (!randomNumbers[randomNumber]) {
             randomNumbers[randomNumber] = true;
-            playlistSongs.push(allMusic[randomNumber]);
+            playlistSongs.push(userSongs[randomNumber]);
             count += 1;
           }
         }
       }
     });
-    return playlistSongs;
-  }
 
-  // Ideally this would be generic and accept a key param so that this can be used elsewhere but i was struggling with making it generic
-  // Due to typescript limitations about indexing song with string;
-  groupByUser(arr: SongWithUserData[]): Record<string, SongWithUserData[]> {
-    return arr.reduce((userMap: Record<string, SongWithUserData[]>, song: SongWithUserData) => {
-      (userMap[song['spotifyId']] = userMap[song['spotifyId']] || []).push(song);
-      return userMap;
-    }, {});
+    return playlistSongs;
   }
 
   getPlaylistTracks(playlistId: string, accessToken: string): Promise<SpotifyPlaylistItemInfo[]> {
@@ -337,15 +337,15 @@ export class SpotifyService {
   private getTopSongsByUser(
     user: User,
     url = `${this.baseSelfUrl}/top/tracks?limit=50&time_range=short_term`,
-  ): Promise<SongWithUserData[]> {
+  ): Promise<SongsByUser> {
     return axios
       .get<SpotifyResponse<SpotifyTrack[]>>(url, {
         headers: {
           Authorization: `Bearer ${user.accessToken}`,
         },
       })
-      .then<SongWithUserData[]>(
-        (x: AxiosResponse<SpotifyResponse<SpotifyTrack[]>>): Promise<SongWithUserData[]> => {
+      .then<SongsByUser>(
+        (x: AxiosResponse<SpotifyResponse<SpotifyTrack[]>>): Promise<SongsByUser> => {
           const songs = x.data.items.map(
             (song: SpotifyTrack): SongWithUserData => ({
               ...song,
@@ -354,9 +354,12 @@ export class SpotifyService {
           );
 
           if (x.data.next) {
-            return this.getTopSongsByUser(user, x.data.next).then(nextSongs => songs.concat(nextSongs));
+            return this.getTopSongsByUser(user, x.data.next).then((data: SongsByUser) => ({
+              user: user,
+              songs: songs.concat(data.songs),
+            }));
           }
-          return new Promise((resolve, _reject) => resolve(songs));
+          return new Promise((resolve, _reject) => resolve({ user, songs }));
         },
       )
       .catch(e => {
@@ -365,15 +368,15 @@ export class SpotifyService {
       });
   }
 
-  private getLikedSongsByUser(user: User, url = `${this.baseSelfUrl}/tracks?limit=50`): Promise<SongWithUserData[]> {
+  private getLikedSongsByUser(user: User, url = `${this.baseSelfUrl}/tracks?limit=50`): Promise<SongsByUser> {
     return axios
       .get<SpotifyResponse<SpotifyLikedSong[]>>(url, {
         headers: {
           Authorization: `Bearer ${user.accessToken}`,
         },
       })
-      .then<SongWithUserData[]>(
-        (x: AxiosResponse<SpotifyResponse<SpotifyLikedSong[]>>): Promise<SongWithUserData[]> => {
+      .then<SongsByUser>(
+        (x: AxiosResponse<SpotifyResponse<SpotifyLikedSong[]>>): Promise<SongsByUser> => {
           const songs = x.data.items.map(
             (song: SpotifyLikedSong): SongWithUserData =>
               Object.assign(song.track, {
@@ -382,9 +385,12 @@ export class SpotifyService {
           );
 
           if (x.data.next) {
-            return this.getLikedSongsByUser(user, x.data.next).then(nextSongs => songs.concat(nextSongs));
+            return this.getLikedSongsByUser(user, x.data.next).then(data => ({
+              user,
+              songs: songs.concat(data.songs),
+            }));
           }
-          return new Promise((resolve, _reject) => resolve(songs));
+          return new Promise((resolve, _reject) => resolve({ user, songs }));
         },
       )
       .catch(e => {
