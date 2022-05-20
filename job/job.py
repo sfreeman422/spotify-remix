@@ -27,7 +27,7 @@ mycursor.execute("SELECT DISTINCT(playlistId) FROM playlist;")
 playlists = mycursor.fetchall()
 
 for playlist in playlists:
-  url = "http://stevefreeman.io/refresh/{playlistId}".format(playlistId=playlist['playlistId'])
+  url = "http://remix.lol/refresh/{playlistId}".format(playlistId=playlist['playlistId'])
   headers = { "Authorization": os.getenv('SPOTIFY_REMIX_API_KEY')}
   response = requests.post(url, headers=headers)
   if (response.status_code > 200):
