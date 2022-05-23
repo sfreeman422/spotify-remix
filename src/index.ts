@@ -37,7 +37,7 @@ axios.interceptors.response.use(undefined, error => {
     // This should handle 401 errors by refreshing our users token.
     // Not sure about these return undefined, but a lil drunk rn.
     return refreshService.refresh(accessToken).then((user: User | undefined) => {
-      if (user) {
+      if (user && error && error.config) {
         error.config.headers.authorization = `Bearer ${user.accessToken}`;
         return axios.request(error.config);
       }
