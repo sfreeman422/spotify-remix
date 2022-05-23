@@ -71,7 +71,8 @@ export class RefreshService {
             const refreshToken = body.refresh_token || user?.refreshToken;
             resolve({ user, accessToken, refreshToken } as TokenSet);
           } else {
-            reject(err);
+            console.error(err);
+            reject(response || err);
           }
         });
       }).then((tokens: TokenSet) => {
