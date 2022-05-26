@@ -223,13 +223,18 @@ export class SpotifyService {
         // Then search for the remaining songs in liked songs
         let count = userTopSongs.length;
         const randomNumbers: Record<number, boolean> = {};
-        while (count < songsPerUser) {
-          const randomNumber = Math.floor(Math.random() * (userLikedSongs.length - 1));
-          if (!randomNumbers[randomNumber]) {
-            randomNumbers[randomNumber] = true;
-            playlistSongs.push(userLikedSongs[randomNumber]);
-            count += 1;
+        if (userLikedSongs.length + count >= songsPerUser) {
+          while (count < songsPerUser) {
+            const randomNumber = Math.floor(Math.random() * (userLikedSongs.length - 1));
+            if (!randomNumbers[randomNumber]) {
+              randomNumbers[randomNumber] = true;
+              playlistSongs.push(userLikedSongs[randomNumber]);
+              count += 1;
+            }
           }
+        } else {
+          // If userTopSongs + userLikedSongs is not greater than or equal to songs per user, just add all of the liked songs.
+          userLikedSongs.forEach(song => playlistSongs.push(song));
         }
       } else {
         const randomNumbers: Record<number, boolean> = {};
