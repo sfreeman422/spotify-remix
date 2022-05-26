@@ -22,14 +22,15 @@ except mysql.connector.Error as err:
     print(err)
 
 mycursor = cnx.cursor(dictionary=True, buffered=True)
-mycursor.execute("SELECT DISTINCT(playlistId) FROM playlist;")
+mycursor.execute("SELECT spotifyId, accessToken FROM user;")
 
-playlists = mycursor.fetchall()
+users = mycursor.fetchall()
 
-for playlist in playlists:
-  url = "http://stevefreeman.io/refresh/{playlistId}".format(playlistId=playlist['playlistId'])
-  headers = { "Authorization": os.getenv('SPOTIFY_REMIX_API_KEY')}
-  response = requests.post(url, headers=headers)
+for user in users:
+  print(user)
+  url = "http://remix.lol/refresh?spotifyId={spotifyId}".format(spotifyId=user['spotifyId'])
+  headers = { 'Authorization': 'Bearer {accessToken}'.format(accessToken=user['accessToken'])}
+  response = requests.get(url, headers=headers)
   if (response.status_code > 200):
-    print('{statusCode} Failure during playlist refresh for {playlistId}'.format(statusCode=response.status_code, playlistId=playlist["playlistId"]))
+    print('{statusCode} Failure during user refresh for {userId}'.format(statusCode=response.status_code, userId=user["spotifyId"]))
     print(response.json())

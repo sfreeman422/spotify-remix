@@ -53,20 +53,16 @@
           .then(x => {
             if (x && x.message) {
               document.getElementById('message').innerHTML =
-                'Successfully subscribed! Sending you to your dashboard...';
-              setTimeout(
-                () => (window.location = `${window.location.protocol}//${window.location.host}/dashboard`),
-                3000,
-              );
+                'Successfully subscribed! Sending you to this playlists history...';
             } else {
               document.getElementById('message').innerHTML =
                 'It looks like you are already subscribed to this playlist! Sending you to this playlists history';
-              setTimeout(
-                () =>
-                  (window.location = `${window.location.protocol}//${window.location.host}/history?playlistId=${playlistId}`),
-                3000,
-              );
             }
+            setTimeout(
+              () =>
+                (window.location = `${window.location.protocol}//${window.location.host}/history?playlistId=${playlistId}`),
+              3000,
+            );
           })
           .catch(e => {
             document.getElementById('message').className = 'error';

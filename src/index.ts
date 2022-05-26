@@ -32,7 +32,7 @@ axios.interceptors.response.use(undefined, error => {
   console.log('url: ', error?.config?.url);
   console.log('config.data: ', error?.config?.data);
   console.log(error?.config?.['axios-retry']);
-  if (error.config && error.response && error.response.status === 401) {
+  if (error && error.config && error.response && error.response.status === 401) {
     const accessToken = error.config.headers.Authorization.split(' ')[1];
     // This should handle 401 errors by refreshing our users token.
     // Not sure about these return undefined, but a lil drunk rn.
