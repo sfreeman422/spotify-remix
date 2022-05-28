@@ -1,25 +1,18 @@
-import { SpotifyHttpService } from './spotify-http.service';
+import { mockQueueService } from '../../shared/mocks/mock-queue.service';
+import { mockSpotifyHttpService } from '../../shared/mocks/mock-spotify-http.service';
+import { mockUserService } from '../../shared/mocks/mock-user.service';
 import { SpotifyUserData } from './spotify.generated.interface';
 import { SongWithUserData } from './spotify.interface';
 import { SpotifyService } from './spotify.service';
 
 describe('SpotifyService', () => {
   let spotifyService: SpotifyService;
-  const mockSpotifyHttpService = {
-    getUserData: jest.fn(),
-    getUserPlaylists: jest.fn(),
-    createUserPLaylist: jest.fn(),
-    subscribeToPlaylist: jest.fn(),
-    getPlaylistTracks: jest.fn(),
-    removeAllPlaylistTracks: jest.fn(),
-    addSongsToPlaylist: jest.fn(),
-    getTopSongsByUser: jest.fn(),
-    getLikedSongsByUser: jest.fn(),
-  };
 
   beforeEach(() => {
     spotifyService = new SpotifyService();
-    spotifyService.httpService = (mockSpotifyHttpService as unknown) as SpotifyHttpService;
+    spotifyService.httpService = mockSpotifyHttpService;
+    spotifyService.userService = mockUserService;
+    spotifyService.queueService = mockQueueService;
   });
 
   describe('getUserData()', () => {
