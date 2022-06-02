@@ -1,8 +1,9 @@
+import { AxiosResponse } from 'axios';
 import { mockQueueService } from '../../shared/mocks/mock-queue.service';
 import { mockSpotifyHttpService } from '../../shared/mocks/mock-spotify-http.service';
 import { mockUserService } from '../../shared/mocks/mock-user.service';
-import { SpotifyUserData } from './spotify.generated.interface';
-import { SongWithUserData } from './spotify.interface';
+import { SpotifyPlaylist, SpotifyResponse, SpotifyUserData } from './spotify.generated.interface';
+import { PlaylistData, SongWithUserData } from './spotify.interface';
 import { SpotifyService } from './spotify.service';
 
 describe('SpotifyService', () => {
@@ -31,6 +32,26 @@ describe('SpotifyService', () => {
       await spotifyService.getUserData('123').catch(e => {
         expect(e).toBe(mockError);
       });
+    });
+  });
+
+  describe('getUserPlaylists()', () => {
+    it('should return an empty PlaylistData when there is no user', async () => {
+      expect.assertions(1);
+      const mockUser = undefined;
+      jest.spyOn(spotifyService.userService, 'getUserWithRelations').mockResolvedValue(mockUser);
+      jest.spyOn(spotifyService.httpService, 'getUserPlaylists').mockResolvedValue({
+        data: {
+          items: [] as SpotifyPlaylist[],
+        },
+      } as AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>);
+      const result = await spotifyService.getUserPlaylists('123');
+      const expected: PlaylistData = {
+        ownedPlaylists: [],
+        orphanPlaylists: [],
+        subscribedPlaylists: [],
+      };
+      expect(result).toEqual(expected);
     });
   });
 
