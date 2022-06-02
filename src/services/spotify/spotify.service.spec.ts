@@ -1,4 +1,6 @@
 import { AxiosResponse } from 'axios';
+import { Playlist } from '../../shared/db/models/Playlist';
+import { User } from '../../shared/db/models/User';
 import { mockQueueService } from '../../shared/mocks/mock-queue.service';
 import { mockSpotifyHttpService } from '../../shared/mocks/mock-spotify-http.service';
 import { mockUserService } from '../../shared/mocks/mock-user.service';
@@ -49,6 +51,114 @@ describe('SpotifyService', () => {
       const expected: PlaylistData = {
         ownedPlaylists: [],
         orphanPlaylists: [],
+        subscribedPlaylists: [],
+      };
+      expect(result).toEqual(expected);
+    });
+
+    it('should return a populated ownedPlaylist when a user has spotify data and owns a playlist', async () => {
+      expect.assertions(1);
+      const mockUser = {
+        spotifyId: '123',
+        ownedPlaylists: [
+          {
+            playlistId: '456',
+          },
+        ] as Playlist[],
+      } as User;
+      const mockSpotifyResponse = {
+        data: {
+          items: [
+            {
+              id: '456',
+            },
+          ],
+        },
+      } as AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>;
+
+      jest.spyOn(spotifyService.userService, 'getUserWithRelations').mockResolvedValue([mockUser]);
+      jest.spyOn(spotifyService.httpService, 'getUserPlaylists').mockResolvedValue(mockSpotifyResponse);
+      const result = await spotifyService.getUserPlaylists('123');
+      const expected: PlaylistData = {
+        ownedPlaylists: [
+          {
+            id: '456',
+          },
+        ] as SpotifyPlaylist[],
+        orphanPlaylists: [],
+        subscribedPlaylists: [],
+      };
+      expect(result).toEqual(expected);
+    });
+
+    it('should return a populated subscribedPlaylist when a user has spotify data and is subscribed to a playlist', async () => {
+      expect.assertions(1);
+      const mockUser = {
+        spotifyId: '123',
+        memberPlaylists: [
+          {
+            playlistId: '456',
+          },
+        ] as Playlist[],
+      } as User;
+      const mockSpotifyResponse = {
+        data: {
+          items: [
+            {
+              id: '456',
+            },
+          ],
+        },
+      } as AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>;
+
+      jest.spyOn(spotifyService.userService, 'getUserWithRelations').mockResolvedValue([mockUser]);
+      jest.spyOn(spotifyService.httpService, 'getUserPlaylists').mockResolvedValue(mockSpotifyResponse);
+      const result = await spotifyService.getUserPlaylists('123');
+      const expected: PlaylistData = {
+        ownedPlaylists: [],
+        orphanPlaylists: [],
+        subscribedPlaylists: [
+          {
+            id: '456',
+          },
+        ] as SpotifyPlaylist[],
+      };
+      expect(result).toEqual(expected);
+    });
+
+    it('should return a populated orphanPlaylist when a user has spotify data and owns a playlist but that playlist does not appear in the spotify data', async () => {
+      expect.assertions(1);
+      const mockUser = {
+        spotifyId: '123',
+        ownedPlaylists: [
+          {
+            playlistId: '123',
+          },
+          {
+            playlistId: '456',
+          },
+        ] as Playlist[],
+      } as User;
+      const mockSpotifyResponse = {
+        data: {
+          items: [
+            {
+              id: '456',
+            },
+          ],
+        },
+      } as AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>;
+
+      jest.spyOn(spotifyService.userService, 'getUserWithRelations').mockResolvedValue([mockUser]);
+      jest.spyOn(spotifyService.httpService, 'getUserPlaylists').mockResolvedValue(mockSpotifyResponse);
+      const result = await spotifyService.getUserPlaylists('123');
+      const expected: PlaylistData = {
+        ownedPlaylists: [
+          {
+            id: '456',
+          },
+        ] as SpotifyPlaylist[],
+        orphanPlaylists: ['123'],
         subscribedPlaylists: [],
       };
       expect(result).toEqual(expected);
