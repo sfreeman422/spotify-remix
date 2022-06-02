@@ -53,6 +53,19 @@ describe('SpotifyService', () => {
       };
       expect(result).toEqual(expected);
     });
+
+    it('should throw an error if httpService throws an error', async () => {
+      expect.assertions(1);
+      const mockUser = undefined;
+      const mockErrorString = 'Test Error';
+      jest.spyOn(spotifyService.userService, 'getUserWithRelations').mockResolvedValue(mockUser);
+      jest.spyOn(spotifyService.httpService, 'getUserPlaylists').mockRejectedValue(mockErrorString);
+      try {
+        await spotifyService.getUserPlaylists('123');
+      } catch (e) {
+        expect(e).toBe(mockErrorString);
+      }
+    });
   });
 
   describe('roundRobinSort()', () => {
