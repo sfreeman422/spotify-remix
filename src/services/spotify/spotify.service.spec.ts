@@ -54,6 +54,22 @@ describe('SpotifyService', () => {
       expect(result).toEqual(expected);
     });
 
+    it('should throw an error if userService throws an error', async () => {
+      expect.assertions(1);
+      const mockErrorString = 'Test Error';
+      jest.spyOn(spotifyService.userService, 'getUserWithRelations').mockRejectedValue(mockErrorString);
+      jest.spyOn(spotifyService.httpService, 'getUserPlaylists').mockResolvedValue({
+        data: {
+          items: [] as SpotifyPlaylist[],
+        },
+      } as AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>);
+      try {
+        await spotifyService.getUserPlaylists('123');
+      } catch (e) {
+        expect(e).toBe(mockErrorString);
+      }
+    });
+
     it('should throw an error if httpService throws an error', async () => {
       expect.assertions(1);
       const mockUser = undefined;
