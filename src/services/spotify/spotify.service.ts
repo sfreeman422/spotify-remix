@@ -90,9 +90,9 @@ export class SpotifyService {
       if (isUserAlreadyMember) {
         return undefined;
       } else {
-        return this.subscribeToPlaylist(accessToken, playlistId).then(_ =>
-          this.userService.updatePlaylistMembers(user[0], playlist[0]),
-        );
+        return this.httpService
+          .subscribeToPlaylist(accessToken, playlistId)
+          .then(_ => this.userService.updatePlaylistMembers(user[0], playlist[0]));
       }
     }
     return undefined;
