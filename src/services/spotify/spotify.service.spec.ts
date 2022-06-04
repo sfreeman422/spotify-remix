@@ -194,6 +194,87 @@ describe('SpotifyService', () => {
     });
   });
 
+  describe('createUserPlaylist()', () => {
+    let getUserMock: jest.SpyInstance<Promise<User | null>>;
+    let createUserPlaylistMock: jest.SpyInstance<Promise<any>>;
+    let savePlaylistMock: jest.SpyInstance<Promise<Playlist>>;
+    let refreshPlaylistMock: jest.SpyInstance<Promise<void>>;
+
+    beforeEach(() => {
+      getUserMock = jest.spyOn(spotifyService.userService, 'getUser');
+      createUserPlaylistMock = jest.spyOn(spotifyService.httpService, 'createUserPlaylist');
+      savePlaylistMock = jest.spyOn(spotifyService.userService, 'savePlaylist');
+      refreshPlaylistMock = jest.spyOn(spotifyService, 'refreshPlaylist');
+    });
+
+    afterEach(() => {
+      getUserMock.mockClear();
+      createUserPlaylistMock.mockClear();
+      savePlaylistMock.mockClear();
+      refreshPlaylistMock.mockClear();
+    });
+
+    it('should call httpService and userService if a user exists', async () => {
+      getUserMock.mockResolvedValue({ id: '123' } as User);
+      createUserPlaylistMock.mockResolvedValue({ data: { id: '123' } });
+      savePlaylistMock.mockResolvedValue({ id: '123' } as Playlist);
+      refreshPlaylistMock.mockResolvedValue();
+      await spotifyService.createUserPlaylist('Bearer 123');
+      expect(getUserMock).toHaveBeenCalledTimes(1);
+      expect(createUserPlaylistMock).toHaveBeenCalledTimes(1);
+      expect(savePlaylistMock).toHaveBeenCalledTimes(1);
+      expect(refreshPlaylistMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('should throw an error if userService throws an error', async () => {
+      getUserMock.mockRejectedValue('Test error');
+      createUserPlaylistMock.mockResolvedValue({ data: { id: '123' } });
+      savePlaylistMock.mockResolvedValue({ id: '123' } as Playlist);
+      refreshPlaylistMock.mockResolvedValue();
+      try {
+        await spotifyService.createUserPlaylist('Bearer 123');
+      } catch (e) {
+        expect(e).toBe('Test error');
+        expect(getUserMock).toHaveBeenCalledTimes(1);
+        expect(createUserPlaylistMock).toHaveBeenCalledTimes(0);
+        expect(savePlaylistMock).toHaveBeenCalledTimes(0);
+        expect(refreshPlaylistMock).toHaveBeenCalledTimes(0);
+      }
+    });
+
+    it('should throw an error if httpService throws an error', async () => {
+      getUserMock.mockResolvedValue({ id: '123' } as User);
+      createUserPlaylistMock.mockRejectedValue('Test error');
+      savePlaylistMock.mockResolvedValue({ id: '123' } as Playlist);
+      refreshPlaylistMock.mockResolvedValue();
+      try {
+        await spotifyService.createUserPlaylist('Bearer 123');
+      } catch (e) {
+        expect(e).toBe('Test error');
+        expect(getUserMock).toHaveBeenCalledTimes(1);
+        expect(createUserPlaylistMock).toHaveBeenCalledTimes(1);
+        expect(savePlaylistMock).toHaveBeenCalledTimes(0);
+        expect(refreshPlaylistMock).toHaveBeenCalledTimes(0);
+      }
+    });
+
+    it('should throw an error if a user does not exist', async () => {
+      getUserMock.mockResolvedValue(null);
+      createUserPlaylistMock.mockResolvedValue({ data: { id: '123' } });
+      savePlaylistMock.mockResolvedValue({ id: '123' } as Playlist);
+      refreshPlaylistMock.mockResolvedValue();
+      try {
+        await spotifyService.createUserPlaylist('Bearer 123');
+      } catch (e) {
+        expect((e as Error).message).toBe('Unable to find user');
+        expect(getUserMock).toHaveBeenCalledTimes(1);
+        expect(createUserPlaylistMock).toHaveBeenCalledTimes(0);
+        expect(savePlaylistMock).toHaveBeenCalledTimes(0);
+        expect(refreshPlaylistMock).toHaveBeenCalledTimes(0);
+      }
+    });
+  });
+
   describe('roundRobinSort()', () => {
     it('should round robin sort', () => {
       const unsorted = [

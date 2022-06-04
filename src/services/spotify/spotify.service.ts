@@ -54,18 +54,15 @@ export class SpotifyService {
     );
   }
 
-  createUserPlaylist(accessToken: string): Promise<any> {
-    return this.userService.getUser({ accessToken: accessToken.split(' ')[1] }).then(user => {
-      if (user) {
-        this.httpService.createUserPlaylist(accessToken, user).then(playlist => {
-          return this.userService
-            .savePlaylist(user, playlist.data.id)
-            .then(playlist => this.refreshPlaylist(playlist.playlistId));
-        });
-      } else {
-        throw new Error('Unable to find user');
-      }
-    });
+  async createUserPlaylist(accessToken: string): Promise<void> {
+    const user = await this.userService.getUser({ accessToken: accessToken.split(' ')[1] });
+    if (user) {
+      const createdPlaylist = await this.httpService.createUserPlaylist(accessToken, user);
+      const savedPlaylist = await this.userService.savePlaylist(user, createdPlaylist.data.id);
+      return this.refreshPlaylist(savedPlaylist.playlistId);
+    } else {
+      throw new Error('Unable to find user');
+    }
   }
 
   async removePlaylist(accessToken: string, playlists: string[]): Promise<Playlist[]> {
