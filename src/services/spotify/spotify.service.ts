@@ -234,6 +234,7 @@ export class SpotifyService {
   // This function sucks, but basically if we have under 10 ppl, use 48 songs total, if we have more than 10, use 6 songs each.
   getNumberOfItemsPerUser(numberOfUsers: number): number {
     const minSongsPerUser = 6;
+    // Fix naming here.
     const songsPerUser = numberOfUsers * 6;
     const maxNumberOfSongs = 48;
     return songsPerUser > maxNumberOfSongs ? minSongsPerUser : Math.round(maxNumberOfSongs / numberOfUsers);
