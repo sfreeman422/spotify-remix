@@ -24,7 +24,7 @@ export class SpotifyService {
   }
 
   async getUserPlaylists(accessToken: string): Promise<PlaylistData> {
-    const user: User[] | undefined = await this.userService.getUserWithRelations({
+    const user: User | undefined = await this.userService.getUserWithRelations({
       where: { accessToken },
       relations: ['memberPlaylists', 'ownedPlaylists'],
     });
@@ -33,9 +33,9 @@ export class SpotifyService {
         if (resp) {
           const spotifyPlaylists: SpotifyPlaylist[] = resp.data.items;
           if (user) {
-            const createdPlaylists = user[0]?.ownedPlaylists?.map(x => x.playlistId) || [];
+            const createdPlaylists = user?.ownedPlaylists?.map(x => x.playlistId) || [];
             const memberPlaylists =
-              user[0]?.memberPlaylists?.map(x => x.playlistId)?.filter(x => !createdPlaylists?.includes(x)) || [];
+              user?.memberPlaylists?.map(x => x.playlistId)?.filter(x => !createdPlaylists?.includes(x)) || [];
 
             const orphanPlaylists = createdPlaylists.filter(x => !spotifyPlaylists.find(y => x === y.id));
             const ownedPlaylists = spotifyPlaylists.filter(x => createdPlaylists?.includes(x.id));
@@ -84,18 +84,18 @@ export class SpotifyService {
     });
 
     const playlist = await this.userService.getPlaylist(playlistId);
-    if (user?.length && playlist[0]) {
-      const userWithPlaylist = user[0];
+    if (user && playlist) {
+      const userWithPlaylist = user;
       const isUserAlreadyMember = userWithPlaylist.memberPlaylists?.map(x => x.playlistId).includes(playlistId);
       if (isUserAlreadyMember) {
         return undefined;
       } else {
         return this.httpService
           .subscribeToPlaylist(accessToken, playlistId)
-          .then(_ => this.userService.updatePlaylistMembers(user[0], playlist[0]));
+          .then(_ => this.userService.updatePlaylistMembers(user, playlist));
       }
     }
-    return undefined;
+    throw new Error('Unable to find user or playlist');
   }
 
   async getTopSongs(members: User[]): Promise<SongsByUser[]> {
@@ -180,7 +180,7 @@ export class SpotifyService {
 
   refreshPlaylist(playlistId: string): Promise<void> {
     const identifier = `playlist-${playlistId}`;
-    const queue = this.queueService.queue<Playlist>(identifier, () => this.populatePlaylist(playlistId));
+    const queue = this.queueService.queue<Playlist | undefined>(identifier, () => this.populatePlaylist(playlistId));
     if (queue.length === 1) {
       return this.queueService.dequeue(identifier);
     } else {
@@ -190,25 +190,26 @@ export class SpotifyService {
     }
   }
 
-  private async populatePlaylist(playlistId: string): Promise<Playlist> {
-    const playlist = await this.userService.getPlaylist(playlistId).then(playlist => {
-      return playlist[0];
-    });
-    const { members, history, owner } = playlist;
+  private async populatePlaylist(playlistId: string): Promise<Playlist | undefined> {
+    const playlist = await this.userService.getPlaylist(playlistId);
+    if (playlist) {
+      const { members, history, owner } = playlist;
 
-    const songsPerUser = this.getNumberOfItemsPerUser(members.length);
-    const music: SongWithUserData[] = await this.getAllMusic(members, songsPerUser, history);
-    const orderedPlaylist: SongWithUserData[] = this.roundRobinSort(music);
-    // Get all songs from the playlist.
-    const playlistTracks: SpotifyPlaylistItemInfo[] = await this.httpService.getPlaylistTracks(
-      playlistId,
-      owner.accessToken,
-    );
-    // Remove all songs from the playlist.
-    await this.httpService.removeAllPlaylistTracks(playlistId, owner.accessToken, playlistTracks);
-    return this.httpService
-      .addSongsToPlaylist(owner.accessToken, playlistId, orderedPlaylist)
-      .then(_ => this.userService.saveSongs(playlist, orderedPlaylist));
+      const songsPerUser = this.getNumberOfItemsPerUser(members.length);
+      const music: SongWithUserData[] = await this.getAllMusic(members, songsPerUser, history);
+      const orderedPlaylist: SongWithUserData[] = this.roundRobinSort(music);
+      // Get all songs from the playlist.
+      const playlistTracks: SpotifyPlaylistItemInfo[] = await this.httpService.getPlaylistTracks(
+        playlistId,
+        owner.accessToken,
+      );
+      // Remove all songs from the playlist.
+      await this.httpService.removeAllPlaylistTracks(playlistId, owner.accessToken, playlistTracks);
+      return this.httpService
+        .addSongsToPlaylist(owner.accessToken, playlistId, orderedPlaylist)
+        .then(_ => this.userService.saveSongs(playlist, orderedPlaylist));
+    }
+    return undefined;
   }
 
   // Note: This sort is a "best effort" to maintain order within the playlist.

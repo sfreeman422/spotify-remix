@@ -76,7 +76,7 @@ describe('SpotifyService', () => {
         },
       } as AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>;
 
-      jest.spyOn(spotifyService.userService, 'getUserWithRelations').mockResolvedValue([mockUser]);
+      jest.spyOn(spotifyService.userService, 'getUserWithRelations').mockResolvedValue(mockUser);
       jest.spyOn(spotifyService.httpService, 'getUserPlaylists').mockResolvedValue(mockSpotifyResponse);
       const result = await spotifyService.getUserPlaylists('123');
       const expected: PlaylistData = {
@@ -111,7 +111,7 @@ describe('SpotifyService', () => {
         },
       } as AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>;
 
-      jest.spyOn(spotifyService.userService, 'getUserWithRelations').mockResolvedValue([mockUser]);
+      jest.spyOn(spotifyService.userService, 'getUserWithRelations').mockResolvedValue(mockUser);
       jest.spyOn(spotifyService.httpService, 'getUserPlaylists').mockResolvedValue(mockSpotifyResponse);
       const result = await spotifyService.getUserPlaylists('123');
       const expected: PlaylistData = {
@@ -149,7 +149,7 @@ describe('SpotifyService', () => {
         },
       } as AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>;
 
-      jest.spyOn(spotifyService.userService, 'getUserWithRelations').mockResolvedValue([mockUser]);
+      jest.spyOn(spotifyService.userService, 'getUserWithRelations').mockResolvedValue(mockUser);
       jest.spyOn(spotifyService.httpService, 'getUserPlaylists').mockResolvedValue(mockSpotifyResponse);
       const result = await spotifyService.getUserPlaylists('123');
       const expected: PlaylistData = {
@@ -323,6 +323,61 @@ describe('SpotifyService', () => {
       expect(result).toEqual([]);
       expect(spotifyService.userService.getAllOwnedPlaylists).toHaveBeenCalled();
       expect(spotifyService.userService.deletePlaylist).toHaveBeenCalledWith([]);
+    });
+  });
+
+  describe('subscribeToPlaylist()', () => {
+    let getUserMock: jest.SpyInstance<Promise<User | undefined>>;
+    let getPlaylistMock: jest.SpyInstance<Promise<Playlist | undefined>>;
+    let subscribeToPlaylistMock: jest.SpyInstance<Promise<AxiosResponse<any, any>>>;
+    let updatePlaylistMembersMock: jest.SpyInstance<Promise<Playlist>>;
+
+    beforeEach(() => {
+      getUserMock = jest.spyOn(spotifyService.userService, 'getUserWithRelations');
+      getPlaylistMock = jest.spyOn(spotifyService.userService, 'getPlaylist');
+      subscribeToPlaylistMock = jest.spyOn(spotifyService.httpService, 'subscribeToPlaylist');
+      updatePlaylistMembersMock = jest.spyOn(spotifyService.userService, 'updatePlaylistMembers');
+    });
+
+    it('should throw an error if user is undefined', async () => {
+      getUserMock.mockResolvedValueOnce(undefined);
+      getPlaylistMock.mockResolvedValueOnce({ playlistId: '1' } as Playlist);
+      try {
+        await spotifyService.subscribeToPlaylist('123', '1');
+      } catch (e) {
+        expect((e as Error).message).toEqual('Unable to find user or playlist');
+      }
+    });
+
+    it('should throw an error if playlist is undefined', async () => {
+      getUserMock.mockResolvedValueOnce({ id: '1' } as User);
+      getPlaylistMock.mockResolvedValueOnce(undefined);
+      try {
+        await spotifyService.subscribeToPlaylist('123', '1');
+      } catch (e) {
+        expect((e as Error).message).toEqual('Unable to find user or playlist');
+      }
+    });
+
+    it('should return undefined if the user is already a member of the playlist', async () => {
+      getUserMock.mockResolvedValueOnce({ id: '1', memberPlaylists: [{ playlistId: '1' }] } as User);
+      getPlaylistMock.mockResolvedValueOnce({ playlistId: '1' } as Playlist);
+      const result = await spotifyService.subscribeToPlaylist('123', '1');
+      expect(result).toBe(undefined);
+    });
+
+    it('should call httpService.subscribeToPlaylist if a user and playlist exist and the user is not already a member of the playlist', async () => {
+      getUserMock.mockResolvedValueOnce({ id: '1', memberPlaylists: [{ playlistId: '2' }] } as User);
+      getPlaylistMock.mockResolvedValueOnce({ playlistId: '1' } as Playlist);
+      subscribeToPlaylistMock.mockResolvedValueOnce({} as AxiosResponse<any, any>);
+      updatePlaylistMembersMock.mockResolvedValueOnce({ playlistId: '1' } as Playlist);
+      const result = await spotifyService.subscribeToPlaylist('123', '1');
+      expect(subscribeToPlaylistMock).toHaveBeenCalledWith('123', '1');
+      expect(updatePlaylistMembersMock).toHaveBeenCalledWith(
+        { id: '1', memberPlaylists: [{ playlistId: '2' }] },
+        { playlistId: '1' },
+      );
+      expect(result).toEqual({ playlistId: '1' });
     });
   });
 
