@@ -5,7 +5,7 @@ import { mockQueueService } from '../../shared/mocks/mock-queue.service';
 import { mockSpotifyHttpService } from '../../shared/mocks/mock-spotify-http.service';
 import { mockUserService } from '../../shared/mocks/mock-user.service';
 import { SpotifyPlaylist, SpotifyResponse, SpotifyUserData } from './spotify.generated.interface';
-import { PlaylistData, SongWithUserData } from './spotify.interface';
+import { PlaylistData, SongsByUser, SongWithUserData } from './spotify.interface';
 import { SpotifyService } from './spotify.service';
 
 describe('SpotifyService', () => {
@@ -378,6 +378,26 @@ describe('SpotifyService', () => {
         { playlistId: '1' },
       );
       expect(result).toEqual({ playlistId: '1' });
+    });
+  });
+
+  describe('getTopSongs()', () => {
+    let getTopSongsByUserMock: jest.SpyInstance<Promise<SongsByUser>>;
+    beforeEach(() => {
+      getTopSongsByUserMock = jest.spyOn(spotifyService.httpService, 'getTopSongsByUser');
+    });
+
+    it('should return an empty array if no users are passed in', async () => {
+      const result = await spotifyService.getTopSongs([]);
+      expect(result).toEqual([]);
+      expect(getTopSongsByUserMock).toHaveBeenCalledTimes(0);
+    });
+
+    it('should call httpService.getTopSongsByUser as many times as the length of the member array passed in', async () => {
+      getTopSongsByUserMock.mockResolvedValue({} as SongsByUser);
+      const memberArr = [{ id: '1' }, { id: '2' }, { id: '3' }] as User[];
+      await spotifyService.getTopSongs(memberArr);
+      expect(getTopSongsByUserMock).toHaveBeenCalledTimes(memberArr.length);
     });
   });
 
