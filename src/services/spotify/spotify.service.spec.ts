@@ -275,6 +275,57 @@ describe('SpotifyService', () => {
     });
   });
 
+  describe('removePlaylist()', () => {
+    let getOwnedPlaylistsMock: jest.SpyInstance<Promise<Playlist[]>>;
+    let deletePlaylistMock: jest.SpyInstance<Promise<Playlist[]>>;
+
+    beforeEach(() => {
+      getOwnedPlaylistsMock = jest.spyOn(spotifyService.userService, 'getAllOwnedPlaylists');
+      deletePlaylistMock = jest.spyOn(spotifyService.userService, 'deletePlaylist');
+    });
+
+    it('should only delete playlists that a given user owns', async () => {
+      getOwnedPlaylistsMock.mockResolvedValueOnce([
+        {
+          playlistId: '1',
+        },
+        {
+          playlistId: '2',
+        },
+        {
+          playlistId: '3',
+        },
+      ] as Playlist[]);
+      deletePlaylistMock.mockResolvedValueOnce([]);
+      const result = await spotifyService.removePlaylist('123', ['3', '4', '5']);
+      expect(result).toEqual([]);
+      expect(spotifyService.userService.getAllOwnedPlaylists).toHaveBeenCalled();
+      expect(spotifyService.userService.deletePlaylist).toHaveBeenCalledWith([
+        {
+          playlistId: '3',
+        },
+      ]);
+    });
+
+    it('should call userService.deletePlaylist with an empty array when a user does not own any playlists but tries to delete playlists', async () => {
+      getOwnedPlaylistsMock.mockResolvedValueOnce([]);
+      deletePlaylistMock.mockResolvedValueOnce([]);
+      const result = await spotifyService.removePlaylist('123', ['3', '4', '5']);
+      expect(result).toEqual([]);
+      expect(spotifyService.userService.getAllOwnedPlaylists).toHaveBeenCalled();
+      expect(spotifyService.userService.deletePlaylist).toHaveBeenCalledWith([]);
+    });
+
+    it('should call userService.deletePlaylist with an empty array when a user owns playlists but tries to delete playlists they do not own', async () => {
+      getOwnedPlaylistsMock.mockResolvedValueOnce([{ playlistId: '1' }, { playlistId: '2' }] as Playlist[]);
+      deletePlaylistMock.mockResolvedValueOnce([]);
+      const result = await spotifyService.removePlaylist('123', ['3', '4', '5']);
+      expect(result).toEqual([]);
+      expect(spotifyService.userService.getAllOwnedPlaylists).toHaveBeenCalled();
+      expect(spotifyService.userService.deletePlaylist).toHaveBeenCalledWith([]);
+    });
+  });
+
   describe('roundRobinSort()', () => {
     it('should round robin sort', () => {
       const unsorted = [
