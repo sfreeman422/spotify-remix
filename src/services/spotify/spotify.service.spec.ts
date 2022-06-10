@@ -345,7 +345,7 @@ describe('SpotifyService', () => {
       try {
         await spotifyService.subscribeToPlaylist('123', '1');
       } catch (e) {
-        expect((e as Error).message).toEqual('Unable to find user or playlist');
+        expect((e as Error).message).toEqual('Unable to find user by accessToken: 123 or playlistId: 1');
       }
     });
 
@@ -355,7 +355,7 @@ describe('SpotifyService', () => {
       try {
         await spotifyService.subscribeToPlaylist('123', '1');
       } catch (e) {
-        expect((e as Error).message).toEqual('Unable to find user or playlist');
+        expect((e as Error).message).toEqual('Unable to find user by accessToken: 123 or playlistId: 1');
       }
     });
 

@@ -95,7 +95,7 @@ export class SpotifyService {
           .then(_ => this.userService.updatePlaylistMembers(user, playlist));
       }
     }
-    throw new Error('Unable to find user or playlist');
+    throw new Error(`Unable to find user by accessToken: ${accessToken} or playlistId: ${playlistId}`);
   }
 
   async getTopSongs(members: User[]): Promise<SongsByUser[]> {
