@@ -104,71 +104,68 @@ export class SpotifyService {
       : [];
   }
 
-  async getAllMusic(members: User[], songsPerUser: number, history: Song[]): Promise<SongWithUserData[]> {
-    // Filter these songs based on what we have already seen in this playlist within the last 12 hours.
-    // We chose 12 hours because we want to allow the same songs to show up if a playlist is being frequently joined,
-    // But we dont want it to show up if its already been seen within the past day.
-    const historyAsStrings: string[] = history
-      .filter(song => !isWithinInterval(song.createdAt, { start: subHours(new Date(), 12), end: new Date() }))
-      .map(x => x.spotifyUrl);
-
-    // Get only the top songs first, these are likely more relevant.
-    let allMusic: SongsByUser[] = await this.getTopSongs(members).then((allTopSongs: SongsByUser[]) => {
-      return allTopSongs.map(x => {
-        const newSongsByUser = Object.assign({}, x);
-        newSongsByUser.topSongs = newSongsByUser.topSongs.filter(x => !historyAsStrings.includes(x.uri));
-        return newSongsByUser;
-      });
-    });
-
-    // Get liked songs for users if necessary else just return the songs we already have..
-    allMusic = await Promise.all(
-      allMusic.map(async (x: SongsByUser) => {
-        if (x.topSongs.length < songsPerUser) {
-          const newSongsByUser: SongsByUser = Object.assign({}, x);
-          return this.httpService.getLikedSongsByUser(x.user).then(y => {
-            newSongsByUser.likedSongs = y?.likedSongs?.filter(x => !historyAsStrings.includes(x.uri)) || [];
-            return newSongsByUser;
-          });
-        }
-        return x;
-      }),
+  filterByHours(arr: Record<string, any>[], fieldName: string, numberOfHours: number): Record<string, any>[] {
+    return arr.filter(
+      x => !isWithinInterval(x[fieldName], { start: subHours(new Date(), numberOfHours), end: new Date() }),
     );
+  }
 
-    // Build out the playlist data.
+  filterSongsByHistory(songs: SongsByUser[], history: string[]): SongsByUser[] {
+    return songs.map((song: SongsByUser) => {
+      const newSongsByUser = Object.assign({}, song);
+      newSongsByUser.topSongs = newSongsByUser.topSongs.filter(x => !history.includes(x.uri));
+      return newSongsByUser;
+    });
+  }
 
+  getLikedSongsIfNecessary(
+    songsByUser: SongsByUser[],
+    songsPerUser: number,
+    history: string[],
+  ): Promise<SongsByUser>[] {
+    return songsByUser.map(async (x: SongsByUser) => {
+      if (x.topSongs.length < songsPerUser) {
+        const newSongsByUser: SongsByUser = Object.assign({}, x);
+        return this.httpService.getLikedSongsByUser(x.user).then(y => {
+          newSongsByUser.likedSongs = y?.likedSongs?.filter(x => !history.includes(x.uri)) || [];
+          return newSongsByUser;
+        });
+      }
+      return x;
+    });
+  }
+
+  generatePlaylist(music: SongsByUser[], songsPerUser: number): SongWithUserData[] {
     const playlistSongs: SongWithUserData[] = [];
-
-    allMusic.forEach((songsByUser: SongsByUser) => {
-      const userTopSongs = songsByUser.topSongs;
-      const userLikedSongs = songsByUser.likedSongs || [];
-      if (userTopSongs.length <= songsPerUser) {
+    music.forEach((songsByUser: SongsByUser) => {
+      const { topSongs, likedSongs } = songsByUser;
+      if (topSongs.length <= songsPerUser) {
         // Add all top songs first.
-        userTopSongs.forEach(song => playlistSongs.push(song));
+        topSongs.forEach(song => playlistSongs.push(song));
         // Then search for the remaining songs in liked songs
-        let count = userTopSongs.length;
+        let count = topSongs.length;
         const randomNumbers: Record<number, boolean> = {};
-        if (userLikedSongs.length + count >= songsPerUser) {
+        if (likedSongs && likedSongs.length + count >= songsPerUser) {
           while (count < songsPerUser) {
-            const randomNumber = Math.floor(Math.random() * (userLikedSongs.length - 1));
+            const randomNumber = Math.floor(Math.random() * (likedSongs.length - 1));
             if (!randomNumbers[randomNumber]) {
               randomNumbers[randomNumber] = true;
-              playlistSongs.push(userLikedSongs[randomNumber]);
+              playlistSongs.push(likedSongs[randomNumber]);
               count += 1;
             }
           }
         } else {
           // If userTopSongs + userLikedSongs is not greater than or equal to songs per user, just add all of the liked songs.
-          userLikedSongs.forEach(song => playlistSongs.push(song));
+          likedSongs?.forEach(song => playlistSongs.push(song));
         }
       } else {
         const randomNumbers: Record<number, boolean> = {};
         let count = 0;
         while (count < songsPerUser) {
-          const randomNumber = Math.floor(Math.random() * (userTopSongs.length - 1));
+          const randomNumber = Math.floor(Math.random() * (topSongs.length - 1));
           if (!randomNumbers[randomNumber]) {
             randomNumbers[randomNumber] = true;
-            playlistSongs.push(userTopSongs[randomNumber]);
+            playlistSongs.push(topSongs[randomNumber]);
             count += 1;
           }
         }
@@ -176,6 +173,18 @@ export class SpotifyService {
     });
 
     return playlistSongs;
+  }
+
+  async getAllMusic(members: User[], songsPerUser: number, history: Song[]): Promise<SongWithUserData[]> {
+    const historyIds: string[] = this.filterByHours(history, 'createdAt', 12).map(x => x.spotifyUrl);
+
+    let music: SongsByUser[] = await this.getTopSongs(members).then((songs: SongsByUser[]) =>
+      this.filterSongsByHistory(songs, historyIds),
+    );
+
+    music = await Promise.all(this.getLikedSongsIfNecessary(music, songsPerUser, historyIds));
+
+    return this.generatePlaylist(music, songsPerUser);
   }
 
   refreshPlaylist(playlistId: string): Promise<void> {

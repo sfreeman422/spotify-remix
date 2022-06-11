@@ -1,5 +1,6 @@
 import { AxiosResponse } from 'axios';
 import { Playlist } from '../../shared/db/models/Playlist';
+import { Song } from '../../shared/db/models/Song';
 import { User } from '../../shared/db/models/User';
 import { mockQueueService } from '../../shared/mocks/mock-queue.service';
 import { mockSpotifyHttpService } from '../../shared/mocks/mock-spotify-http.service';
@@ -398,6 +399,40 @@ describe('SpotifyService', () => {
       const memberArr = [{ id: '1' }, { id: '2' }, { id: '3' }] as User[];
       await spotifyService.getTopSongs(memberArr);
       expect(getTopSongsByUserMock).toHaveBeenCalledTimes(memberArr.length);
+    });
+  });
+
+  describe('getAllMusic()', () => {
+    let mockGetTopSongs: jest.SpyInstance<Promise<SongsByUser[]>>;
+    let mockGetLikedSongsByUser: jest.SpyInstance<Promise<SongsByUser>>;
+
+    beforeEach(() => {
+      mockGetTopSongs = jest.spyOn(spotifyService, 'getTopSongs');
+      mockGetLikedSongsByUser = jest.spyOn(spotifyService.httpService, 'getLikedSongsByUser');
+    });
+
+    it('should throw an error if getTopSongs call throws an error', async () => {
+      mockGetTopSongs.mockRejectedValueOnce('Test');
+      try {
+        const members = [] as User[];
+        const songsPerUser = 6;
+        const history = [] as Song[];
+        await spotifyService.getAllMusic(members, songsPerUser, history);
+      } catch (e) {
+        expect(e).toBe('Test');
+      }
+    });
+
+    it('should throw an error if getLikedSongsByUser call throws an error', async () => {
+      mockGetLikedSongsByUser.mockRejectedValueOnce('Test');
+      try {
+        const members = [] as User[];
+        const songsPerUser = 6;
+        const history = [] as Song[];
+        await spotifyService.getAllMusic(members, songsPerUser, history);
+      } catch (e) {
+        expect(e).toBe('Test');
+      }
     });
   });
 
