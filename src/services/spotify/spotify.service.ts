@@ -98,9 +98,20 @@ export class SpotifyService {
     throw new Error(`Unable to find user by accessToken: ${accessToken} or playlistId: ${playlistId}`);
   }
 
-  async getTopSongs(members: User[]): Promise<SongsByUser[]> {
+  async getTopSongs(members: User[], history: string[]): Promise<SongsByUser[]> {
+    const historyIds = history;
     return members?.length
-      ? await Promise.all(members.map(async (member: User) => this.httpService.getTopSongsByUser(member)))
+      ? await Promise.all(
+          members.map(async (member: User) =>
+            this.httpService.getTopSongsByUser(member).then(x => {
+              x.topSongs = x.topSongs.filter(song => !historyIds.includes(song.uri));
+              x.topSongs.forEach(song => {
+                historyIds.push(song.uri);
+              });
+              return x;
+            }),
+          ),
+        )
       : [];
   }
 
@@ -110,24 +121,19 @@ export class SpotifyService {
     );
   }
 
-  filterSongsByHistory(songs: SongsByUser[], history: string[]): SongsByUser[] {
-    return songs.map((song: SongsByUser) => {
-      const newSongsByUser = Object.assign({}, song);
-      newSongsByUser.topSongs = newSongsByUser.topSongs.filter(x => !history.includes(x.uri));
-      return newSongsByUser;
-    });
-  }
-
   getLikedSongsIfNecessary(
     songsByUser: SongsByUser[],
     songsPerUser: number,
     history: string[],
   ): Promise<SongsByUser>[] {
+    const historyIds = history;
     return songsByUser.map(async (x: SongsByUser) => {
       if (x.topSongs.length < songsPerUser) {
+        x.topSongs.forEach(song => historyIds.push(song.uri));
         const newSongsByUser: SongsByUser = Object.assign({}, x);
         return this.httpService.getLikedSongsByUser(x.user).then(y => {
-          newSongsByUser.likedSongs = y?.likedSongs?.filter(x => !history.includes(x.uri)) || [];
+          newSongsByUser.likedSongs = y?.likedSongs?.filter(x => !historyIds.includes(x.uri)) || [];
+          newSongsByUser.likedSongs.forEach(song => historyIds.push(song.uri));
           return newSongsByUser;
         });
       }
@@ -178,9 +184,7 @@ export class SpotifyService {
   async getAllMusic(members: User[], songsPerUser: number, history: Song[]): Promise<SongWithUserData[]> {
     const historyIds: string[] = this.filterByHours(history, 'createdAt', 12).map(x => x.spotifyUrl);
 
-    let music: SongsByUser[] = await this.getTopSongs(members).then((songs: SongsByUser[]) =>
-      this.filterSongsByHistory(songs, historyIds),
-    );
+    let music: SongsByUser[] = await this.getTopSongs(members, historyIds);
 
     music = await Promise.all(this.getLikedSongsIfNecessary(music, songsPerUser, historyIds));
 

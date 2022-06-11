@@ -1,4 +1,5 @@
 import { AxiosResponse } from 'axios';
+import { subHours } from 'date-fns';
 import { Playlist } from '../../shared/db/models/Playlist';
 import { Song } from '../../shared/db/models/Song';
 import { User } from '../../shared/db/models/User';
@@ -389,16 +390,242 @@ describe('SpotifyService', () => {
     });
 
     it('should return an empty array if no users are passed in', async () => {
-      const result = await spotifyService.getTopSongs([]);
+      const result = await spotifyService.getTopSongs([], []);
       expect(result).toEqual([]);
       expect(getTopSongsByUserMock).toHaveBeenCalledTimes(0);
     });
 
-    it('should call httpService.getTopSongsByUser as many times as the length of the member array passed in', async () => {
-      getTopSongsByUserMock.mockResolvedValue({} as SongsByUser);
+    it('should call httpService.getTopSongsByUser as many times as members.length and only return songs that are not included in history or included in other users top songs', async () => {
+      getTopSongsByUserMock.mockResolvedValueOnce({
+        user: { id: '1' },
+        topSongs: [
+          {
+            uri: '1',
+          },
+          {
+            uri: '2',
+          },
+        ],
+      } as SongsByUser);
+      getTopSongsByUserMock.mockResolvedValueOnce({
+        user: { id: '2' },
+        topSongs: [
+          {
+            uri: '1',
+          },
+          {
+            uri: '2',
+          },
+        ],
+      } as SongsByUser);
+      getTopSongsByUserMock.mockResolvedValueOnce({
+        user: { id: '3' },
+        topSongs: [
+          {
+            uri: '1',
+          },
+          {
+            uri: '2',
+          },
+        ],
+      } as SongsByUser);
+      const mockHistory = ['1'];
       const memberArr = [{ id: '1' }, { id: '2' }, { id: '3' }] as User[];
-      await spotifyService.getTopSongs(memberArr);
+      const result = await spotifyService.getTopSongs(memberArr, mockHistory);
+      const expected = [
+        {
+          user: {
+            id: '1',
+          },
+          topSongs: [
+            {
+              uri: '2',
+            },
+          ],
+        },
+        {
+          user: {
+            id: '2',
+          },
+          topSongs: [],
+        },
+        {
+          user: {
+            id: '3',
+          },
+          topSongs: [],
+        },
+      ];
+      expect(result).toEqual(expected);
       expect(getTopSongsByUserMock).toHaveBeenCalledTimes(memberArr.length);
+    });
+  });
+
+  describe('filterByHours()', () => {
+    it('should return only songs that were created older than one hour ago', () => {
+      const passingDate1 = subHours(new Date(), 6);
+      const passingDate2 = subHours(new Date(), 3);
+      const mockSongs = [
+        {
+          createdAt: new Date(),
+        },
+        {
+          createdAt: passingDate1,
+        },
+        {
+          createdAt: passingDate2,
+        },
+        {
+          createdAt: new Date(),
+        },
+        {
+          createdAt: new Date(),
+        },
+      ] as Song[];
+      const expected = [
+        {
+          createdAt: passingDate1,
+        },
+        {
+          createdAt: passingDate2,
+        },
+      ];
+      expect(spotifyService.filterByHours(mockSongs, 'createdAt', 1)).toEqual(expected);
+    });
+  });
+
+  describe('getLikedSongsIfNecessary()', () => {
+    let mockGetLikedSongsByUser: jest.SpyInstance<Promise<SongsByUser>>;
+    beforeEach(() => {
+      mockGetLikedSongsByUser = jest.spyOn(spotifyService.httpService, 'getLikedSongsByUser');
+    });
+
+    it('should return an undefined likedSongs attribute if there are enough topSongs', async () => {
+      const mockSongsByUser = [
+        {
+          user: {
+            id: '1',
+          },
+          topSongs: [
+            {
+              uri: '1',
+            },
+            {
+              uri: '2',
+            },
+          ],
+        },
+      ] as SongsByUser[];
+      const result = await Promise.all(spotifyService.getLikedSongsIfNecessary(mockSongsByUser, 2, []));
+      expect(result[0].likedSongs).toBeUndefined();
+    });
+
+    it('should return likedSongs when there are not enough top songs', async () => {
+      mockGetLikedSongsByUser.mockResolvedValueOnce({
+        user: {
+          id: '1',
+        },
+        likedSongs: [
+          {
+            uri: '3',
+          },
+          {
+            uri: '4',
+          },
+        ],
+      } as SongsByUser);
+      const mockSongsByUser = [
+        {
+          user: {
+            id: '1',
+          },
+          topSongs: [
+            {
+              uri: '1',
+            },
+            {
+              uri: '2',
+            },
+          ],
+        },
+      ] as SongsByUser[];
+
+      const result = await Promise.all(spotifyService.getLikedSongsIfNecessary(mockSongsByUser, 3, []));
+      expect(result[0].likedSongs?.length).toBe(2);
+    });
+
+    it('should return only likedSongs that are not also topSongs when there are not enough top songs', async () => {
+      mockGetLikedSongsByUser.mockResolvedValueOnce({
+        user: {
+          id: '1',
+        },
+        likedSongs: [
+          {
+            uri: '1',
+          },
+          {
+            uri: '3',
+          },
+        ],
+      } as SongsByUser);
+      const mockSongsByUser = [
+        {
+          user: {
+            id: '1',
+          },
+          topSongs: [
+            {
+              uri: '1',
+            },
+            {
+              uri: '2',
+            },
+          ],
+        },
+      ] as SongsByUser[];
+      const expected = [{ uri: '3' }];
+      const result = await Promise.all(spotifyService.getLikedSongsIfNecessary(mockSongsByUser, 3, []));
+      expect(result[0].likedSongs).toEqual(expected);
+    });
+
+    it('should return only likedSongs that are not also topSongs, and also not listed in history when there are not enough top songs', async () => {
+      mockGetLikedSongsByUser.mockResolvedValueOnce({
+        user: {
+          id: '1',
+        },
+        likedSongs: [
+          {
+            uri: '1',
+          },
+          {
+            uri: '3',
+          },
+          {
+            uri: '5',
+          },
+          {
+            uri: '7',
+          },
+        ],
+      } as SongsByUser);
+      const mockSongsByUser = [
+        {
+          user: {
+            id: '1',
+          },
+          topSongs: [
+            {
+              uri: '1',
+            },
+            {
+              uri: '2',
+            },
+          ],
+        },
+      ] as SongsByUser[];
+      const expected = [{ uri: '3' }, { uri: '5' }];
+      const result = await Promise.all(spotifyService.getLikedSongsIfNecessary(mockSongsByUser, 3, ['7']));
+      expect(result[0].likedSongs).toEqual(expected);
     });
   });
 
