@@ -20,11 +20,21 @@ describe('SpotifyService', () => {
     spotifyService.queueService = mockQueueService;
   });
 
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
   describe('getUserData()', () => {
+    let mockGetUserData: jest.SpyInstance<Promise<SpotifyUserData>>;
+
+    beforeEach(() => {
+      mockGetUserData = jest.spyOn(spotifyService.httpService, 'getUserData');
+    });
+
     it('should return user data when user data is returned', async () => {
       expect.assertions(1);
       const mockUser = { email: 'abc@123.com' } as SpotifyUserData;
-      jest.spyOn(spotifyService.httpService, 'getUserData').mockResolvedValueOnce(mockUser);
+      mockGetUserData.mockResolvedValueOnce(mockUser);
       const userData = await spotifyService.getUserData('123');
       expect(userData).toBe(mockUser);
     });
@@ -32,7 +42,7 @@ describe('SpotifyService', () => {
     it('should throw an error when an error is thrown', async () => {
       expect.assertions(1);
       const mockError = new Error('Test');
-      jest.spyOn(spotifyService.httpService, 'getUserData').mockRejectedValueOnce(mockError);
+      mockGetUserData.mockRejectedValueOnce(mockError);
       await spotifyService.getUserData('123').catch(e => {
         expect(e).toBe(mockError);
       });
@@ -40,11 +50,19 @@ describe('SpotifyService', () => {
   });
 
   describe('getUserPlaylists()', () => {
+    let mockGetUserWithRelations: jest.SpyInstance<Promise<User | undefined>>;
+    let mockGetUserPlaylists: jest.SpyInstance<Promise<AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>, any>>>;
+
+    beforeEach(() => {
+      mockGetUserWithRelations = jest.spyOn(spotifyService.userService, 'getUserWithRelations');
+      mockGetUserPlaylists = jest.spyOn(spotifyService.httpService, 'getUserPlaylists');
+    });
+
     it('should return an empty PlaylistData when there is no user', async () => {
       expect.assertions(1);
       const mockUser = undefined;
-      jest.spyOn(spotifyService.userService, 'getUserWithRelations').mockResolvedValue(mockUser);
-      jest.spyOn(spotifyService.httpService, 'getUserPlaylists').mockResolvedValue({
+      mockGetUserWithRelations.mockResolvedValueOnce(mockUser);
+      mockGetUserPlaylists.mockResolvedValueOnce({
         data: {
           items: [] as SpotifyPlaylist[],
         },
@@ -78,8 +96,8 @@ describe('SpotifyService', () => {
         },
       } as AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>;
 
-      jest.spyOn(spotifyService.userService, 'getUserWithRelations').mockResolvedValue(mockUser);
-      jest.spyOn(spotifyService.httpService, 'getUserPlaylists').mockResolvedValue(mockSpotifyResponse);
+      mockGetUserWithRelations.mockResolvedValueOnce(mockUser);
+      mockGetUserPlaylists.mockResolvedValueOnce(mockSpotifyResponse);
       const result = await spotifyService.getUserPlaylists('123');
       const expected: PlaylistData = {
         ownedPlaylists: [
@@ -113,8 +131,8 @@ describe('SpotifyService', () => {
         },
       } as AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>;
 
-      jest.spyOn(spotifyService.userService, 'getUserWithRelations').mockResolvedValue(mockUser);
-      jest.spyOn(spotifyService.httpService, 'getUserPlaylists').mockResolvedValue(mockSpotifyResponse);
+      mockGetUserWithRelations.mockResolvedValueOnce(mockUser);
+      mockGetUserPlaylists.mockResolvedValueOnce(mockSpotifyResponse);
       const result = await spotifyService.getUserPlaylists('123');
       const expected: PlaylistData = {
         ownedPlaylists: [],
@@ -151,8 +169,8 @@ describe('SpotifyService', () => {
         },
       } as AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>;
 
-      jest.spyOn(spotifyService.userService, 'getUserWithRelations').mockResolvedValue(mockUser);
-      jest.spyOn(spotifyService.httpService, 'getUserPlaylists').mockResolvedValue(mockSpotifyResponse);
+      mockGetUserWithRelations.mockResolvedValueOnce(mockUser);
+      mockGetUserPlaylists.mockResolvedValueOnce(mockSpotifyResponse);
       const result = await spotifyService.getUserPlaylists('123');
       const expected: PlaylistData = {
         ownedPlaylists: [
@@ -169,12 +187,12 @@ describe('SpotifyService', () => {
     it('should throw an error if userService throws an error', async () => {
       expect.assertions(1);
       const mockErrorString = 'Test Error';
-      jest.spyOn(spotifyService.userService, 'getUserWithRelations').mockRejectedValue(mockErrorString);
-      jest.spyOn(spotifyService.httpService, 'getUserPlaylists').mockResolvedValue({
-        data: {
-          items: [] as SpotifyPlaylist[],
-        },
-      } as AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>);
+      mockGetUserWithRelations.mockRejectedValueOnce(mockErrorString);
+      // mockGetUserPlaylists.mockResolvedValueOnce({
+      //   data: {
+      //     items: [] as SpotifyPlaylist[],
+      //   },
+      // } as AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>);
       try {
         await spotifyService.getUserPlaylists('123');
       } catch (e) {
@@ -186,8 +204,8 @@ describe('SpotifyService', () => {
       expect.assertions(1);
       const mockUser = undefined;
       const mockErrorString = 'Test Error';
-      jest.spyOn(spotifyService.userService, 'getUserWithRelations').mockResolvedValue(mockUser);
-      jest.spyOn(spotifyService.httpService, 'getUserPlaylists').mockRejectedValue(mockErrorString);
+      mockGetUserWithRelations.mockResolvedValueOnce(mockUser);
+      mockGetUserPlaylists.mockRejectedValueOnce(mockErrorString);
       try {
         await spotifyService.getUserPlaylists('123');
       } catch (e) {
@@ -209,18 +227,11 @@ describe('SpotifyService', () => {
       refreshPlaylistMock = jest.spyOn(spotifyService, 'refreshPlaylist');
     });
 
-    afterEach(() => {
-      getUserMock.mockClear();
-      createUserPlaylistMock.mockClear();
-      savePlaylistMock.mockClear();
-      refreshPlaylistMock.mockClear();
-    });
-
     it('should call httpService and userService if a user exists', async () => {
-      getUserMock.mockResolvedValue({ id: '123' } as User);
-      createUserPlaylistMock.mockResolvedValue({ data: { id: '123' } });
-      savePlaylistMock.mockResolvedValue({ id: '123' } as Playlist);
-      refreshPlaylistMock.mockResolvedValue();
+      getUserMock.mockResolvedValueOnce({ id: '123' } as User);
+      createUserPlaylistMock.mockResolvedValueOnce({ data: { id: '123' } });
+      savePlaylistMock.mockResolvedValueOnce({ id: '123' } as Playlist);
+      refreshPlaylistMock.mockResolvedValueOnce();
       await spotifyService.createUserPlaylist('Bearer 123');
       expect(getUserMock).toHaveBeenCalledTimes(1);
       expect(createUserPlaylistMock).toHaveBeenCalledTimes(1);
@@ -229,10 +240,10 @@ describe('SpotifyService', () => {
     });
 
     it('should throw an error if userService throws an error', async () => {
-      getUserMock.mockRejectedValue('Test error');
-      createUserPlaylistMock.mockResolvedValue({ data: { id: '123' } });
-      savePlaylistMock.mockResolvedValue({ id: '123' } as Playlist);
-      refreshPlaylistMock.mockResolvedValue();
+      getUserMock.mockRejectedValueOnce('Test error');
+      createUserPlaylistMock.mockResolvedValueOnce({ data: { id: '123' } });
+      savePlaylistMock.mockResolvedValueOnce({ id: '123' } as Playlist);
+      refreshPlaylistMock.mockResolvedValueOnce();
       try {
         await spotifyService.createUserPlaylist('Bearer 123');
       } catch (e) {
@@ -245,10 +256,10 @@ describe('SpotifyService', () => {
     });
 
     it('should throw an error if httpService throws an error', async () => {
-      getUserMock.mockResolvedValue({ id: '123' } as User);
-      createUserPlaylistMock.mockRejectedValue('Test error');
-      savePlaylistMock.mockResolvedValue({ id: '123' } as Playlist);
-      refreshPlaylistMock.mockResolvedValue();
+      getUserMock.mockResolvedValueOnce({ id: '123' } as User);
+      createUserPlaylistMock.mockRejectedValueOnce('Test error');
+      savePlaylistMock.mockResolvedValueOnce({ id: '123' } as Playlist);
+      refreshPlaylistMock.mockResolvedValueOnce();
       try {
         await spotifyService.createUserPlaylist('Bearer 123');
       } catch (e) {
@@ -261,10 +272,10 @@ describe('SpotifyService', () => {
     });
 
     it('should throw an error if a user does not exist', async () => {
-      getUserMock.mockResolvedValue(null);
-      createUserPlaylistMock.mockResolvedValue({ data: { id: '123' } });
-      savePlaylistMock.mockResolvedValue({ id: '123' } as Playlist);
-      refreshPlaylistMock.mockResolvedValue();
+      getUserMock.mockResolvedValueOnce(null);
+      createUserPlaylistMock.mockResolvedValueOnce({ data: { id: '123' } });
+      savePlaylistMock.mockResolvedValueOnce({ id: '123' } as Playlist);
+      refreshPlaylistMock.mockResolvedValueOnce();
       try {
         await spotifyService.createUserPlaylist('Bearer 123');
       } catch (e) {
@@ -494,6 +505,54 @@ describe('SpotifyService', () => {
     });
   });
 
+  describe('getAllMusic()', () => {
+    let mockGetTopSongs: jest.SpyInstance<Promise<SongsByUser[]>>;
+    let mockGetLikedSongsByUser: jest.SpyInstance<Promise<SongsByUser>>;
+
+    beforeEach(() => {
+      mockGetTopSongs = jest.spyOn(spotifyService, 'getTopSongs');
+      mockGetLikedSongsByUser = jest.spyOn(spotifyService.httpService, 'getLikedSongsByUser');
+    });
+
+    it('should throw an error if getTopSongs call throws an error', async () => {
+      expect.assertions(1);
+      mockGetTopSongs.mockRejectedValueOnce('Test');
+      try {
+        const members = [] as User[];
+        const songsPerUser = 6;
+        const history = [] as Song[];
+        await spotifyService.getAllMusic(members, songsPerUser, history);
+      } catch (e) {
+        expect(e).toBe('Test');
+      }
+    });
+
+    it('should throw an error if getLikedSongsByUser call throws an error', async () => {
+      expect.assertions(1);
+      mockGetTopSongs.mockResolvedValueOnce([
+        {
+          user: {
+            id: '1',
+          },
+          topSongs: [
+            {
+              uri: '1',
+            },
+          ],
+        },
+      ] as SongsByUser[]);
+      mockGetLikedSongsByUser.mockRejectedValueOnce('Test');
+      try {
+        const members = [] as User[];
+        const songsPerUser = 6;
+        const history = [] as Song[];
+        await spotifyService.getAllMusic(members, songsPerUser, history);
+      } catch (e) {
+        expect(e).toBe('Test');
+      }
+    });
+  });
+
   describe('getLikedSongsIfNecessary()', () => {
     let mockGetLikedSongsByUser: jest.SpyInstance<Promise<SongsByUser>>;
     beforeEach(() => {
@@ -626,40 +685,6 @@ describe('SpotifyService', () => {
       const expected = [{ uri: '3' }, { uri: '5' }];
       const result = await Promise.all(spotifyService.getLikedSongsIfNecessary(mockSongsByUser, 3, ['7']));
       expect(result[0].likedSongs).toEqual(expected);
-    });
-  });
-
-  describe('getAllMusic()', () => {
-    let mockGetTopSongs: jest.SpyInstance<Promise<SongsByUser[]>>;
-    let mockGetLikedSongsByUser: jest.SpyInstance<Promise<SongsByUser>>;
-
-    beforeEach(() => {
-      mockGetTopSongs = jest.spyOn(spotifyService, 'getTopSongs');
-      mockGetLikedSongsByUser = jest.spyOn(spotifyService.httpService, 'getLikedSongsByUser');
-    });
-
-    it('should throw an error if getTopSongs call throws an error', async () => {
-      mockGetTopSongs.mockRejectedValueOnce('Test');
-      try {
-        const members = [] as User[];
-        const songsPerUser = 6;
-        const history = [] as Song[];
-        await spotifyService.getAllMusic(members, songsPerUser, history);
-      } catch (e) {
-        expect(e).toBe('Test');
-      }
-    });
-
-    it('should throw an error if getLikedSongsByUser call throws an error', async () => {
-      mockGetLikedSongsByUser.mockRejectedValueOnce('Test');
-      try {
-        const members = [] as User[];
-        const songsPerUser = 6;
-        const history = [] as Song[];
-        await spotifyService.getAllMusic(members, songsPerUser, history);
-      } catch (e) {
-        expect(e).toBe('Test');
-      }
     });
   });
 
