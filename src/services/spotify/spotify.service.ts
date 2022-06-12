@@ -163,7 +163,9 @@ export class SpotifyService {
       if (!hasTopSongs && !!likedSongs && hasEnoughLikedSongs) {
         return this.getRandomSongs(likedSongs, songsPerUser, playlistSongs);
       } else if (hasEnoughTopSongs) {
-        this.getRandomSongs(topSongs, songsPerUser, playlistSongs);
+        for (let i = 0; i < songsPerUser; i++) {
+          playlistSongs.push(topSongs[i]);
+        }
       } else if (!hasEnoughTopSongs && !!likedSongs && hasEnoughTopSongsAndLikedSongs) {
         topSongs.forEach(song => playlistSongs.push(song));
         this.getRandomSongs(likedSongs, songsPerUser, playlistSongs, topSongs.length);
