@@ -212,12 +212,29 @@ export class SpotifyService {
         owner.accessToken,
       );
       // Remove all songs from the playlist.
-      await this.httpService.removeAllPlaylistTracks(playlistId, owner.accessToken, playlistTracks);
+      await this.removeAllPlaylistTracks(playlistId, owner.accessToken, playlistTracks);
       return this.httpService
         .addSongsToPlaylist(owner.accessToken, playlistId, orderedPlaylist)
         .then(_ => this.userService.saveSongs(playlist, orderedPlaylist));
     }
     return undefined;
+  }
+
+  removeAllPlaylistTracks(playlistId: string, accessToken: string, playlistTracks: SpotifyPlaylistItemInfo[]) {
+    const calls = [];
+    if (playlistTracks.length > 100) {
+      const numberOfCalls = Math.ceil(playlistTracks.length / 100);
+      let lastIndex = 0;
+      for (let i = 0; i < numberOfCalls; i++) {
+        calls.push(
+          this.httpService.removeAllPlaylistTracks(playlistId, accessToken, playlistTracks.slice(lastIndex, 100)),
+        );
+        lastIndex += 100;
+      }
+    } else {
+      calls.push(this.httpService.removeAllPlaylistTracks(playlistId, accessToken, playlistTracks));
+    }
+    return Promise.all(calls);
   }
 
   // Note: This sort is a "best effort" to maintain order within the playlist.

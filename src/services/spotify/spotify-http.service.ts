@@ -102,14 +102,29 @@ export class SpotifyHttpService {
       });
   }
 
-  getPlaylistTracks(playlistId: string, accessToken: string): Promise<SpotifyPlaylistItemInfo[]> {
+  getPlaylistTracks(
+    playlistId: string,
+    accessToken: string,
+    url = `${this.basePlaylistUrl}/${playlistId}/tracks?limit=50`,
+  ): Promise<SpotifyPlaylistItemInfo[]> {
     return axios
-      .get<SpotifyResponse<SpotifyPlaylistItemInfo[]>>(`${this.basePlaylistUrl}/${playlistId}/tracks?limit=50`, {
+      .get<SpotifyResponse<SpotifyPlaylistItemInfo[]>>(url, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
       })
-      .then((x: AxiosResponse<SpotifyResponse<SpotifyPlaylistItemInfo[]>>): SpotifyPlaylistItemInfo[] => x.data.items);
+      .then<SpotifyPlaylistItemInfo[]>(
+        (x: AxiosResponse<SpotifyResponse<SpotifyPlaylistItemInfo[]>>): Promise<SpotifyPlaylistItemInfo[]> => {
+          const songsToBeRemoved = x.data.items;
+
+          if (x.data.next) {
+            return this.getPlaylistTracks(playlistId, accessToken, x.data.next).then((x: SpotifyPlaylistItemInfo[]) =>
+              songsToBeRemoved.concat(x),
+            );
+          }
+          return new Promise((resolve, _reject) => resolve(songsToBeRemoved));
+        },
+      );
   }
 
   removeAllPlaylistTracks(playlistId: string, accessToken: string, tracks: SpotifyPlaylistItemInfo[]): any {
