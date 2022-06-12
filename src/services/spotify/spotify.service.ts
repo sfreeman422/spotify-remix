@@ -141,40 +141,35 @@ export class SpotifyService {
     });
   }
 
+  getRandomSongs(songs: SongWithUserData[], songsPerUser: number, playlistSongs: SongWithUserData[], count = 0): void {
+    const randomNumbers: Record<number, boolean> = {};
+    while (count < songsPerUser) {
+      const randomNumber = Math.floor(Math.random() * songs.length);
+      if (!randomNumbers[randomNumber]) {
+        randomNumbers[randomNumber] = true;
+        playlistSongs.push(songs[randomNumber]);
+        count += 1;
+      }
+    }
+  }
+
   generatePlaylist(music: SongsByUser[], songsPerUser: number): SongWithUserData[] {
     const playlistSongs: SongWithUserData[] = [];
     music.forEach((songsByUser: SongsByUser) => {
       const { topSongs, likedSongs } = songsByUser;
-      if (topSongs.length <= songsPerUser) {
-        // Add all top songs first.
+
+      const hasTopSongs = topSongs.length !== 0;
+      const hasEnoughTopSongs = topSongs.length >= songsPerUser;
+      const hasEnoughLikedSongs = !!likedSongs && likedSongs.length >= songsPerUser;
+      const hasEnoughTopSongsAndLikedSongs =
+        hasTopSongs && !!likedSongs && topSongs.length + likedSongs.length >= songsPerUser;
+      if (!hasTopSongs && !!likedSongs && hasEnoughLikedSongs) {
+        return this.getRandomSongs(likedSongs, songsPerUser, playlistSongs);
+      } else if (hasEnoughTopSongs) {
         topSongs.forEach(song => playlistSongs.push(song));
-        // Then search for the remaining songs in liked songs
-        let count = topSongs.length;
-        const randomNumbers: Record<number, boolean> = {};
-        if (likedSongs && likedSongs.length + count >= songsPerUser) {
-          while (count < songsPerUser) {
-            const randomNumber = Math.floor(Math.random() * (likedSongs.length - 1));
-            if (!randomNumbers[randomNumber]) {
-              randomNumbers[randomNumber] = true;
-              playlistSongs.push(likedSongs[randomNumber]);
-              count += 1;
-            }
-          }
-        } else {
-          // If userTopSongs + userLikedSongs is not greater than or equal to songs per user, just add all of the liked songs.
-          likedSongs?.forEach(song => playlistSongs.push(song));
-        }
-      } else {
-        const randomNumbers: Record<number, boolean> = {};
-        let count = 0;
-        while (count < songsPerUser) {
-          const randomNumber = Math.floor(Math.random() * (topSongs.length - 1));
-          if (!randomNumbers[randomNumber]) {
-            randomNumbers[randomNumber] = true;
-            playlistSongs.push(topSongs[randomNumber]);
-            count += 1;
-          }
-        }
+      } else if (!hasEnoughTopSongs && !!likedSongs && hasEnoughTopSongsAndLikedSongs) {
+        topSongs.forEach(song => playlistSongs.push(song));
+        this.getRandomSongs(likedSongs, songsPerUser, playlistSongs, topSongs.length);
       }
     });
 
@@ -245,13 +240,11 @@ export class SpotifyService {
     return sortedArr;
   }
 
-  // This function sucks, but basically if we have under 10 ppl, use 48 songs total, if we have more than 10, use 6 songs each.
   getNumberOfItemsPerUser(numberOfUsers: number): number {
     const minSongsPerUser = 6;
-    // Fix naming here.
-    const songsPerUser = numberOfUsers * 6;
+    const totalPossibleSongs = numberOfUsers * minSongsPerUser;
     const maxNumberOfSongs = 48;
-    return songsPerUser > maxNumberOfSongs ? minSongsPerUser : Math.round(maxNumberOfSongs / numberOfUsers);
+    return totalPossibleSongs > maxNumberOfSongs ? minSongsPerUser : Math.floor(maxNumberOfSongs / numberOfUsers);
   }
 
   getPlaylistHistory(playlistId: string): Promise<Song[]> {

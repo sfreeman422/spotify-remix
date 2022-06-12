@@ -688,6 +688,102 @@ describe('SpotifyService', () => {
     });
   });
 
+  describe('generatePlaylist()', () => {
+    it('should populate the playlist with only top songs if the user has enough top songs', () => {
+      const expected = [
+        {
+          uri: '1',
+        },
+        {
+          uri: '2',
+        },
+        {
+          uri: '3',
+        },
+      ] as SongWithUserData[];
+      const mockSongs = [
+        {
+          user: {
+            id: '1',
+          },
+          topSongs: [
+            {
+              uri: '1',
+            },
+            {
+              uri: '2',
+            },
+            {
+              uri: '3',
+            },
+          ],
+        },
+      ] as SongsByUser[];
+      expect(spotifyService.generatePlaylist(mockSongs, 3)).toEqual(expected);
+    });
+
+    it('should populate the playlist with top songs and liked songs if there are not enough top songs', () => {
+      const expected = [
+        {
+          uri: '1',
+        },
+        {
+          uri: '2',
+        },
+        {
+          uri: '3',
+        },
+      ] as SongWithUserData[];
+      const mockSongs = [
+        {
+          user: {
+            id: '1',
+          },
+          topSongs: [
+            {
+              uri: '1',
+            },
+            {
+              uri: '2',
+            },
+          ],
+          likedSongs: [
+            {
+              uri: '3',
+            },
+          ],
+        },
+      ] as SongsByUser[];
+      expect(spotifyService.generatePlaylist(mockSongs, 3)).toEqual(expected);
+    });
+
+    it('should populate the playlist with only liked songs if there are no top songs', () => {
+      const mockSongs = [
+        {
+          user: {
+            id: '1',
+          },
+          topSongs: [] as SongWithUserData[],
+          likedSongs: [
+            {
+              uri: '1',
+            },
+            {
+              uri: '2',
+            },
+            {
+              uri: '3',
+            },
+          ],
+        },
+      ] as SongsByUser[];
+      const result = spotifyService.generatePlaylist(mockSongs, 3);
+      expect(result.indexOf({ uri: '1' } as SongWithUserData)).toBeTruthy();
+      expect(result.indexOf({ uri: '2' } as SongWithUserData)).toBeTruthy();
+      expect(result.indexOf({ uri: '3' } as SongWithUserData)).toBeTruthy();
+    });
+  });
+
   describe('roundRobinSort()', () => {
     it('should round robin sort', () => {
       const unsorted = [
@@ -777,6 +873,24 @@ describe('SpotifyService', () => {
         },
       ] as SongWithUserData[];
       expect(spotifyService.roundRobinSort(unsorted)).toStrictEqual(sorted);
+    });
+  });
+
+  describe('getNumberOfItemsPerUser()', () => {
+    it('should return minNumberOfSongs when there are 8 users', () => {
+      expect(spotifyService.getNumberOfItemsPerUser(8)).toBe(6);
+    });
+
+    it('should return minNumberOfSongs when there are more than 8 users', () => {
+      expect(spotifyService.getNumberOfItemsPerUser(10)).toBe(6);
+    });
+
+    it('should return maxNumberofSongs when there is only 1 user', () => {
+      expect(spotifyService.getNumberOfItemsPerUser(1)).toBe(48);
+    });
+
+    it('should calculate a number of songs when there is 5 users', () => {
+      expect(spotifyService.getNumberOfItemsPerUser(5)).toBe(9);
     });
   });
 });
