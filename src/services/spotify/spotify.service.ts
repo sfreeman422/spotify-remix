@@ -149,6 +149,7 @@ export class SpotifyService {
   }
 
   generatePlaylist(music: SongsByUser[], songsPerUser: number): SongWithUserData[] {
+    console.log(songsPerUser);
     const playlistSongs: SongWithUserData[] = [];
     music.forEach((songsByUser: SongsByUser) => {
       const { topSongs, likedSongs } = songsByUser;
@@ -162,9 +163,7 @@ export class SpotifyService {
       if (!hasTopSongs && !!likedSongs && hasEnoughLikedSongs) {
         return this.getRandomSongs(likedSongs, songsPerUser, playlistSongs);
       } else if (hasEnoughTopSongs) {
-        for (let i = 0; i < songsPerUser; i++) {
-          playlistSongs.push(topSongs[i]);
-        }
+        this.getRandomSongs(topSongs, songsPerUser, playlistSongs);
       } else if (!hasEnoughTopSongs && !!likedSongs && hasEnoughTopSongsAndLikedSongs) {
         topSongs.forEach(song => playlistSongs.push(song));
         this.getRandomSongs(likedSongs, songsPerUser, playlistSongs, topSongs.length);
