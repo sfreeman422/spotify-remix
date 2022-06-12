@@ -7,7 +7,7 @@ import {
   SpotifyResponse,
   SpotifyTrack,
   SpotifyUserData,
-} from './spotify.generated.interface';
+} from './spotify-http.interface';
 import { SongsByUser, SongWithUserData } from './spotify.interface';
 
 export class SpotifyHttpService {

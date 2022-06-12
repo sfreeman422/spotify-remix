@@ -6,12 +6,7 @@ import { User } from '../../shared/db/models/User';
 import { QueueService } from '../../shared/services/queue.service';
 import { UserService } from '../user/user.service';
 import { SpotifyHttpService } from './spotify-http.service';
-import {
-  SpotifyPlaylist,
-  SpotifyPlaylistItemInfo,
-  SpotifyResponse,
-  SpotifyUserData,
-} from './spotify.generated.interface';
+import { SpotifyPlaylist, SpotifyPlaylistItemInfo, SpotifyResponse, SpotifyUserData } from './spotify-http.interface';
 import { PlaylistData, SongsByUser, SongWithUserData } from './spotify.interface';
 
 export class SpotifyService {

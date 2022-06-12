@@ -6,7 +6,7 @@ import { User } from '../../shared/db/models/User';
 import { mockQueueService } from '../../shared/mocks/mock-queue.service';
 import { mockSpotifyHttpService } from '../../shared/mocks/mock-spotify-http.service';
 import { mockUserService } from '../../shared/mocks/mock-user.service';
-import { SpotifyPlaylist, SpotifyResponse, SpotifyUserData } from './spotify.generated.interface';
+import { SpotifyPlaylist, SpotifyResponse, SpotifyUserData } from './spotify-http.interface';
 import { PlaylistData, SongsByUser, SongWithUserData } from './spotify.interface';
 import { SpotifyService } from './spotify.service';
 
