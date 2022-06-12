@@ -237,9 +237,9 @@ export class SpotifyService {
 
   getNumberOfItemsPerUser(numberOfUsers: number): number {
     const minSongsPerUser = 6;
-    const totalPossibleSongs = numberOfUsers * minSongsPerUser;
     const maxNumberOfSongs = 48;
-    return totalPossibleSongs > maxNumberOfSongs ? minSongsPerUser : Math.floor(maxNumberOfSongs / numberOfUsers);
+    const divided = Math.floor(maxNumberOfSongs / numberOfUsers);
+    return divided <= minSongsPerUser ? minSongsPerUser : divided;
   }
 
   getPlaylistHistory(playlistId: string): Promise<Song[]> {
