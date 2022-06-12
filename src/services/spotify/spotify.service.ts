@@ -158,6 +158,7 @@ export class SpotifyService {
       const hasEnoughLikedSongs = !!likedSongs && likedSongs.length >= songsPerUser;
       const hasEnoughTopSongsAndLikedSongs =
         hasTopSongs && !!likedSongs && topSongs.length + likedSongs.length >= songsPerUser;
+
       if (!hasTopSongs && !!likedSongs && hasEnoughLikedSongs) {
         return this.getRandomSongs(likedSongs, songsPerUser, playlistSongs);
       } else if (hasEnoughTopSongs) {
@@ -201,6 +202,7 @@ export class SpotifyService {
       const { members, history, owner } = playlist;
 
       const songsPerUser = this.getNumberOfItemsPerUser(members.length);
+      console.log(songsPerUser);
       const music: SongWithUserData[] = await this.getAllMusic(members, songsPerUser, history);
       const orderedPlaylist: SongWithUserData[] = this.roundRobinSort(music);
       // Get all songs from the playlist.
