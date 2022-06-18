@@ -14,6 +14,7 @@ export const getDataSource = async (): Promise<DataSource> => {
       host: process.env.TYPEORM_HOST,
       username: process.env.TYPEORM_USERNAME,
       password: process.env.TYPEORM_PASSWORD,
+      port: process.env.TYPEORM_PORT ? parseInt(process.env.TYPEORM_PORT) : 3306,
       database: 'spotifyRemixDB',
       entities: [path.join(__dirname, 'models', '*.ts')],
       synchronize: true,

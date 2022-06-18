@@ -25,8 +25,10 @@ export class UserService {
     }
   }
 
-  public async getUserWithRelations(options: FindManyOptions<User>): Promise<User[] | undefined> {
-    return getDataSource().then(datasource => datasource.getRepository(User).find(options));
+  public async getUserWithRelations(options: FindManyOptions<User>): Promise<User | undefined> {
+    return getDataSource()
+      .then(datasource => datasource.getRepository(User).find(options))
+      .then(user => (user?.length ? user[0] : undefined));
   }
 
   public async updateExistingUser(user: User): Promise<User> {
@@ -50,9 +52,12 @@ export class UserService {
       return [];
     });
   }
-  public async getPlaylist(playlistId: string): Promise<Playlist[]> {
+  public async getPlaylist(playlistId: string): Promise<Playlist | undefined> {
     return getDataSource().then(datasource =>
-      datasource.getRepository(Playlist).find({ where: { playlistId }, relations: ['members', 'history', 'owner'] }),
+      datasource
+        .getRepository(Playlist)
+        .find({ where: { playlistId }, relations: ['members', 'history', 'owner'] })
+        .then(res => res?.[0]),
     );
   }
 

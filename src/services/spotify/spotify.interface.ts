@@ -1,5 +1,5 @@
 import { User } from '../../shared/db/models/User';
-import { SpotifyPlaylist, SpotifyTrack } from './spotify.generated.interface';
+import { SpotifyPlaylist, SpotifyTrack } from './spotify-http.interface';
 
 export interface SongWithUserData extends SpotifyTrack {
   spotifyId: string;
