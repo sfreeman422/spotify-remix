@@ -16,6 +16,9 @@ const app: Application = express();
 const PORT = process.env.PORT ? process.env.PORT : 3000;
 const refreshService = RefreshService.getInstance();
 
+// TODO: Remove this once we are hosting on NGINX.
+app.use(express.static(__dirname + '/html'));
+
 app.use(
   bodyParser.urlencoded({
     extended: true,

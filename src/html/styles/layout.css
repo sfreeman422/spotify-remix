@@ -32,6 +32,9 @@
 .margin-025 {
   margin: 0.25rem;
 }
+.margin-000 {
+  margin: 0;
+}
 
 /* margin horizontal */
 .margin-hor-100 {

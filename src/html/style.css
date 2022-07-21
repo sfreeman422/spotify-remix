@@ -1,10 +1,5 @@
 @import url(styles/index.css);
 
-.header {
-  height: 87px;
-  margin: 0 10rem;
-}
-
 .content {
   height: calc(100vh - 90px);
   background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), url(images/bg.png);

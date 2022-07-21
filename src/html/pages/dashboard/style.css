@@ -1,0 +1,19 @@
+@import url(../../styles/index.css);
+
+.app-content {
+  margin: 1rem 10rem;
+}
+.card {
+  border-radius: 5px;
+  border: solid 1px;
+  background-color: rgb(201, 201, 201);
+  padding: 1rem;
+  margin: 1rem;
+  width: 300px;
+  word-wrap: normal;
+}
+
+.playlist {
+  display: flex;
+  flex-wrap: wrap;
+}
