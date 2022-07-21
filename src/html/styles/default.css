@@ -6,4 +6,5 @@ body {
 }
 a {
   text-decoration-line: none;
+  word-wrap: break-word;
 }

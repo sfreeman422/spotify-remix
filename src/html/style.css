@@ -1,10 +1,4 @@
-@import url(./styles/borders.css);
-@import url(./styles/colors.css);
-@import url(./styles/default.css);
-@import url(./styles/hovers.css);
-@import url(./styles/layout.css);
-@import url(./styles/positioning.css);
-@import url(./styles/text.css);
+@import url(styles/index.css);
 
 .header {
   height: 87px;
