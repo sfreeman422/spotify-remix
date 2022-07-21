@@ -1,0 +1,9 @@
+.hover-green:hover {
+  color: green;
+}
+.hover-white:hover {
+  color: white;
+}
+.hover-pointer:hover {
+  cursor: pointer;
+}

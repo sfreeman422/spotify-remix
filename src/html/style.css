@@ -1,104 +1,18 @@
-body {
-  background: black;
-  height: 100vh;
-  font-family: Noto Sans;
-  margin: 0;
-}
-a {
-  text-decoration-line: none;
-}
-.text-white {
-  color: white;
-}
-.text-green {
-  color: green;
-}
-.text-black {
-  color: black;
-}
-.hover-green:hover {
-  color: green;
-}
-.hover-white:hover {
-  color: white;
-}
-.hover-pointer:hover {
-  cursor: pointer;
-}
+@import url(./styles/borders.css);
+@import url(./styles/colors.css);
+@import url(./styles/default.css);
+@import url(./styles/hovers.css);
+@import url(./styles/layout.css);
+@import url(./styles/positioning.css);
+@import url(./styles/sizing.css);
+@import url(./styles/text.css);
+
 .header {
   height: 87px;
   margin: 0 10rem;
 }
-.flex-space-even {
-  display: flex;
-  justify-content: space-evenly;
-}
-.margin-100 {
-  margin: 1rem;
-}
-.margin-hor-100 {
-  margin: 0rem 1rem;
-}
-.margin-hor-600 {
-  margin: 0rem 6rem;
-}
-.padding-100 {
-  padding: 1rem;
-}
-.padding-50 {
-  padding: 0.5rem;
-}
-.hor-center {
-  display: flex;
-  align-items: center;
-}
-.vert-center {
-  display: flex;
-  align-items: center;
-  flex-direction: column;
-}
-.width-25 {
-  width: 25%;
-}
-.height-100 {
+
+.content {
   height: calc(100vh - 90px);
-}
-.bg-white {
-  background-color: white;
-}
-.bg-green {
-  background-color: green;
-}
-.bg-purple {
-  background-color: #7960ee;
-}
-.flex-space-btwn {
-  display: flex;
-  justify-content: space-between;
-}
-.flex-just-center {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-.bdr-rad-010 {
-  border-radius: 10px;
-}
-.font-weight-700 {
-  font-weight: 700;
-}
-.z-1 {
-  z-index: 1;
-}
-.text-gigantic {
-  font-size: 3rem;
-}
-.text-biggest {
-  font-size: 2rem;
-}
-.text-bigger {
-  font-size: 1.5rem;
-}
-#content {
   background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), url(bg.png);
 }

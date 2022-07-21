@@ -1,0 +1,9 @@
+body {
+  background: black;
+  height: 100vh;
+  font-family: Noto Sans;
+  margin: 0;
+}
+a {
+  text-decoration-line: none;
+}
