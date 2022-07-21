@@ -1,83 +1,30 @@
+<!DOCTYPE html>
 <html>
   <head>
-    <style>
-      body {
-        background: black;
-      }
-      .text-white {
-        color: white;
-      }
-      .text-green {
-        color: green;
-      }
-      .hover-green:hover {
-        color: green;
-      }
-      .hover-pointer:hover {
-        cursor: pointer;
-      }
-      .header {
-        width: 100%;
-        display: flex;
-        justify-content: space-between;
-      }
-      .flex-space-even {
-        display: flex;
-        justify-content: space-evenly;
-      }
-      .margin-100 {
-        margin: 1rem;
-      }
-      .margin-hor-100 {
-        margin: 0rem 1rem;
-      }
-      .padding-100 {
-        padding: 1rem;
-      }
-      .padding-50 {
-        padding: 0.5rem;
-      }
-      .hor-center {
-        display: flex;
-        align-items: center;
-      }
-      .width-25 {
-        width: 25%;
-      }
-      .height-100 {
-        height: 100%;
-      }
-      .bg-white {
-        background-color: white;
-      }
-      .flex-space-btwn {
-        display: flex;
-        justify-content: space-between;
-      }
-      .brd-rad-005 {
-        border-radius: 5px;
-      }
-    </style>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Sans|Noto Sans 700" />
+    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <div class="header">
-      <div class="margin-hor-100" id="logo">
+      <div class="margin-hor-s" id="logo">
         <h1><span class="text-white">Remix</span><span class="text-green">.lol</span></h1>
       </div>
       <div class="flex-space-even" id="navigation">
         <div class="text-white margin-hor-100 hor-center hover-green hover-pointer">How It Works</div>
         <div class="text-white margin-hor-100 hor-center">|</div>
-        <div class="text-white margin-hor-100 hor-center hover-green hover-pointer">Sign Up</div>
-        <div class="text-white margin-hor-100 hor-center hover-green hover-pointer">Log In</div>
+        <div class="text-white margin-hor-100 hor-center hover-green hover-pointer">
+          <a href="/login" class="z-1 text-white text-no-effects">Log In with Spotify</a>
+        </div>
       </div>
     </div>
-    <div class="margin-100 padding-100 brd-rad-005 bg-white flex-space-btwn height-100">
-      <div class="width-25">
-        <h1>Listen to the hottest new songs curated by your friends.</h1>
+    <div class="bg-white vert-center flex-just-center height-100" id="content">
+      <div class="vert-center margin-100 padding-100">
+        <h1 class="font-weight-700">Listen to the hottest new songs curated by your friends.</h1>
+        <h2>Automated. Asynchronous. Amazing.</h2>
+        <p>Remix.lol creates a playlist each week with all of the music you and your friends have been listening to.</p>
       </div>
-      <div>
-        IMG GOES HERE.
-        <a href="/login">Log in</a>
+      <div class="margin-hor-100 hover-white hover-pointer bg-green padding-100 bdr-rad-010">
+        <a href="/login" class="z-1 text-black text-no-effects">Log In with Spotify</a>
       </div>
     </div>
   </body>

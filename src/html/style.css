@@ -1,0 +1,91 @@
+body {
+  background: black;
+  height: 100vh;
+  font-family: Noto Sans;
+  margin: 0;
+}
+.text-white {
+  color: white;
+}
+.text-green {
+  color: green;
+}
+.text-black {
+  color: black;
+}
+.hover-green:hover {
+  color: green;
+}
+.hover-white:hover {
+  color: white;
+}
+.hover-pointer:hover {
+  cursor: pointer;
+}
+.header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  height: 87px;
+}
+.flex-space-even {
+  display: flex;
+  justify-content: space-evenly;
+}
+.margin-100 {
+  margin: 1rem;
+}
+.margin-hor-100 {
+  margin: 0rem 1rem;
+}
+.margin-hor-600 {
+  margin: 0rem 6rem;
+}
+.padding-100 {
+  padding: 1rem;
+}
+.padding-50 {
+  padding: 0.5rem;
+}
+.hor-center {
+  display: flex;
+  align-items: center;
+}
+.vert-center {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+.width-25 {
+  width: 25%;
+}
+.height-100 {
+  height: calc(100vh - 90px);
+}
+.bg-white {
+  background-color: white;
+}
+.bg-green {
+  background-color: green;
+}
+.flex-space-btwn {
+  display: flex;
+  justify-content: space-between;
+}
+.flex-just-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.bdr-rad-010 {
+  border-radius: 10px;
+}
+.text-no-effects {
+  text-decoration: none;
+}
+.font-weight-700 {
+  font-weight: 700;
+}
+.z-1 {
+  z-index: 1;
+}
