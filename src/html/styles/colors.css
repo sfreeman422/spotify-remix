@@ -1,3 +1,4 @@
+/* colors */
 .white {
   color: white;
 }
@@ -7,6 +8,8 @@
 .black {
   color: black;
 }
+
+/* background-color */
 .bg-white {
   background-color: white;
 }
