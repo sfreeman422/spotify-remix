@@ -1,49 +1,27 @@
 let playlists;
+const accessTokenName = 'spotify-remix-access-token';
+const refreshTokenName = 'spotify-remix-refresh-token';
+const redirectTokenName = 'spotify-remix-redirect-to';
+
+function setTokens(accessToken, refreshToken) {
+  localStorage.setItem(accessTokenName, accessToken);
+  localStorage.setItem(refreshTokenName, refreshToken);
+}
 
 function getAndSetTokens() {
-  console.log('doing things');
-  const redirectTo = localStorage.getItem('spotify-remix-redirect-to');
+  const redirectTo = localStorage.getItem(redirectTokenName);
+  const params = new URLSearchParams(window.location.search);
+  const paramAccessToken = params.get('accessToken');
+  const paramRefreshToken = params.get('refreshToken');
+
   if (redirectTo) {
-    const params = new URLSearchParams(window.location.search);
-    const accessToken = params.get('accessToken');
-    const refreshToken = params.get('refreshToken');
-    localStorage.setItem('spotify-remix-access-token', accessToken);
-    localStorage.setItem('spotify-remix-refresh-token', refreshToken);
-    localStorage.removeItem('spotify-remix-redirect-to');
+    setTokens(paramAccessToken, paramRefreshToken);
+    localStorage.removeItem(redirectTokenName);
     window.location = redirectTo;
   }
-  const params = new URLSearchParams(window.location.search);
-  const spotifyId = params.get('spotifyId');
-  const accessTokenString = 'spotify-remix-access-token';
-  const refreshTokenString = 'spotify-remix-refresh-token';
-  let accessToken = localStorage.getItem(accessTokenString);
-  let refreshToken = localStorage.getItem(refreshTokenString);
-  if (!accessToken || !refreshToken) {
-    const paramAccessToken = params.get('accessToken');
-    const paramRefreshToken = params.get('refreshToken');
 
-    if (paramAccessToken && paramRefreshToken) {
-      accessToken = paramAccessToken;
-      refreshToken = paramRefreshToken;
-    }
-  }
-  if (accessToken && refreshToken) {
-    return fetch(`/refresh?spotifyId=${spotifyId}`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        refreshToken,
-      },
-    })
-      .then(x => x.json())
-      .then(x => {
-        localStorage.setItem('spotify-remix-access-token', x.accessToken);
-        localStorage.setItem('spotify-remix-refresh-token', x.refreshToken);
-      })
-      .catch(e => {
-        window.location = `${window.location.protocol}//${window.location.host}/login`;
-        console.error('Unable to refresh tokens');
-        console.error(e);
-      });
+  if (paramAccessToken && paramRefreshToken) {
+    setTokens(paramAccessToken, paramRefreshToken);
   } else {
     window.location = `${window.location.protocol}//${window.location.host}/login`;
   }
@@ -160,4 +138,5 @@ function createPlaylist() {
   });
 }
 
-getAndSetTokens().then(() => getPlaylistsAndBuildDivs());
+getAndSetTokens();
+getPlaylistsAndBuildDivs();
