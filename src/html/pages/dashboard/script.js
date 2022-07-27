@@ -13,6 +13,8 @@ function getAndSetTokens() {
   const params = new URLSearchParams(window.location.search);
   const paramAccessToken = params.get('accessToken');
   const paramRefreshToken = params.get('refreshToken');
+  const storageAccessToken = localStorage.getItem(accessTokenName);
+  const storageRefreshToken = localStorage.getItem(refreshTokenName);
 
   if (redirectTo) {
     setTokens(paramAccessToken, paramRefreshToken);
@@ -22,6 +24,8 @@ function getAndSetTokens() {
 
   if (paramAccessToken && paramRefreshToken) {
     setTokens(paramAccessToken, paramRefreshToken);
+  } else if (storageAccessToken && storageRefreshToken) {
+    return;
   } else {
     window.location = `${window.location.protocol}//${window.location.host}/login`;
   }
