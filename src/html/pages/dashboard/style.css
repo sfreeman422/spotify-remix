@@ -4,13 +4,11 @@
   height: calc(100vh - 88px);
 }
 .card {
-  border-radius: 5px;
-  border: solid 1px;
-  background-color: rgb(201, 201, 201);
+  border-radius: 10px;
+  background-color: #2d2b2f;
   padding: 1rem;
   margin: 1rem;
-  width: 300px;
-  word-wrap: normal;
+  width: 20rem;
 }
 
 .playlist {

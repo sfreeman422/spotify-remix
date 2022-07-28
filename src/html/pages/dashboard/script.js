@@ -50,23 +50,28 @@ function createOrphanedPlaylists(playlists) {
 }
 
 function createOwnedPlaylists(playlists) {
-  playlistDiv.innerHTML += `<div>
+  playlistDiv.innerHTML += `<div class="flex-center-hor">
         <h3 class="white">Your Remixes</h3>
-        <button id="create-playlist-button" onclick="createPlaylist()">Create a New Remix Playlist</button>
+        <div class="hover-white hover-pointer bg-green padding-100 bdr-rad-010" id="create-playlist-button" onclick="createPlaylist()">
+          Create a Playlist
+        </div>
         <div class="playlist" id="managed-playlists"></div>
         </div>`;
   playlists.map(
     item =>
       (document.getElementById('managed-playlists').innerHTML += `
                   <div class="card">
-                  <h3>${item.name}</h3>
-                  <p>${item.tracks.total} tracks</p>
-                  <a href=${item.external_urls.spotify}>${item.external_urls.spotify}</a>
-                  <p>${item.description}</p>
-                  <p>Invite your friends using this link:</p>
-                  <a href="${window.location.protocol}//${window.location.host}/playlist?playlistId=${item.id}">
-                    <span>${window.location.protocol}//${window.location.host}/playlist?playlistId=${item.id}</span>
-                  </a>
+                    <img src=${item.images[1].url}></img>
+                    <h3 class="white">${item.name}</h3>
+                    <div class="hover-white hover-pointer bg-green padding-100 bdr-rad-010">
+                      <a class="z-1 black" href=${item.external_urls.spotify}>Open on Spotify</a>
+                    </div>
+                    <div class="hover-white hover-pointer bg-green padding-100 bdr-rad-010">
+                      <a class="z-1 black" href=${item.external_urls.spotify}>Copy Invite Link</a>
+                    </div>
+                    <a href="${window.location.protocol}//${window.location.host}/playlist?playlistId=${item.id}">
+                      <span>${window.location.protocol}//${window.location.host}/playlist?playlistId=${item.id}</span>
+                    </a>
                   </div>`),
   );
 }
