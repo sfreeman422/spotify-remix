@@ -3,7 +3,7 @@ let orphanedPlaylists;
 const accessTokenName = 'spotify-remix-access-token';
 const refreshTokenName = 'spotify-remix-refresh-token';
 const redirectTokenName = 'spotify-remix-redirect-to';
-const playlistDiv = document.getElementById('playlists');
+const appContentDiv = document.getElementById('app-content');
 
 function setTokens(accessToken, refreshToken) {
   localStorage.setItem(accessTokenName, accessToken);
@@ -35,7 +35,7 @@ function getAndSetTokens() {
 
 function createOrphanedPlaylists(playlists) {
   orphanedPlaylists = playlists;
-  playlistDiv.innerHTML += `<div>
+  appContentDiv.innerHTML += `<div>
                     <h3 class="white">Orphaned Remixes</h3>
                     <button onclick="removeOrphanedPlaylists()">Remove Orphaned Playlists</button>
                     <div class="playlist" id="orphan-playlists"></div>
@@ -50,33 +50,34 @@ function createOrphanedPlaylists(playlists) {
 }
 
 function createOwnedPlaylists(playlists) {
-  playlistDiv.innerHTML += `<div class="flex-center-hor">
-        <h3 class="white">Your Remixes</h3>
-        <div class="hover-white hover-pointer bg-green padding-100 bdr-rad-010" id="create-playlist-button" onclick="createPlaylist()">
+  appContentDiv.innerHTML += `<div class="flex-center-hor">
+        <div class="hover-white hover-pointer bg-green padding-100 bdr-rad-010 width-content margin-bottom-100" id="create-playlist-button" onclick="createPlaylist()">
           Create a Playlist
         </div>
+        <span class="white font-size-big">Your Remixes</span>
         <div class="playlist" id="managed-playlists"></div>
         </div>`;
   playlists.map(
     item =>
       (document.getElementById('managed-playlists').innerHTML += `
                   <div class="card">
-                    <img src=${item.images[1].url}></img>
-                    <h3 class="white">${item.name}</h3>
-                    <div class="hover-white hover-pointer bg-green padding-100 bdr-rad-010">
-                      <a class="z-1 black" href=${item.external_urls.spotify}>Open on Spotify</a>
+                    <div class="flex-hor-center">
+                      <img src=${item.images[1].url} class="playlist-img"></img>
                     </div>
-                    <div class="hover-white hover-pointer bg-green padding-100 bdr-rad-010">
-                      <a class="z-1 black" href=${item.external_urls.spotify}>Copy Invite Link</a>
+                    <h4 class="white">${item.name}</h3>
+                    <div class="flex-space-even">
+                      <div class="hover-white hover-pointer bg-green padding-100 bdr-rad-010 width-content">
+                        <a class="z-1 black font-size-small" href=${item.external_urls.spotify}>Open on Spotify</a>
+                      </div>
+                      <div class="hover-white hover-pointer bg-green padding-100 bdr-rad-010 width-content" onclick="copyText('${window.location.protocol}//${window.location.host}/playlist?playlistId=${item.id}')">
+                        <span class="z-1 black font-size-small" id="copy-invite-link">Copy Invite Link</span>
+                      </div>
                     </div>
-                    <a href="${window.location.protocol}//${window.location.host}/playlist?playlistId=${item.id}">
-                      <span>${window.location.protocol}//${window.location.host}/playlist?playlistId=${item.id}</span>
-                    </a>
                   </div>`),
   );
 }
 function createFollowedPlaylists(playlists) {
-  playlistDiv.innerHTML += `<div>
+  appContentDiv.innerHTML += `<div>
                     <h3 class="white">Your Followed Remixes</h3>
                     <div class="playlist" id="subbed-playlists"></div>
                     </div>`;
@@ -95,7 +96,7 @@ function createFollowedPlaylists(playlists) {
   );
 }
 function createEmptySection() {
-  playlistDiv.innerHTML = `<div class="flex-vert-center flex-just-center">
+  appContentDiv.innerHTML = `<div class="flex-vert-center flex-just-center height-100">
     <span class="material-symbols-outlined white font-size-gigantic">search</span>
     <h2 class="white">Looks like don't have any playlists!</h2>
     <h3 class="white margin-000">Start by either subscribing to a playlist or creating one.</h3>
@@ -115,7 +116,7 @@ function getPlaylistsAndBuildDivs() {
   })
     .then(x => x.json())
     .then(playlistInfo => {
-      playlistDiv.innerHTML = '';
+      appContentDiv.innerHTML = '';
       const { orphanPlaylists, ownedPlaylists, subscribedPlaylists } = playlistInfo;
       const hasOrphanPlaylists = orphanPlaylists && orphanPlaylists.length > 0;
       const hasOwnedPlaylists = ownedPlaylists && ownedPlaylists.length > 0;
@@ -166,9 +167,15 @@ function createPlaylist() {
     body: JSON.stringify({}),
   }).then(() => {
     playlistButton.innerHTML = 'Create a New Remix Playlist';
-    playlistButton.disabled = false;
     getPlaylistsAndBuildDivs();
   });
+}
+
+function copyText(text) {
+  console.log(text);
+  navigator.clipboard.writeText(text);
+  document.getElementById('copy-invite-link').textContent = 'Copied!';
+  setTimeout(() => (document.getElementById('copy-invite-link').textContent = 'Copy Invite Link'), 1500);
 }
 
 getAndSetTokens();
