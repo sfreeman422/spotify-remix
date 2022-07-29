@@ -51,13 +51,12 @@ playlistController.put('/playlist/:playlistId/subscribe', (req, res) => {
   }
 });
 
-// Should create a new playlist for the user that is public and available to be shared with others.
 playlistController.post('/playlist', (req, res) => {
   const { authorization } = req.headers;
   if (authorization) {
     spotifyService
       .createUserPlaylist(authorization)
-      .then(_ => res.send())
+      .then(() => res.send())
       .catch(e => {
         console.error(e);
         res.status(500).send(e);
@@ -75,7 +74,13 @@ playlistController.delete('/playlist', (req, res) => {
     const accessToken = authorization.split(' ')[1];
     res.send(spotifyService.removePlaylist(accessToken, playlists));
   } else {
-    res.status(400).send('Missing authorization or playlists');
+    let message;
+    if (!authorization) {
+      message = 'Missing authorization header';
+    } else if (!playlists) {
+      message = 'Missing playlists';
+    }
+    res.status(400).send(message);
   }
 });
 
