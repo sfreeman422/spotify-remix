@@ -149,7 +149,6 @@ export class SpotifyService {
   }
 
   generatePlaylist(music: SongsByUser[], songsPerUser: number): SongWithUserData[] {
-    console.log(songsPerUser);
     const playlistSongs: SongWithUserData[] = [];
     music.forEach((songsByUser: SongsByUser) => {
       const { topSongs, likedSongs } = songsByUser;
@@ -203,7 +202,6 @@ export class SpotifyService {
       const { members, history, owner } = playlist;
 
       const songsPerUser = this.getNumberOfItemsPerUser(members.length);
-      console.log(songsPerUser);
       const music: SongWithUserData[] = await this.getAllMusic(members, songsPerUser, history);
       const orderedPlaylist: SongWithUserData[] = this.roundRobinSort(music);
       // Get all songs from the playlist.
