@@ -44,7 +44,7 @@ function createOrphanedPlaylists(playlists) {
     item =>
       (document.getElementById('orphan-playlists').innerHTML += `
                   <div class="card">
-                  <h3>${item}</h3>
+                  <h3 class="white">${item}</h3>
                   </div>`),
   );
 }
@@ -98,10 +98,10 @@ function createFollowedPlaylists(playlists) {
 function createEmptySection() {
   appContentDiv.innerHTML = `<div class="flex-vert-center flex-just-center height-100">
     <span class="material-symbols-outlined white font-size-gigantic">search</span>
-    <h2 class="white">Looks like don't have any playlists!</h2>
-    <h3 class="white margin-000">Start by either subscribing to a playlist or creating one.</h3>
+    <h2 class="white">Looks like don't have any Remixes!</h2>
+    <h3 class="white margin-000">Start by either subscribing to a Remix or creating one.</h3>
     <div class="margin-100 hover-white hover-pointer bg-green padding-100 bdr-rad-010" id="create-playlist-button" onclick="createPlaylist()">
-        Create a Playlist
+        Create a Remix
       </div>
   </div>`;
 }
@@ -166,7 +166,7 @@ function createPlaylist() {
     },
     body: JSON.stringify({}),
   }).then(() => {
-    playlistButton.innerHTML = 'Create a New Remix Playlist';
+    playlistButton.innerHTML = 'Create a New Remix';
     getPlaylistsAndBuildDivs();
   });
 }

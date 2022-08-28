@@ -52,11 +52,13 @@
           })
           .then(x => {
             if (x && x.message) {
-              document.getElementById('message').innerHTML =
-                'Successfully subscribed! Sending you to this playlists history...';
+              document.getElementById(
+                'message',
+              ).innerHTML = `Successfully subscribed! Sending you to this Remix's history...`;
             } else {
-              document.getElementById('message').innerHTML =
-                'It looks like you are already subscribed to this playlist! Sending you to this playlists history';
+              document.getElementById(
+                'message',
+              ).innerHTML = `It looks like you are already subscribed to this Remix! Sending you to this Remix's history`;
             }
             setTimeout(
               () =>
@@ -67,7 +69,7 @@
           .catch(e => {
             document.getElementById('message').className = 'error';
             document.getElementById('message').innerHTML =
-              'It looks like we were unable to subscribe to this playlist! Please try again.';
+              'It looks like we were unable to subscribe to this Remix! Please try again.';
             console.error(e);
           });
       }
