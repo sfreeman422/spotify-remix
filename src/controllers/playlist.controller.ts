@@ -67,12 +67,18 @@ playlistController.post('/playlist', (req, res) => {
 });
 
 // Should delete the given playlist by Id
-playlistController.delete('/playlist', (req, res) => {
+playlistController.delete('/playlist', async (req, res) => {
   const { playlists } = req.body;
   const { authorization } = req.headers;
   if (authorization && playlists) {
     const accessToken = authorization.split(' ')[1];
-    res.send(spotifyService.removePlaylist(accessToken, playlists));
+    try {
+      const removal = await spotifyService.removePlaylist(accessToken, playlists);
+      res.send(removal);
+    } catch (e) {
+      // This should not just be a 500 but should be more reflective of true error state.
+      res.status(500).send(e);
+    }
   } else {
     let message;
     if (!authorization) {

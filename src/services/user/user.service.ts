@@ -62,6 +62,9 @@ export class UserService {
   }
 
   public deletePlaylist(playlists: Playlist[]): Promise<Playlist[]> {
+    if (!playlists.length) {
+      throw new Error('Unable to delete playlist. No playlist exists with that id');
+    }
     return getDataSource().then(async datasource => {
       const songs: Song[] = await datasource
         .getRepository(Song)

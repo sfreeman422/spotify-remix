@@ -65,7 +65,10 @@ export class SpotifyService {
     const playlistsOwnedAndToBeDeleted: Playlist[] = ownedPlaylists.filter(x =>
       playlists.some(y => x.playlistId === y),
     );
-    return this.userService.deletePlaylist(playlistsOwnedAndToBeDeleted);
+    if (playlistsOwnedAndToBeDeleted.length) {
+      return this.userService.deletePlaylist(playlistsOwnedAndToBeDeleted);
+    }
+    throw new Error(`Unable to find playlist with id ${playlists}`);
   }
 
   unsubscribeFromPlaylist(_accessToken: string, _playlistId: string): void {

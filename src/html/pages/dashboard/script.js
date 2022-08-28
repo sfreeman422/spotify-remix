@@ -50,13 +50,6 @@ function createOrphanedPlaylists(playlists) {
 }
 
 function createOwnedPlaylists(playlists) {
-  appContentDiv.innerHTML += `<div class="flex-center-hor">
-        <div class="hover-white hover-pointer bg-green padding-100 bdr-rad-010 width-content margin-bottom-100" id="create-playlist-button" onclick="createPlaylist()">
-          Create a Playlist
-        </div>
-        <span class="white font-size-big">Your Remixes</span>
-        <div class="playlist" id="managed-playlists"></div>
-        </div>`;
   playlists.map(
     item =>
       (document.getElementById('managed-playlists').innerHTML += `
@@ -111,7 +104,7 @@ function getPlaylistsAndBuildDivs() {
   fetch('/playlists', {
     headers: {
       Authorization: `Bearer ${accessToken}`,
-      cache: 'no-store',
+      cache: 'no-cache, no-store',
     },
   })
     .then(x => x.json())
@@ -121,6 +114,19 @@ function getPlaylistsAndBuildDivs() {
       const hasOrphanPlaylists = orphanPlaylists && orphanPlaylists.length > 0;
       const hasOwnedPlaylists = ownedPlaylists && ownedPlaylists.length > 0;
       const hasSubscribedPlaylists = subscribedPlaylists && subscribedPlaylists.length > 0;
+
+      if (!hasOrphanPlaylists && !hasOwnedPlaylists && !hasSubscribedPlaylists) {
+        createEmptySection();
+      } else {
+        appContentDiv.innerHTML += `<div class="flex-center-hor">
+        <div class="hover-white hover-pointer bg-green padding-100 bdr-rad-010 width-content margin-bottom-100" id="create-playlist-button" onclick="createPlaylist()">
+          Create a Playlist
+        </div>
+        <span class="white font-size-big">Your Remixes</span>
+        <div class="playlist" id="managed-playlists"></div>
+        </div>`;
+      }
+
       if (hasOrphanPlaylists) {
         createOrphanedPlaylists(orphanPlaylists);
       }
@@ -131,10 +137,6 @@ function getPlaylistsAndBuildDivs() {
 
       if (hasSubscribedPlaylists) {
         createFollowedPlaylists(subscribedPlaylists);
-      }
-
-      if (!hasOrphanPlaylists && !hasOwnedPlaylists && !hasSubscribedPlaylists) {
-        createEmptySection();
       }
     });
 }
