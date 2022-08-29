@@ -42,7 +42,9 @@ axios.interceptors.response.use(undefined, error => {
     return refreshService.refresh(accessToken).then((user: User | undefined) => {
       if (user) {
         error.config.headers.authorization = `Bearer ${user.accessToken}`;
-        return axios.request(error.config);
+        return axios.request(error.config).then(res => {
+          res.data = { ...res.data, accessToken: user.accessToken, refreshToken: user.refreshToken };
+        });
       }
       return undefined;
     });

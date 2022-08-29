@@ -1,3 +1,5 @@
+import { APIResponse } from '../../shared/interfaces/APIResponse.interface';
+
 export interface SpotifyExternalUrls {
   spotify: string;
 }
@@ -67,7 +69,7 @@ export interface SpotifyLikedSong {
   track: SpotifyTrack;
 }
 
-export interface SpotifyResponse<T> {
+export interface SpotifyResponse<T> extends APIResponse {
   items: T;
   total: number;
   limit: number;

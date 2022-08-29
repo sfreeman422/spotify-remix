@@ -40,6 +40,8 @@ export class SpotifyService {
               ownedPlaylists,
               orphanPlaylists,
               subscribedPlaylists,
+              refreshToken: resp?.data?.refreshToken,
+              accessToken: resp?.data?.accessToken,
             };
           }
           return { ownedPlaylists: [], orphanPlaylists: [], subscribedPlaylists: [] };
