@@ -240,8 +240,6 @@ export class SpotifyService {
     return Promise.all(calls);
   }
 
-  // Note: This sort is a "best effort" to maintain order within the playlist.
-  // If a failure occurs or one request completes sooner than another the order will not be maintained.
   roundRobinSort(arr: SongWithUserData[]): SongWithUserData[] {
     const allSongs = arr;
     let sortedArr: SongWithUserData[] = [];

@@ -124,7 +124,7 @@ export interface SpotifyUserDataFollowers {
   total: number;
 }
 
-export interface SpotifyUserData {
+export interface SpotifyUserData extends APIResponse {
   country: string;
   display_name: string;
   email: string;

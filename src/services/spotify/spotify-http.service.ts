@@ -45,7 +45,7 @@ export class SpotifyHttpService {
       });
   }
 
-  createUserPlaylist(accessToken: string, user: User): Promise<any> {
+  createUserPlaylist(accessToken: string, user: User): Promise<AxiosResponse> {
     return axios
       .post(
         `${this.baseUserUrl}/${user.spotifyId}/playlists`,
@@ -115,14 +115,14 @@ export class SpotifyHttpService {
       })
       .then<SpotifyPlaylistItemInfo[]>(
         (x: AxiosResponse<SpotifyResponse<SpotifyPlaylistItemInfo[]>>): Promise<SpotifyPlaylistItemInfo[]> => {
-          const songsToBeRemoved = x.data.items;
+          const playlistTracks = x.data.items;
 
           if (x.data.next) {
             return this.getPlaylistTracks(playlistId, accessToken, x.data.next).then((x: SpotifyPlaylistItemInfo[]) =>
-              songsToBeRemoved.concat(x),
+              playlistTracks.concat(x),
             );
           }
-          return new Promise((resolve, _reject) => resolve(songsToBeRemoved));
+          return new Promise((resolve, _reject) => resolve(playlistTracks));
         },
       );
   }
