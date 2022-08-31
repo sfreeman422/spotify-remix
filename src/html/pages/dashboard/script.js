@@ -109,6 +109,10 @@ function getPlaylistsAndBuildDivs() {
   })
     .then(x => x.json())
     .then(playlistInfo => {
+      if (playlistInfo.accessToken && playlistInfo.refreshToken) {
+        setTokens(playlistInfo.accessToken, playlistInfo.refreshToken);
+      }
+
       appContentDiv.innerHTML = '';
       const { orphanPlaylists, ownedPlaylists, subscribedPlaylists } = playlistInfo;
       const hasOrphanPlaylists = orphanPlaylists && orphanPlaylists.length > 0;
@@ -153,6 +157,9 @@ function removeOrphanedPlaylists() {
       playlists: orphanedPlaylists,
     }),
   }).then(x => {
+    if (x.accessToken && x.refreshToken) {
+      setTokens(x.accessToken, x.refreshToken);
+    }
     orphanedPlaylists = undefined;
     getPlaylistsAndBuildDivs();
   });
@@ -167,7 +174,10 @@ function createPlaylist() {
       Authorization: `Bearer ${accessToken}`,
     },
     body: JSON.stringify({}),
-  }).then(() => {
+  }).then(x => {
+    if (x.accessToken && x.refreshToken) {
+      setTokens(x.accessToken, x.refreshToken);
+    }
     playlistButton.innerHTML = 'Create a New Remix';
     getPlaylistsAndBuildDivs();
   });

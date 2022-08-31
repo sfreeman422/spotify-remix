@@ -180,7 +180,7 @@ export class SpotifyService {
   }
 
   async getAllMusic(members: User[], songsPerUser: number, history: Song[]): Promise<SongWithUserData[]> {
-    const historyIds: string[] = this.filterByHours(history, 'createdAt', 12).map(x => x.spotifyUrl);
+    const historyIds: string[] = this.filterByHours(history, 'createdAt', 144).map(x => x.spotifyUrl);
 
     let music: SongsByUser[] = await this.getTopSongs(members, historyIds);
 
