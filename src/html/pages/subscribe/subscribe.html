@@ -1,40 +1,29 @@
 <html>
-  <head></head>
+  <head>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Sans|Noto Sans 700" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
+    <link rel="stylesheet" href="/pages/subscribe/style.css" />
+  </head>
   <style>
     .error {
       color: red;
     }
   </style>
   <body>
-    <div>
-      <div id="subscribe">
-        <h1 id="message">Attempting to subscribe...</h1>
+    <div class="header flex-space-btwn">
+      <div id="logo">
+        <h1><span class="white">Remix</span><span class="green">.lol</span></h1>
+      </div>
+      <div class="flex-space-even" id="navigation">
+        <div class="white margin-hor-100 flex-hor-center font-size-bigger">Dashboard</div>
       </div>
     </div>
-    <script>
-      function getAndSetTokens(accessToken, refreshToken, playlistId) {
-        return fetch(`/refresh`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            refreshToken,
-          },
-        })
-          .then(x => x.json())
-          .then(tokens => {
-            localStorage.setItem('spotify-remix-access-token', tokens.accessToken);
-            localStorage.setItem('spotify-remix-refresh-token', tokens.refreshToken);
-            return tokens;
-          })
-          .catch(e => {
-            localStorage.setItem(
-              'spotify-remix-redirect-to',
-              `${window.location.protocol}//${window.location.host}/playlist?playlistId=${playlistId}`,
-            );
-            window.location = `${window.location.protocol}//${window.location.host}/login`;
-            console.error('Unable to refresh tokens');
-          });
-      }
 
+    <div class="app-content" id="app-content">
+      <span class="material-symbols-outlined white font-size-gigantic">equalizer</span>
+      <h2 class="white">Subscribing you to the Remix</h2>
+    </div>
+    <script>
       function subscribeToPlaylist(playlistId, accessToken) {
         return fetch(`/playlist/${playlistId}/subscribe`, {
           method: 'PUT',
@@ -76,12 +65,17 @@
 
       const accessToken = localStorage.getItem('spotify-remix-access-token');
       const refreshToken = localStorage.getItem('spotify-remix-refresh-token');
-      const queryParams = new URLSearchParams(window.location.search);
-      const playlistId = queryParams.get('playlistId');
+      const playlistId = new URLSearchParams(window.location.search).get('playlistId');
 
-      getAndSetTokens(accessToken, refreshToken, playlistId).then(x => {
+      if (!accessToken && !refreshToken) {
+        localStorage.setItem(
+          'spotify-remix-redirect-to',
+          `${window.location.protocol}//${window.location.host}/playlist?playlistId=${playlistId}`,
+        );
+        window.location = `${window.location.protocol}//${window.location.host}/login`;
+      } else {
         subscribeToPlaylist(playlistId, x.accessToken);
-      });
+      }
     </script>
   </body>
 </html>
