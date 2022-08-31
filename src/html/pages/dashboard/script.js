@@ -26,6 +26,7 @@ function getAndSetTokens() {
 
   if (paramAccessToken && paramRefreshToken) {
     setTokens(paramAccessToken, paramRefreshToken);
+    window.location = '/dashboard';
   } else if (storageAccessToken && storageRefreshToken) {
     return;
   } else {
