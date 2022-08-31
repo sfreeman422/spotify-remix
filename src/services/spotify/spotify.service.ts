@@ -23,32 +23,37 @@ export class SpotifyService {
       where: { accessToken },
       relations: ['memberPlaylists', 'ownedPlaylists'],
     });
-    return this.httpService.getUserPlaylists(accessToken).then(
-      (resp: AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>): PlaylistData => {
-        if (resp) {
-          const spotifyPlaylists: SpotifyPlaylist[] = resp.data.items;
-          if (user) {
-            const createdPlaylists = user?.ownedPlaylists?.map(x => x.playlistId) || [];
-            const memberPlaylists =
-              user?.memberPlaylists?.map(x => x.playlistId)?.filter(x => !createdPlaylists?.includes(x)) || [];
+    return this.httpService
+      .getUserPlaylists(accessToken)
+      .then(
+        (resp: AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>): PlaylistData => {
+          if (resp) {
+            const spotifyPlaylists: SpotifyPlaylist[] = resp.data.items;
+            if (user) {
+              const createdPlaylists = user?.ownedPlaylists?.map(x => x.playlistId) || [];
+              const memberPlaylists =
+                user?.memberPlaylists?.map(x => x.playlistId)?.filter(x => !createdPlaylists?.includes(x)) || [];
 
-            const orphanPlaylists = createdPlaylists.filter(x => !spotifyPlaylists.find(y => x === y.id));
-            const ownedPlaylists = spotifyPlaylists.filter(x => createdPlaylists?.includes(x.id));
-            const subscribedPlaylists = spotifyPlaylists.filter(x => memberPlaylists?.includes(x.id));
+              const orphanPlaylists = createdPlaylists.filter(x => !spotifyPlaylists.find(y => x === y.id));
+              const ownedPlaylists = spotifyPlaylists.filter(x => createdPlaylists?.includes(x.id));
+              const subscribedPlaylists = spotifyPlaylists.filter(x => memberPlaylists?.includes(x.id));
 
-            return {
-              ownedPlaylists,
-              orphanPlaylists,
-              subscribedPlaylists,
-              refreshToken: resp?.data?.refreshToken,
-              accessToken: resp?.data?.accessToken,
-            };
+              return {
+                ownedPlaylists,
+                orphanPlaylists,
+                subscribedPlaylists,
+                refreshToken: resp?.data?.refreshToken,
+                accessToken: resp?.data?.accessToken,
+              };
+            }
+            return { ownedPlaylists: [], orphanPlaylists: [], subscribedPlaylists: [] };
           }
           return { ownedPlaylists: [], orphanPlaylists: [], subscribedPlaylists: [] };
-        }
-        return { ownedPlaylists: [], orphanPlaylists: [], subscribedPlaylists: [] };
-      },
-    );
+        },
+      )
+      .catch(e => {
+        throw e;
+      });
   }
 
   async createUserPlaylist(accessToken: string): Promise<void> {

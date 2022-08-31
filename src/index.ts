@@ -45,8 +45,9 @@ axios.interceptors.response.use(undefined, error => {
         return axios.request(error.config).then(res => {
           res.data = { ...res.data, accessToken: user.accessToken, refreshToken: user.refreshToken };
         });
+      } else {
+        return Promise.reject('Unable to authenticate user');
       }
-      return undefined;
     });
   }
 

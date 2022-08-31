@@ -12,8 +12,12 @@ playlistController.get('/playlists', (req, res) => {
       .getUserPlaylists(accessToken)
       .then(x => res.send(x))
       .catch(e => {
-        console.log(e);
-        res.status(500).send(e);
+        console.error(e.message);
+        if (e?.message === 'Unable to authenticate user') {
+          res.status(401).send(e);
+        } else {
+          res.status(500).send(e);
+        }
       });
   } else {
     res.status(400).send('Missing access token!');

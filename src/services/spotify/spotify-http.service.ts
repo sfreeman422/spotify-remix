@@ -39,9 +39,16 @@ export class SpotifyHttpService {
           Authorization: `Bearer ${accessToken}`,
         },
       })
+      .then(response => {
+        if (!response) {
+          // This sucks, we need a way to reliably know what error status was returned by the get call.
+          throw new Error('Unable to authenticate user');
+        }
+        return response;
+      })
       .catch(e => {
         console.log(e);
-        throw new Error(e);
+        throw e;
       });
   }
 

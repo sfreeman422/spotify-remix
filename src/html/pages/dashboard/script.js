@@ -105,10 +105,16 @@ function getPlaylistsAndBuildDivs() {
   fetch('/playlists', {
     headers: {
       Authorization: `Bearer ${accessToken}`,
-      cache: 'no-cache, no-store',
+      'cache-control': 'no-store',
     },
   })
-    .then(x => x.json())
+    .then(x => {
+      if (x.ok) {
+        return x.json();
+      } else {
+        throw x;
+      }
+    })
     .then(playlistInfo => {
       if (playlistInfo.accessToken && playlistInfo.refreshToken) {
         setTokens(playlistInfo.accessToken, playlistInfo.refreshToken);
@@ -142,6 +148,14 @@ function getPlaylistsAndBuildDivs() {
 
       if (hasSubscribedPlaylists) {
         createFollowedPlaylists(subscribedPlaylists);
+      }
+    })
+    .catch(e => {
+      console.error(e);
+      if (e.status === 401) {
+        window.location = `${window.location.protocol}//${window.location.host}/login`;
+      } else {
+        console.log('a non 401 error occurred - we should render an error page');
       }
     });
 }
