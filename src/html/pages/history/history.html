@@ -1,56 +1,40 @@
 <html>
   <head>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Sans|Noto Sans 700" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
+    <link rel="stylesheet" href="/pages/history/style.css" />
     <style>
-      body {
-        background: black;
-      }
-
-      a {
-        word-wrap: break-word;
-      }
-
-      .card {
-        border-radius: 5px;
-        border: solid 1px;
-        background-color: rgb(201, 201, 201);
-        padding: 1rem;
-        margin: 1rem;
-        width: 300px;
-        word-wrap: normal;
-      }
-
-      .text-white {
-        color: white;
-      }
-
-      .text-green {
-        color: green;
-      }
-
-      .playlist {
-        display: flex;
-        flex-wrap: wrap;
-      }
-
       table {
-        background-color: white;
-        padding: 1rem;
+        background-color: black;
       }
 
       td {
-        border-color: black;
-        border-width: 1px;
-        border-style: solid;
         padding: 1rem;
-        margin: 1rem;
+        border-top: 1px;
+        border-bottom: 0px;
+        border-left: 0px;
+        border-right: 0px;
+        border-style: solid;
+        border-color: white;
       }
     </style>
   </head>
   <body>
-    <h1><span class="text-white">Spotify</span><span class="text-green">Remix</span></h1>
-    <h2 class="text-white">History</h2>
-    <button onclick="goToDashboard()">Visit your dashboard</button>
-    <div>
+    <div class="header flex-space-btwn">
+      <div id="logo">
+        <h1><span class="white">Remix</span><span class="green">.lol</span></h1>
+      </div>
+      <div
+        class="width-content margin-100 hover-white hover-pointer bg-green padding-100 bdr-rad-010"
+        onclick="goToDashboard()"
+      >
+        Dashboard
+      </div>
+      <div class="flex-space-even" id="navigation">
+        <div class="white margin-hor-100 flex-hor-center font-size-bigger">History</div>
+      </div>
+    </div>
+    <div class="app-content">
       <div id="playlists"></div>
     </div>
     <script>
@@ -69,22 +53,22 @@
           })
           .then(history => {
             document.getElementById('playlists').innerHTML = `
-            <table>
+            <table cellspacing="0">
               <tr>
-                <th>Song</th>
-                <th>Arist</th>
-                <th>Album</th>
-                <th>Added By:</th>
-                <th>Added On:</th>
+                <th class="font-size-big white">Song</th>
+                <th class="font-size-big white">Arist</th>
+                <th class="font-size-big white">Album</th>
+                <th class="font-size-big white">User</th>
+                <th class="font-size-big white">Date</th>
               </tr>
               ${history.map(x => {
                 return `
                 <tr>
-                  <td>${x.title}</td>
-                  <td>${x.artist}</td>
-                  <td>${x.album}</td>
-                  <td>${x.userId}</td>
-                  <td>${x.createdAt}</td>
+                  <td class="white">${x.title}</td>
+                  <td class="white">${x.artist}</td>
+                  <td class="white">${x.album}</td>
+                  <td class="white">${x.userId}</td>
+                  <td class="white">${x.createdAt}</td>
                 </tr>
                 `;
               })}

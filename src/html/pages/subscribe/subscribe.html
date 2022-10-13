@@ -15,17 +15,19 @@
         <h1><span class="white">Remix</span><span class="green">.lol</span></h1>
       </div>
       <div class="flex-space-even" id="navigation">
-        <div class="white margin-hor-100 flex-hor-center font-size-bigger">Dashboard</div>
+        <div class="white margin-hor-100 flex-hor-center font-size-bigger">Subscribe</div>
       </div>
     </div>
 
-    <div class="app-content" id="app-content">
-      <span class="material-symbols-outlined white font-size-gigantic">equalizer</span>
-      <h2 class="white">Subscribing you to the Remix</h2>
+    <div class="app-content flex-just-center" id="app-content">
+      <div class="flex-vert-center">
+        <span class="material-symbols-outlined white font-size-gigantic padding-100" id="icon">equalizer</span>
+        <h2 class="white font-size-normal" id="message">Subscribing you to the Remix...</h2>
+      </div>
     </div>
     <script>
       function subscribeToPlaylist(playlistId, accessToken) {
-        return fetch(`/playlist/${playlistId}/subscribe`, {
+        fetch(`/playlist/${playlistId}/subscribe`, {
           method: 'PUT',
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -40,14 +42,16 @@
             return x;
           })
           .then(x => {
-            if (x && x.message) {
+            if (x) {
+              document.getElementById('icon').className = document.getElementById('icon').className + ' green';
               document.getElementById(
                 'message',
               ).innerHTML = `Successfully subscribed! Sending you to this Remix's history...`;
             } else {
+              document.getElementById('icon').className = document.getElementById('icon').className + ' green';
               document.getElementById(
                 'message',
-              ).innerHTML = `It looks like you are already subscribed to this Remix! Sending you to this Remix's history`;
+              ).innerHTML = `It looks like you are already subscribed to this Remix! <br> Sending you to this Remix's history...`;
             }
             setTimeout(
               () =>
@@ -74,7 +78,7 @@
         );
         window.location = `${window.location.protocol}//${window.location.host}/login`;
       } else {
-        subscribeToPlaylist(playlistId, x.accessToken);
+        subscribeToPlaylist(playlistId, accessToken);
       }
     </script>
   </body>
