@@ -105,7 +105,7 @@ export class SpotifyService {
 
   async getTopSongs(members: User[], history: string[]): Promise<SongsByUser[]> {
     const historyIds = history;
-    const maxSongsPerArtistPerUser = 2;
+    const maxSongsPerArtistPerUser = 3;
     return members?.length
       ? await Promise.all(
           members.map(async (member: User) =>
@@ -127,7 +127,7 @@ export class SpotifyService {
               x.topSongs.forEach(song => {
                 historyIds.push(song.uri);
               });
-              console.log(seenArtists);
+
               return x;
             }),
           ),
