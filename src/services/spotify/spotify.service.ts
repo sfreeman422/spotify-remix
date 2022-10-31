@@ -6,7 +6,13 @@ import { User } from '../../shared/db/models/User';
 import { QueueService } from '../../shared/services/queue.service';
 import { UserService } from '../user/user.service';
 import { SpotifyHttpService } from './spotify-http.service';
-import { SpotifyPlaylist, SpotifyPlaylistItemInfo, SpotifyResponse, SpotifyUserData } from './spotify-http.interface';
+import {
+  SpotifyArtist,
+  SpotifyPlaylist,
+  SpotifyPlaylistItemInfo,
+  SpotifyResponse,
+  SpotifyUserData,
+} from './spotify-http.interface';
 import { PlaylistData, SongsByUser, SongWithUserData } from './spotify.interface';
 
 export class SpotifyService {
@@ -105,11 +111,28 @@ export class SpotifyService {
 
   async getTopSongs(members: User[], history: string[]): Promise<SongsByUser[]> {
     const historyIds = history;
+    const maxSongsPerArtistPerUser = 2;
     return members?.length
       ? await Promise.all(
           members.map(async (member: User) =>
             this.httpService.getTopSongsByUser(member).then(x => {
-              x.topSongs = x.topSongs.filter(song => !historyIds.includes(song.uri));
+              const seenArtists: Record<string, number> = {};
+
+              x.topSongs = x.topSongs.filter(song => {
+                let shouldSongBeIgnored = false;
+
+                song.artists.forEach(artist => {
+                  if (seenArtists[artist.id] && seenArtists[artist.id] >= maxSongsPerArtistPerUser) {
+                    shouldSongBeIgnored = true;
+                  } else if (seenArtists[artist.id]) {
+                    seenArtists[artist.id] = seenArtists[artist.id]++;
+                  } else {
+                    seenArtists[artist.id] = 1;
+                  }
+                });
+                return !historyIds.includes(song.uri) && !shouldSongBeIgnored;
+              });
+
               x.topSongs.forEach(song => {
                 historyIds.push(song.uri);
               });
