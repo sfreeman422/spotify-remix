@@ -114,14 +114,11 @@ export class SpotifyService {
 
               x.topSongs = x.topSongs.filter(song => {
                 let shouldSongBeIgnored = false;
-
+                // This log ensures that we only allow a given maxSongsPerArtistPerUser so that we do not get entire albums from one person.
                 song.artists.forEach(artist => {
-                  if (seenArtists[artist.id] && seenArtists[artist.id] >= maxSongsPerArtistPerUser) {
+                  seenArtists[artist.id] = seenArtists[artist.id] ? ++seenArtists[artist.id] : 1;
+                  if (seenArtists[artist.id] > maxSongsPerArtistPerUser) {
                     shouldSongBeIgnored = true;
-                  } else if (seenArtists[artist.id]) {
-                    seenArtists[artist.id] = seenArtists[artist.id]++;
-                  } else {
-                    seenArtists[artist.id] = 1;
                   }
                 });
                 return !historyIds.includes(song.uri) && !shouldSongBeIgnored;
@@ -130,6 +127,7 @@ export class SpotifyService {
               x.topSongs.forEach(song => {
                 historyIds.push(song.uri);
               });
+              console.log(seenArtists);
               return x;
             }),
           ),
