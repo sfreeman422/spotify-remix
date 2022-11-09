@@ -114,7 +114,7 @@ export class SpotifyService {
 
               x.topSongs = x.topSongs.filter(song => {
                 let shouldSongBeIgnored = false;
-                // This log ensures that we only allow a given maxSongsPerArtistPerUser so that we do not get entire albums from one person.
+                // This ensures that we only allow a given maxSongsPerArtistPerUser so that we do not get entire albums from one person.
                 song.artists.forEach(artist => {
                   seenArtists[artist.id] = seenArtists[artist.id] ? ++seenArtists[artist.id] : 1;
                   if (seenArtists[artist.id] > maxSongsPerArtistPerUser) {
@@ -141,6 +141,7 @@ export class SpotifyService {
     );
   }
 
+  // may need advanced filtering here to filter out songs per user.
   getLikedSongsIfNecessary(
     songsByUser: SongsByUser[],
     songsPerUser: number,
@@ -161,18 +162,6 @@ export class SpotifyService {
     });
   }
 
-  getRandomSongs(songs: SongWithUserData[], songsPerUser: number, playlistSongs: SongWithUserData[], count = 0): void {
-    const randomNumbers: Record<number, boolean> = {};
-    while (count < songsPerUser) {
-      const randomNumber = Math.floor(Math.random() * songs.length);
-      if (!randomNumbers[randomNumber]) {
-        randomNumbers[randomNumber] = true;
-        playlistSongs.push(songs[randomNumber]);
-        count += 1;
-      }
-    }
-  }
-
   generatePlaylist(music: SongsByUser[], songsPerUser: number): SongWithUserData[] {
     const playlistSongs: SongWithUserData[] = [];
     music.forEach((songsByUser: SongsByUser) => {
@@ -180,19 +169,19 @@ export class SpotifyService {
 
       const hasTopSongs = topSongs.length !== 0;
       const hasEnoughTopSongs = topSongs.length >= songsPerUser;
-      const hasEnoughLikedSongs = !!likedSongs && likedSongs.length >= songsPerUser;
+      const hasLikedSongs = likedSongs && likedSongs.length !== 0;
+      const hasEnoughLikedSongs = hasLikedSongs && likedSongs!.length >= songsPerUser;
       const hasEnoughTopSongsAndLikedSongs =
-        hasTopSongs && !!likedSongs && topSongs.length + likedSongs.length >= songsPerUser;
+        hasTopSongs && hasLikedSongs && topSongs.length + likedSongs!.length >= songsPerUser;
 
-      if (!hasTopSongs && !!likedSongs && hasEnoughLikedSongs) {
-        return this.getRandomSongs(likedSongs, songsPerUser, playlistSongs);
+      if (!hasTopSongs && hasLikedSongs && hasEnoughLikedSongs) {
+        playlistSongs.concat(likedSongs.slice(0, songsPerUser - 1));
       } else if (hasEnoughTopSongs) {
-        for (let i = 0; i < songsPerUser; i++) {
-          playlistSongs.push(topSongs[i]);
-        }
-      } else if (!hasEnoughTopSongs && !!likedSongs && hasEnoughTopSongsAndLikedSongs) {
+        playlistSongs.concat(topSongs.slice(0, songsPerUser - 1));
+      } else if (!hasEnoughTopSongs && hasEnoughTopSongsAndLikedSongs) {
         topSongs.forEach(song => playlistSongs.push(song));
-        this.getRandomSongs(likedSongs, songsPerUser, playlistSongs, topSongs.length);
+        playlistSongs.concat(topSongs);
+        playlistSongs.concat(likedSongs.slice(0, playlistSongs.length - songsPerUser));
       }
     });
 
@@ -243,7 +232,11 @@ export class SpotifyService {
     return undefined;
   }
 
-  removeAllPlaylistTracks(playlistId: string, accessToken: string, playlistTracks: SpotifyPlaylistItemInfo[]) {
+  removeAllPlaylistTracks(
+    playlistId: string,
+    accessToken: string,
+    playlistTracks: SpotifyPlaylistItemInfo[],
+  ): Promise<any> {
     const calls = [];
     if (playlistTracks.length > 100) {
       const numberOfCalls = Math.ceil(playlistTracks.length / 100);
