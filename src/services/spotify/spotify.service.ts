@@ -149,7 +149,7 @@ export class SpotifyService {
   ): Promise<SongsByUser>[] {
     const historyIds = history;
     return songsByUser.map(async (x: SongsByUser) => {
-      if (x.topSongs.length < songsPerUser) {
+      if (x.topSongs.length < songsPerUser && x.likedSongs.length < songsPerUser) {
         x.topSongs.forEach(song => historyIds.push(song.uri));
         const newSongsByUser: SongsByUser = Object.assign({}, x);
         return this.httpService.getLikedSongsByUser(x.user).then(y => {
