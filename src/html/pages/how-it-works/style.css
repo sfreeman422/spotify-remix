@@ -1,0 +1,28 @@
+@import url(../../styles/index.css);
+
+.width-small {
+  width: 40%;
+}
+
+.width-large {
+  width: 80%;
+}
+
+.step-left {
+  padding: 0.5rem;
+  border-right-color: white;
+  border-right-width: 2px;
+  border-right-style: solid;
+}
+
+.step-right {
+  padding: 0.5rem;
+  border-left-color: white;
+  border-left-width: 2px;
+  border-left-style: solid;
+  text-align: right;
+}
+
+.step-item {
+  margin: 1rem;
+}

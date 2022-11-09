@@ -61,10 +61,10 @@ function createOwnedPlaylists(playlists) {
                     <h4 class="white">${item.name}</h3>
                     <div class="flex-space-even">
                       <div class="hover-white hover-pointer bg-green padding-100 bdr-rad-010 width-content">
-                        <a class="z-1 black font-size-small" href=${item.external_urls.spotify}>Open on Spotify</a>
+                        <a class="black font-size-small" href=${item.external_urls.spotify}>Open on Spotify</a>
                       </div>
                       <div class="hover-white hover-pointer bg-green padding-100 bdr-rad-010 width-content" onclick="copyText('${window.location.protocol}//${window.location.host}/playlist?playlistId=${item.id}')">
-                        <span class="z-1 black font-size-small" id="copy-invite-link">Copy Invite Link</span>
+                        <span class="black font-size-small" id="copy-invite-link">Copy Invite Link</span>
                       </div>
                     </div>
                   </div>`),

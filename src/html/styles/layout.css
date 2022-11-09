@@ -23,6 +23,10 @@
   flex-direction: column;
 }
 
+.flex-column {
+  flex-direction: column;
+}
+
 /* margin */
 .margin-100 {
   margin: 1rem;
