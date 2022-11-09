@@ -49,6 +49,18 @@
   margin-bottom: 1rem;
 }
 
+.margin-ver-100 {
+  margin: 1rem 0rem;
+}
+
+.margin-ver-050 {
+  margin: 0.5rem 0rem;
+}
+
+.margin-ver-025 {
+  margin: 0.25rem 0rem;
+}
+
 /* margin horizontal */
 .margin-hor-100 {
   margin: 0rem 1rem;
