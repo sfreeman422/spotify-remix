@@ -170,9 +170,9 @@ export class SpotifyService {
       const hasTopSongs = topSongs.length !== 0;
       const hasEnoughTopSongs = topSongs.length >= songsPerUser;
       const hasLikedSongs = likedSongs && likedSongs.length !== 0;
-      const hasEnoughLikedSongs = hasLikedSongs && likedSongs!.length >= songsPerUser;
+      const hasEnoughLikedSongs = hasLikedSongs && likedSongs.length >= songsPerUser;
       const hasEnoughTopSongsAndLikedSongs =
-        hasTopSongs && hasLikedSongs && topSongs.length + likedSongs!.length >= songsPerUser;
+        hasTopSongs && hasLikedSongs && topSongs.length + likedSongs.length >= songsPerUser;
 
       if (!hasTopSongs && hasLikedSongs && hasEnoughLikedSongs) {
         playlistSongs.concat(likedSongs.slice(0, songsPerUser - 1));

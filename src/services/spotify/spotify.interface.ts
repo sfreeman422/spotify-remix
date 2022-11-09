@@ -15,5 +15,5 @@ export interface PlaylistData extends APIResponse {
 export interface SongsByUser extends APIResponse {
   user: User;
   topSongs: SongWithUserData[];
-  likedSongs?: SongWithUserData[];
+  likedSongs: SongWithUserData[];
 }

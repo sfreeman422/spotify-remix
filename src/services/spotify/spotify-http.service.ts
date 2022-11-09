@@ -184,9 +184,10 @@ export class SpotifyHttpService {
             return this.getTopSongsByUser(user, x.data.next).then((data: SongsByUser) => ({
               user: user,
               topSongs: songs.concat(data.topSongs),
+              likedSongs: [],
             }));
           }
-          return new Promise((resolve, _reject) => resolve({ user, topSongs: songs }));
+          return new Promise((resolve, _reject) => resolve({ user, topSongs: songs, likedSongs: [] }));
         },
       )
       .catch(e => {
