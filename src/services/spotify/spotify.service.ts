@@ -23,30 +23,37 @@ export class SpotifyService {
       where: { accessToken },
       relations: ['memberPlaylists', 'ownedPlaylists'],
     });
-    return this.httpService.getUserPlaylists(accessToken).then(
-      (resp: AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>): PlaylistData => {
-        if (resp) {
-          const spotifyPlaylists: SpotifyPlaylist[] = resp.data.items;
-          if (user) {
-            const createdPlaylists = user?.ownedPlaylists?.map(x => x.playlistId) || [];
-            const memberPlaylists =
-              user?.memberPlaylists?.map(x => x.playlistId)?.filter(x => !createdPlaylists?.includes(x)) || [];
+    return this.httpService
+      .getUserPlaylists(accessToken)
+      .then(
+        (resp: AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>): PlaylistData => {
+          if (resp) {
+            const spotifyPlaylists: SpotifyPlaylist[] = resp.data.items;
+            if (user) {
+              const createdPlaylists = user?.ownedPlaylists?.map(x => x.playlistId) || [];
+              const memberPlaylists =
+                user?.memberPlaylists?.map(x => x.playlistId)?.filter(x => !createdPlaylists?.includes(x)) || [];
 
-            const orphanPlaylists = createdPlaylists.filter(x => !spotifyPlaylists.find(y => x === y.id));
-            const ownedPlaylists = spotifyPlaylists.filter(x => createdPlaylists?.includes(x.id));
-            const subscribedPlaylists = spotifyPlaylists.filter(x => memberPlaylists?.includes(x.id));
+              const orphanPlaylists = createdPlaylists.filter(x => !spotifyPlaylists.find(y => x === y.id));
+              const ownedPlaylists = spotifyPlaylists.filter(x => createdPlaylists?.includes(x.id));
+              const subscribedPlaylists = spotifyPlaylists.filter(x => memberPlaylists?.includes(x.id));
 
-            return {
-              ownedPlaylists,
-              orphanPlaylists,
-              subscribedPlaylists,
-            };
+              return {
+                ownedPlaylists,
+                orphanPlaylists,
+                subscribedPlaylists,
+                refreshToken: resp?.data?.refreshToken,
+                accessToken: resp?.data?.accessToken,
+              };
+            }
+            return { ownedPlaylists: [], orphanPlaylists: [], subscribedPlaylists: [] };
           }
           return { ownedPlaylists: [], orphanPlaylists: [], subscribedPlaylists: [] };
-        }
-        return { ownedPlaylists: [], orphanPlaylists: [], subscribedPlaylists: [] };
-      },
-    );
+        },
+      )
+      .catch(e => {
+        throw e;
+      });
   }
 
   async createUserPlaylist(accessToken: string): Promise<void> {
@@ -65,7 +72,10 @@ export class SpotifyService {
     const playlistsOwnedAndToBeDeleted: Playlist[] = ownedPlaylists.filter(x =>
       playlists.some(y => x.playlistId === y),
     );
-    return this.userService.deletePlaylist(playlistsOwnedAndToBeDeleted);
+    if (playlistsOwnedAndToBeDeleted.length) {
+      return this.userService.deletePlaylist(playlistsOwnedAndToBeDeleted);
+    }
+    throw new Error(`Unable to find playlist with id ${playlists}`);
   }
 
   unsubscribeFromPlaylist(_accessToken: string, _playlistId: string): void {
@@ -95,14 +105,29 @@ export class SpotifyService {
 
   async getTopSongs(members: User[], history: string[]): Promise<SongsByUser[]> {
     const historyIds = history;
+    const maxSongsPerArtistPerUser = 3;
     return members?.length
       ? await Promise.all(
           members.map(async (member: User) =>
             this.httpService.getTopSongsByUser(member).then(x => {
-              x.topSongs = x.topSongs.filter(song => !historyIds.includes(song.uri));
+              const seenArtists: Record<string, number> = {};
+
+              x.topSongs = x.topSongs.filter(song => {
+                let shouldSongBeIgnored = false;
+                // This ensures that we only allow a given maxSongsPerArtistPerUser so that we do not get entire albums from one person.
+                song.artists.forEach(artist => {
+                  seenArtists[artist.id] = seenArtists[artist.id] ? ++seenArtists[artist.id] : 1;
+                  if (seenArtists[artist.id] > maxSongsPerArtistPerUser) {
+                    shouldSongBeIgnored = true;
+                  }
+                });
+                return !historyIds.includes(song.uri) && !shouldSongBeIgnored;
+              });
+
               x.topSongs.forEach(song => {
                 historyIds.push(song.uri);
               });
+
               return x;
             }),
           ),
@@ -116,6 +141,7 @@ export class SpotifyService {
     );
   }
 
+  // may need advanced filtering here to filter out songs per user.
   getLikedSongsIfNecessary(
     songsByUser: SongsByUser[],
     songsPerUser: number,
@@ -123,7 +149,7 @@ export class SpotifyService {
   ): Promise<SongsByUser>[] {
     const historyIds = history;
     return songsByUser.map(async (x: SongsByUser) => {
-      if (x.topSongs.length < songsPerUser) {
+      if (x.topSongs.length < songsPerUser && x.likedSongs.length < songsPerUser) {
         x.topSongs.forEach(song => historyIds.push(song.uri));
         const newSongsByUser: SongsByUser = Object.assign({}, x);
         return this.httpService.getLikedSongsByUser(x.user).then(y => {
@@ -136,39 +162,26 @@ export class SpotifyService {
     });
   }
 
-  getRandomSongs(songs: SongWithUserData[], songsPerUser: number, playlistSongs: SongWithUserData[], count = 0): void {
-    const randomNumbers: Record<number, boolean> = {};
-    while (count < songsPerUser) {
-      const randomNumber = Math.floor(Math.random() * songs.length);
-      if (!randomNumbers[randomNumber]) {
-        randomNumbers[randomNumber] = true;
-        playlistSongs.push(songs[randomNumber]);
-        count += 1;
-      }
-    }
-  }
-
   generatePlaylist(music: SongsByUser[], songsPerUser: number): SongWithUserData[] {
-    console.log(songsPerUser);
     const playlistSongs: SongWithUserData[] = [];
     music.forEach((songsByUser: SongsByUser) => {
       const { topSongs, likedSongs } = songsByUser;
 
       const hasTopSongs = topSongs.length !== 0;
       const hasEnoughTopSongs = topSongs.length >= songsPerUser;
-      const hasEnoughLikedSongs = !!likedSongs && likedSongs.length >= songsPerUser;
+      const hasLikedSongs = likedSongs && likedSongs.length !== 0;
+      const hasEnoughLikedSongs = hasLikedSongs && likedSongs.length >= songsPerUser;
       const hasEnoughTopSongsAndLikedSongs =
-        hasTopSongs && !!likedSongs && topSongs.length + likedSongs.length >= songsPerUser;
+        hasTopSongs && hasLikedSongs && topSongs.length + likedSongs.length >= songsPerUser;
 
-      if (!hasTopSongs && !!likedSongs && hasEnoughLikedSongs) {
-        return this.getRandomSongs(likedSongs, songsPerUser, playlistSongs);
+      if (!hasTopSongs && hasLikedSongs && hasEnoughLikedSongs) {
+        playlistSongs.concat(likedSongs.slice(0, songsPerUser - 1));
       } else if (hasEnoughTopSongs) {
-        for (let i = 0; i < songsPerUser; i++) {
-          playlistSongs.push(topSongs[i]);
-        }
-      } else if (!hasEnoughTopSongs && !!likedSongs && hasEnoughTopSongsAndLikedSongs) {
+        playlistSongs.concat(topSongs.slice(0, songsPerUser - 1));
+      } else if (!hasEnoughTopSongs && hasEnoughTopSongsAndLikedSongs) {
         topSongs.forEach(song => playlistSongs.push(song));
-        this.getRandomSongs(likedSongs, songsPerUser, playlistSongs, topSongs.length);
+        playlistSongs.concat(topSongs);
+        playlistSongs.concat(likedSongs.slice(0, playlistSongs.length - songsPerUser));
       }
     });
 
@@ -176,7 +189,7 @@ export class SpotifyService {
   }
 
   async getAllMusic(members: User[], songsPerUser: number, history: Song[]): Promise<SongWithUserData[]> {
-    const historyIds: string[] = this.filterByHours(history, 'createdAt', 12).map(x => x.spotifyUrl);
+    const historyIds: string[] = this.filterByHours(history, 'createdAt', 144).map(x => x.spotifyUrl);
 
     let music: SongsByUser[] = await this.getTopSongs(members, historyIds);
 
@@ -203,7 +216,6 @@ export class SpotifyService {
       const { members, history, owner } = playlist;
 
       const songsPerUser = this.getNumberOfItemsPerUser(members.length);
-      console.log(songsPerUser);
       const music: SongWithUserData[] = await this.getAllMusic(members, songsPerUser, history);
       const orderedPlaylist: SongWithUserData[] = this.roundRobinSort(music);
       // Get all songs from the playlist.
@@ -220,7 +232,11 @@ export class SpotifyService {
     return undefined;
   }
 
-  removeAllPlaylistTracks(playlistId: string, accessToken: string, playlistTracks: SpotifyPlaylistItemInfo[]) {
+  removeAllPlaylistTracks(
+    playlistId: string,
+    accessToken: string,
+    playlistTracks: SpotifyPlaylistItemInfo[],
+  ): Promise<any> {
     const calls = [];
     if (playlistTracks.length > 100) {
       const numberOfCalls = Math.ceil(playlistTracks.length / 100);
@@ -237,8 +253,6 @@ export class SpotifyService {
     return Promise.all(calls);
   }
 
-  // Note: This sort is a "best effort" to maintain order within the playlist.
-  // If a failure occurs or one request completes sooner than another the order will not be maintained.
   roundRobinSort(arr: SongWithUserData[]): SongWithUserData[] {
     const allSongs = arr;
     let sortedArr: SongWithUserData[] = [];

@@ -12,17 +12,17 @@ indexController.get('/', (_req, res) => {
 
 indexController.get('/dashboard', (_req, res) => {
   console.log('indexController /dashboard route hit');
-  res.sendFile(path.join(__dirname, '../html', 'dashboard.html'));
+  res.sendFile(path.join(__dirname, '../html/pages/dashboard', 'dashboard.html'));
 });
 
 indexController.get('/playlist', (_req, res) => {
   console.log('indexController /playlist hit');
-  res.sendFile(path.join(__dirname, '../html', 'subscribe.html'));
+  res.sendFile(path.join(__dirname, '../html/pages/subscribe', 'subscribe.html'));
 });
 
 indexController.get('/history', (_req, res) => {
   console.log('indexController /history route hit');
-  res.sendFile(path.join(__dirname, '../html', 'history.html'));
+  res.sendFile(path.join(__dirname, '../html/pages/history', 'history.html'));
 });
 
 export const controllers = [indexController, authController, playlistController];

@@ -16,6 +16,9 @@ const app: Application = express();
 const PORT = process.env.PORT ? process.env.PORT : 3000;
 const refreshService = RefreshService.getInstance();
 
+// TODO: Remove this once we are hosting on NGINX.
+app.use(express.static(__dirname + '/html'));
+
 app.use(
   bodyParser.urlencoded({
     extended: true,
@@ -39,9 +42,12 @@ axios.interceptors.response.use(undefined, error => {
     return refreshService.refresh(accessToken).then((user: User | undefined) => {
       if (user) {
         error.config.headers.authorization = `Bearer ${user.accessToken}`;
-        return axios.request(error.config);
+        return axios.request(error.config).then(res => {
+          res.data = { ...res.data, accessToken: user.accessToken, refreshToken: user.refreshToken };
+        });
+      } else {
+        return Promise.reject('Unable to authenticate user');
       }
-      return undefined;
     });
   }
 

@@ -1,0 +1,10 @@
+.header {
+  height: 87px;
+  margin: 0 10rem;
+}
+.app-content {
+  height: calc(100vh - 88px);
+  max-height: calc(100vh - 88px);
+  margin-left: 10rem;
+  margin-right: 10rem;
+}

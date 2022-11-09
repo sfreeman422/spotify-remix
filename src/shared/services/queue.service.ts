@@ -18,8 +18,8 @@ export class QueueService {
   }
 
   dequeue(key: string): Promise<void> {
-    console.log('dequeueing for key', key);
     if (Object.keys(this.state).includes(key) && this.state[key].length > 0) {
+      console.log('dequeueing for key', key);
       return this.state[key][0]().then(_ => {
         this.state[key].splice(0, 1);
         return this.dequeue(key);

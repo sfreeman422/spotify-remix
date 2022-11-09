@@ -1,0 +1,30 @@
+/* font-size */
+.font-size-gigantic {
+  font-size: 6rem;
+}
+.font-size-biggest {
+  font-size: 3rem;
+}
+.font-size-bigger {
+  font-size: 2rem;
+}
+.font-size-big {
+  font-size: 1.5rem;
+}
+.font-size-normal {
+  font-size: 1rem;
+}
+.font-size-small {
+  font-size: 0.75rem;
+}
+.font-size-smaller {
+  font-size: 0.5rem;
+}
+.font-size-smallest {
+  font-size: 0.25rem;
+}
+
+/* font-weight */
+.font-weight-700 {
+  font-weight: 700;
+}

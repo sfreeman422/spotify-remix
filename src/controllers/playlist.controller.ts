@@ -12,8 +12,12 @@ playlistController.get('/playlists', (req, res) => {
       .getUserPlaylists(accessToken)
       .then(x => res.send(x))
       .catch(e => {
-        console.log(e);
-        res.status(500).send(e);
+        console.error(e.message);
+        if (e?.message === 'Unable to authenticate user') {
+          res.status(401).send(e);
+        } else {
+          res.status(500).send(e);
+        }
       });
   } else {
     res.status(400).send('Missing access token!');
@@ -51,13 +55,12 @@ playlistController.put('/playlist/:playlistId/subscribe', (req, res) => {
   }
 });
 
-// Should create a new playlist for the user that is public and available to be shared with others.
 playlistController.post('/playlist', (req, res) => {
   const { authorization } = req.headers;
   if (authorization) {
     spotifyService
       .createUserPlaylist(authorization)
-      .then(_ => res.send())
+      .then(() => res.send())
       .catch(e => {
         console.error(e);
         res.status(500).send(e);
@@ -68,14 +71,26 @@ playlistController.post('/playlist', (req, res) => {
 });
 
 // Should delete the given playlist by Id
-playlistController.delete('/playlist', (req, res) => {
+playlistController.delete('/playlist', async (req, res) => {
   const { playlists } = req.body;
   const { authorization } = req.headers;
   if (authorization && playlists) {
     const accessToken = authorization.split(' ')[1];
-    res.send(spotifyService.removePlaylist(accessToken, playlists));
+    try {
+      const removal = await spotifyService.removePlaylist(accessToken, playlists);
+      res.send(removal);
+    } catch (e) {
+      // This should not just be a 500 but should be more reflective of true error state.
+      res.status(500).send(e);
+    }
   } else {
-    res.status(400).send('Missing authorization or playlists');
+    let message;
+    if (!authorization) {
+      message = 'Missing authorization header';
+    } else if (!playlists) {
+      message = 'Missing playlists';
+    }
+    res.status(400).send(message);
   }
 });
 

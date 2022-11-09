@@ -1,0 +1,28 @@
+@import url(../../styles/index.css);
+
+.card {
+  border-radius: 10px;
+  background-color: #2d2b2f;
+  padding: 1rem;
+  margin: 1rem;
+  width: 20rem;
+  text-align: center;
+}
+.card:first-child {
+  margin-left: 0rem;
+}
+
+.playlist {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.playlists {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.playlist-img {
+  width: 200px;
+}

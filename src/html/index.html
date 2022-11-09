@@ -1,10 +1,34 @@
+<!DOCTYPE html>
 <html>
-  <head></head>
+  <head>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Sans|Noto Sans 700" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
   <body>
-    <div>
-      <div id="login">
-        <h1>First, log in to spotify</h1>
-        <a href="/login">Log in</a>
+    <div class="header flex-space-btwn">
+      <div id="logo">
+        <h1><span class="white">Remix</span><span class="green">.lol</span></h1>
+      </div>
+      <div class="flex-space-even" id="navigation">
+        <div class="white margin-hor-100 flex-hor-center hover-green hover-pointer">How It Works</div>
+        <div class="white margin-hor-100 flex-hor-center">|</div>
+        <div class="white margin-hor-100 flex-hor-center hover-pointer">
+          <a href="/login" class="z-1 white hover-green">Log In with Spotify</a>
+        </div>
+      </div>
+    </div>
+    <div class="bg-white flex-vert-center flex-just-center content" id="content">
+      <div class="flex-vert-center margin-100 padding-100">
+        <h1 class="font-size-biggest font-weight-700 white">
+          <span class="green">Discover</span> new music curated by <span class="green">your friends.</span>
+        </h1>
+        <h2 class="font-size-bigger white">Automated. Asynchronous. Amazing.</h2>
+        <p class="font-size-big white">
+          Remix.lol creates a playlist each week with all of the music you and your friends have been listening to.
+        </p>
+      </div>
+      <div class="margin-hor-100 hover-white hover-pointer bg-green padding-100 bdr-rad-010">
+        <a href="/login" class="z-1 black">Log In with Spotify</a>
       </div>
     </div>
   </body>

@@ -1,0 +1,85 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Sans|Noto Sans 700" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
+    <link rel="stylesheet" href="/pages/history/style.css" />
+    <style>
+      table {
+        background-color: black;
+      }
+
+      td {
+        padding: 1rem;
+        border-top: 1px;
+        border-bottom: 0px;
+        border-left: 0px;
+        border-right: 0px;
+        border-style: solid;
+        border-color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header flex-space-btwn">
+      <div id="logo">
+        <h1><span class="white">Remix</span><span class="green">.lol</span></h1>
+      </div>
+      <div
+        class="width-content margin-100 hover-white hover-pointer bg-green padding-100 bdr-rad-010"
+        onclick="goToDashboard()"
+      >
+        Dashboard
+      </div>
+      <div class="flex-space-even" id="navigation">
+        <div class="white margin-hor-100 flex-hor-center font-size-bigger">History</div>
+      </div>
+    </div>
+    <div class="app-content">
+      <div id="playlists"></div>
+    </div>
+    <script>
+      function goToDashboard() {
+        window.location = `${window.location.protocol}//${window.location.host}/dashboard`;
+      }
+      let history;
+      const params = new URLSearchParams(window.location.search);
+      const playlistId = params.get('playlistId');
+      if (playlistId) {
+        fetch(`playlist/${playlistId}/history`)
+          .then(history => {
+            if (history.ok) {
+              return history.json();
+            }
+          })
+          .then(history => {
+            document.getElementById('playlists').innerHTML = `
+            <table cellspacing="0">
+              <tr>
+                <th class="font-size-big white">Song</th>
+                <th class="font-size-big white">Arist</th>
+                <th class="font-size-big white">Album</th>
+                <th class="font-size-big white">User</th>
+                <th class="font-size-big white">Date</th>
+              </tr>
+              ${history.map(x => {
+                return `
+                <tr>
+                  <td class="white">${x.title}</td>
+                  <td class="white">${x.artist}</td>
+                  <td class="white">${x.album}</td>
+                  <td class="white">${x.userId}</td>
+                  <td class="white">${x.createdAt}</td>
+                </tr>
+                `;
+              })}
+            </table>
+          `;
+          });
+      } else {
+        document.getElementById('playlists').innerHTML = `
+        <p class="text-red">Unable to retrieve Remix history.</p>
+        `;
+      }
+    </script>
+  </body>
+</html>
