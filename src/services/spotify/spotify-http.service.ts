@@ -172,17 +172,18 @@ export class SpotifyHttpService {
       .get<SpotifyResponse<SpotifyTrack[]>>(url, { headers })
       .then<SongsByUser>(
         (x: AxiosResponse<SpotifyResponse<SpotifyTrack[]>>): Promise<SongsByUser> => {
-          const songs = x.data.items.map(
+          console.log(x);
+          const songs = x?.data?.items.map(
             (song: SpotifyTrack): SongWithUserData => ({
               ...song,
               spotifyId: user.spotifyId,
             }),
           );
 
-          if (x.data.next) {
-            return this.getTopSongsByUser(user, x.data.next).then((data: SongsByUser) => ({
+          if (x?.data?.next) {
+            return this.getTopSongsByUser(user, x?.data?.next).then((data: SongsByUser) => ({
               user: user,
-              topSongs: songs.concat(data.topSongs),
+              topSongs: songs.concat(data?.topSongs),
               likedSongs: [],
             }));
           }
