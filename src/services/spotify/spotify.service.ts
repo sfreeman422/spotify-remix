@@ -192,7 +192,6 @@ export class SpotifyService {
     const historyIds: string[] = history.map(x => x.spotifyUrl);
 
     let music: SongsByUser[] = await this.getTopSongs(members, historyIds);
-    console.log('getAllMusic', music.length);
     music = await Promise.all(this.getLikedSongsIfNecessary(music, songsPerUser, historyIds));
 
     return this.generatePlaylist(music, songsPerUser);
