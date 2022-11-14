@@ -166,6 +166,7 @@ export class SpotifyService {
     const playlistSongs: SongWithUserData[] = [];
     music.forEach((songsByUser: SongsByUser) => {
       const { topSongs, likedSongs } = songsByUser;
+      console.log(topSongs);
 
       const hasTopSongs = topSongs.length !== 0;
       const hasEnoughTopSongs = topSongs.length >= songsPerUser;
