@@ -166,22 +166,10 @@ export class SpotifyService {
     let playlistSongs: SongWithUserData[] = [];
     music.forEach((songsByUser: SongsByUser) => {
       const { topSongs, likedSongs } = songsByUser;
-
-      const hasEnoughTopSongs = topSongs.length >= songsPerUser;
-      const hasEnoughTopSongsAndLikedSongs = topSongs.length + likedSongs.length >= songsPerUser;
       console.log('user: ', songsByUser.user.spotifyId, 'top songs: ', topSongs.length);
       console.log('user: ', songsByUser.user.spotifyId, 'liked songs: ', likedSongs.length);
-      console.log('user: ', songsByUser.user.spotifyId, 'hasEnoughTopSongs: ', hasEnoughTopSongs);
-      console.log('user: ', songsByUser.user.spotifyId, 'hasEnoughTopAndLikedSongs', hasEnoughTopSongsAndLikedSongs);
-
-      if (hasEnoughTopSongs) {
-        playlistSongs = playlistSongs.concat(topSongs.slice(0, songsPerUser - 1));
-      } else {
-        const lastIndex = songsPerUser - topSongs.length - 1;
-        console.log('lastIndex', lastIndex);
-        playlistSongs = playlistSongs.concat(topSongs);
-        playlistSongs = playlistSongs.concat(likedSongs.slice(0, lastIndex));
-      }
+      const lastIndex = songsPerUser - topSongs.length;
+      playlistSongs = playlistSongs.concat(topSongs.slice(0, songsPerUser)).concat(likedSongs.slice(0, lastIndex));
     });
 
     console.log('playlistSongs', playlistSongs.length);
