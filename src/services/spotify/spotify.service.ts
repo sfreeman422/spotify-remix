@@ -163,7 +163,7 @@ export class SpotifyService {
   }
 
   generatePlaylist(music: SongsByUser[], songsPerUser: number): SongWithUserData[] {
-    const playlistSongs: SongWithUserData[] = [];
+    let playlistSongs: SongWithUserData[] = [];
     music.forEach((songsByUser: SongsByUser) => {
       const { topSongs, likedSongs } = songsByUser;
       console.log('user: ', songsByUser.user.spotifyId, 'songs: ', topSongs.length);
@@ -176,13 +176,13 @@ export class SpotifyService {
         hasTopSongs && hasLikedSongs && topSongs.length + likedSongs.length >= songsPerUser;
 
       if (!hasTopSongs && hasLikedSongs && hasEnoughLikedSongs) {
-        playlistSongs.concat(likedSongs.slice(0, songsPerUser - 1));
+        playlistSongs = playlistSongs.concat(likedSongs.slice(0, songsPerUser - 1));
       } else if (hasEnoughTopSongs) {
-        playlistSongs.concat(topSongs.slice(0, songsPerUser - 1));
+        playlistSongs = playlistSongs.concat(topSongs.slice(0, songsPerUser - 1));
       } else if (!hasEnoughTopSongs && hasEnoughTopSongsAndLikedSongs) {
         topSongs.forEach(song => playlistSongs.push(song));
-        playlistSongs.concat(topSongs);
-        playlistSongs.concat(likedSongs.slice(0, playlistSongs.length - songsPerUser));
+        playlistSongs = playlistSongs.concat(topSongs);
+        playlistSongs = playlistSongs.concat(likedSongs.slice(0, playlistSongs.length - songsPerUser));
       }
     });
 
