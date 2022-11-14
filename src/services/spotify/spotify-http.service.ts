@@ -173,7 +173,7 @@ export class SpotifyHttpService {
       })
       .then<SongsByUser>(
         (x: AxiosResponse<SpotifyResponse<SpotifyTrack[]>>): Promise<SongsByUser> => {
-          console.log(x);
+          console.log(x?.data);
           const songs = x?.data?.items.map(
             (song: SpotifyTrack): SongWithUserData => ({
               ...song,

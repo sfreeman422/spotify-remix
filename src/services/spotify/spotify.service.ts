@@ -185,6 +185,8 @@ export class SpotifyService {
       }
     });
 
+    console.log(playlistSongs);
+
     return playlistSongs;
   }
 
