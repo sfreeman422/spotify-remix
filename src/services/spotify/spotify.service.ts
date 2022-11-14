@@ -180,9 +180,10 @@ export class SpotifyService {
       } else if (hasEnoughTopSongs) {
         playlistSongs = playlistSongs.concat(topSongs.slice(0, songsPerUser - 1));
       } else if (!hasEnoughTopSongs && hasEnoughTopSongsAndLikedSongs) {
-        topSongs.forEach(song => playlistSongs.push(song));
         playlistSongs = playlistSongs.concat(topSongs);
-        playlistSongs = playlistSongs.concat(likedSongs.slice(0, playlistSongs.length - songsPerUser));
+        playlistSongs = playlistSongs.concat(
+          likedSongs.slice(0, playlistSongs.length - (songsPerUser - topSongs.length)),
+        );
       }
     });
 
