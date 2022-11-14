@@ -172,7 +172,7 @@ export class SpotifyHttpService {
       .get<SpotifyResponse<SpotifyTrack[]>>(url, { headers })
       .then<SongsByUser>(
         (x: AxiosResponse<SpotifyResponse<SpotifyTrack[]>>): Promise<SongsByUser> => {
-          if (x.data === undefined) {
+          if (x?.data === undefined) {
             console.log(x);
           }
           const songs = x?.data?.items.map(
