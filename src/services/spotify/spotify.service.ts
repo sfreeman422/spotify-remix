@@ -166,7 +166,7 @@ export class SpotifyService {
     const playlistSongs: SongWithUserData[] = [];
     music.forEach((songsByUser: SongsByUser) => {
       const { topSongs, likedSongs } = songsByUser;
-      console.log(topSongs);
+      console.log('user: ', songsByUser.user, 'songs: ', topSongs.length);
 
       const hasTopSongs = topSongs.length !== 0;
       const hasEnoughTopSongs = topSongs.length >= songsPerUser;
@@ -186,7 +186,7 @@ export class SpotifyService {
       }
     });
 
-    console.log(playlistSongs);
+    console.log('playlistSongs', playlistSongs.length);
 
     return playlistSongs;
   }
@@ -195,7 +195,7 @@ export class SpotifyService {
     const historyIds: string[] = this.filterByHours(history, 'createdAt', 144).map(x => x.spotifyUrl);
 
     let music: SongsByUser[] = await this.getTopSongs(members, historyIds);
-
+    console.log('getAllMusic', music.length);
     music = await Promise.all(this.getLikedSongsIfNecessary(music, songsPerUser, historyIds));
 
     return this.generatePlaylist(music, songsPerUser);
