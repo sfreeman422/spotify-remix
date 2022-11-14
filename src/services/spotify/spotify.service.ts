@@ -168,22 +168,17 @@ export class SpotifyService {
       const { topSongs, likedSongs } = songsByUser;
       console.log('user: ', songsByUser.user.spotifyId, 'songs: ', topSongs.length);
 
-      const hasTopSongs = topSongs.length !== 0;
       const hasEnoughTopSongs = topSongs.length >= songsPerUser;
-      const hasLikedSongs = likedSongs && likedSongs.length !== 0;
-      const hasEnoughLikedSongs = hasLikedSongs && likedSongs.length >= songsPerUser;
-      const hasEnoughTopSongsAndLikedSongs =
-        hasTopSongs && hasLikedSongs && topSongs.length + likedSongs.length >= songsPerUser;
+      const hasEnoughTopSongsAndLikedSongs = topSongs.length + likedSongs.length >= songsPerUser;
 
-      if (!hasTopSongs && hasLikedSongs && hasEnoughLikedSongs) {
-        playlistSongs = playlistSongs.concat(likedSongs.slice(0, songsPerUser - 1));
-      } else if (hasEnoughTopSongs) {
+      if (hasEnoughTopSongs) {
         playlistSongs = playlistSongs.concat(topSongs.slice(0, songsPerUser - 1));
-      } else if (!hasEnoughTopSongs && hasEnoughTopSongsAndLikedSongs) {
+      } else if (hasEnoughTopSongsAndLikedSongs) {
+        const totalTopSongs = topSongs.length;
         playlistSongs = playlistSongs.concat(topSongs);
-        playlistSongs = playlistSongs.concat(
-          likedSongs.slice(0, playlistSongs.length - (songsPerUser - topSongs.length)),
-        );
+        playlistSongs = playlistSongs.concat(likedSongs.slice(0, songsPerUser - totalTopSongs - 1));
+      } else {
+        playlistSongs = playlistSongs.concat(likedSongs.slice(0, songsPerUser - 1));
       }
     });
 
