@@ -164,6 +164,7 @@ export class SpotifyHttpService {
   getTopSongsByUser(
     user: User,
     url = `${this.baseSelfUrl}/top/tracks?limit=50&time_range=short_term`,
+    retry = 0,
   ): Promise<SongsByUser> {
     const headers = {
       Authorization: `Bearer ${user.accessToken}`,
@@ -186,7 +187,6 @@ export class SpotifyHttpService {
               likedSongs: [],
             }));
           }
-          return new Promise((resolve, _reject) => resolve({ user, topSongs: songs, likedSongs: [] }));
         },
       )
       .catch(e => {
