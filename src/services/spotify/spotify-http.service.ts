@@ -175,8 +175,8 @@ export class SpotifyHttpService {
       .get<SpotifyResponse<SpotifyTrack[]>>(url, { headers })
       .then<SongsByUser>(
         (x: AxiosResponse<SpotifyResponse<SpotifyTrack[]>>): Promise<SongsByUser> => {
+          console.log(x);
           if (x?.data === undefined && retries < 5) {
-            console.log(x);
             return this.getTopSongsByUser(user, url, retries + 1);
           } else if (retries >= 5) {
             throw new Error(`Unable to retrieve songs for user: ${user.spotifyId}`);
