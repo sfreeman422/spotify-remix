@@ -164,7 +164,6 @@ export class SpotifyHttpService {
   getTopSongsByUser(
     user: User,
     url = `${this.baseSelfUrl}/top/tracks?limit=50&time_range=short_term`,
-    retries = 5,
   ): Promise<SongsByUser> {
     const headers = {
       Authorization: `Bearer ${user.accessToken}`,
@@ -175,27 +174,22 @@ export class SpotifyHttpService {
         (x: AxiosResponse<SpotifyResponse<SpotifyTrack[]>>): Promise<SongsByUser> => {
           console.log(x);
           console.log(x.data);
-          if (x?.data === undefined && retries < 5) {
-            return this.getTopSongsByUser(user, url, retries + 1);
-          } else if (retries >= 5) {
-            throw new Error(`Unable to retrieve songs for user: ${user.spotifyId}`);
-          } else {
-            const songs = x?.data?.items.map(
-              (song: SpotifyTrack): SongWithUserData => ({
-                ...song,
-                spotifyId: user.spotifyId,
-              }),
-            );
+          console.log(x.data.items);
+          const songs = x.data.items.map(
+            (song: SpotifyTrack): SongWithUserData => ({
+              ...song,
+              spotifyId: user.spotifyId,
+            }),
+          );
 
-            if (x?.data?.next) {
-              return this.getTopSongsByUser(user, x?.data?.next).then((data: SongsByUser) => ({
-                user: user,
-                topSongs: songs.concat(data?.topSongs),
-                likedSongs: [],
-              }));
-            }
-            return Promise.resolve({ user, topSongs: songs, likedSongs: [] });
+          if (x?.data?.next) {
+            return this.getTopSongsByUser(user, x?.data?.next).then((data: SongsByUser) => ({
+              user: user,
+              topSongs: songs.concat(data?.topSongs),
+              likedSongs: [],
+            }));
           }
+          return Promise.resolve({ user, topSongs: songs, likedSongs: [] });
         },
       )
       .catch(e => {
