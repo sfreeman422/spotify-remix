@@ -166,12 +166,13 @@ export class SpotifyHttpService {
     url = `${this.baseSelfUrl}/top/tracks?limit=50&time_range=short_term`,
     retries = 5,
   ): Promise<SongsByUser> {
+    const headers = {
+      Authorization: `Bearer ${user.accessToken}`,
+    };
+    console.log(url);
+    console.log(headers);
     return axios
-      .get<SpotifyResponse<SpotifyTrack[]>>(url, {
-        headers: {
-          Authorization: `Bearer ${user.accessToken}`,
-        },
-      })
+      .get<SpotifyResponse<SpotifyTrack[]>>(url, { headers })
       .then<SongsByUser>(
         (x: AxiosResponse<SpotifyResponse<SpotifyTrack[]>>): Promise<SongsByUser> => {
           if (x?.data === undefined && retries < 5) {
