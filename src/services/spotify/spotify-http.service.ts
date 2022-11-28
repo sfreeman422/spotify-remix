@@ -1,5 +1,4 @@
 import axios, { AxiosResponse } from 'axios';
-import e from 'express';
 import { User } from '../../shared/db/models/User';
 import {
   SpotifyLikedSong,
