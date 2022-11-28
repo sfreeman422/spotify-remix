@@ -176,6 +176,7 @@ export class SpotifyHttpService {
       .then<SongsByUser>(
         (x: AxiosResponse<SpotifyResponse<SpotifyTrack[]>>): Promise<SongsByUser> => {
           console.log(x);
+          console.log(x.data);
           if (x?.data === undefined && retries < 5) {
             return this.getTopSongsByUser(user, url, retries + 1);
           } else if (retries >= 5) {
