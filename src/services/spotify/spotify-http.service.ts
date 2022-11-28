@@ -1,4 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
+import e from 'express';
 import { User } from '../../shared/db/models/User';
 import {
   SpotifyLikedSong,
@@ -164,6 +165,7 @@ export class SpotifyHttpService {
   getTopSongsByUser(
     user: User,
     url = `${this.baseSelfUrl}/top/tracks?limit=50&time_range=short_term`,
+    retries = 5,
   ): Promise<SongsByUser> {
     return axios
       .get<SpotifyResponse<SpotifyTrack[]>>(url, {
@@ -173,24 +175,28 @@ export class SpotifyHttpService {
       })
       .then<SongsByUser>(
         (x: AxiosResponse<SpotifyResponse<SpotifyTrack[]>>): Promise<SongsByUser> => {
-          if (x?.data === undefined) {
+          if (x?.data === undefined && retries < 5) {
             console.log(x);
-          }
-          const songs = x?.data?.items.map(
-            (song: SpotifyTrack): SongWithUserData => ({
-              ...song,
-              spotifyId: user.spotifyId,
-            }),
-          );
+            return this.getTopSongsByUser(user, url, retries + 1);
+          } else if (retries >= 5) {
+            throw new Error(`Unable to retrieve songs for user: ${user}`);
+          } else {
+            const songs = x?.data?.items.map(
+              (song: SpotifyTrack): SongWithUserData => ({
+                ...song,
+                spotifyId: user.spotifyId,
+              }),
+            );
 
-          if (x?.data?.next) {
-            return this.getTopSongsByUser(user, x?.data?.next).then((data: SongsByUser) => ({
-              user: user,
-              topSongs: songs.concat(data?.topSongs),
-              likedSongs: [],
-            }));
+            if (x?.data?.next) {
+              return this.getTopSongsByUser(user, x?.data?.next).then((data: SongsByUser) => ({
+                user: user,
+                topSongs: songs.concat(data?.topSongs),
+                likedSongs: [],
+              }));
+            }
+            return new Promise((resolve, _reject) => resolve({ user, topSongs: songs, likedSongs: [] }));
           }
-          return new Promise((resolve, _reject) => resolve({ user, topSongs: songs, likedSongs: [] }));
         },
       )
       .catch(e => {
