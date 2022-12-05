@@ -37,13 +37,13 @@ axios.interceptors.response.use(undefined, error => {
   console.log(error?.config?.['axios-retry']);
   if (error && error.config && error.response && error.response.status === 401) {
     const accessToken = error.config.headers.Authorization.split(' ')[1];
-    // This should handle 401 errors by refreshing our users token.
-    // Not sure about these return undefined, but a lil drunk rn.
     return refreshService.refresh(accessToken).then((user: User | undefined) => {
       if (user) {
         error.config.headers.authorization = `Bearer ${user.accessToken}`;
         return axios.request(error.config).then(res => {
           res.data = { ...res.data, accessToken: user.accessToken, refreshToken: user.refreshToken };
+          console.log('Refreshed user token, returning');
+          console.log(res.data);
         });
       } else {
         return Promise.reject('Unable to authenticate user');
