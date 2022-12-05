@@ -82,9 +82,18 @@ playlistController.put('/playlist/:playlistId/subscribe', (req, res) => {
   );
 
   if (accessToken && playlistId) {
+    console.log(
+      'playlistController - PUT - /playlist/:playlistId/subscribe call has initiated subscribeToPlaylist method for ',
+      playlistId,
+    );
     spotifyService
       .subscribeToPlaylist(accessToken, playlistId)
       .then(subscribedUser => {
+        console.log(
+          'playlistController - PUT - /playlist/:playlistId/subscribe call has completed subscribeToPlaylist method for ',
+          playlistId,
+        );
+        console.log(subscribedUser);
         if (subscribedUser) {
           console.log(
             JSON.stringify({
@@ -293,6 +302,7 @@ playlistController.post('/refresh/:playlistId', (req, res) => {
   const { playlistId } = req.params;
   const { authorization } = req.headers;
   console.log(
+<<<<<<< HEAD
     JSON.stringify({
       level: 'log',
       name: 'playlistController',
@@ -301,6 +311,12 @@ playlistController.post('/refresh/:playlistId', (req, res) => {
       time: new Date(),
       message: `/refresh/${playlistId} hit attempting to call spotifyService.refreshPlaylist(${playlistId})`,
     }),
+=======
+    'playlistController - POST - /refresh/:playlistId call has initiated refreshPlaylist with authorization: ',
+    authorization,
+    ' and playlistId ',
+    playlistId,
+>>>>>>> 7400fd7 (Added logs to playlist.controller)
   );
 
   if (playlistId && authorization === process.env.SPOTIFY_REMIX_API_KEY) {
@@ -308,6 +324,7 @@ playlistController.post('/refresh/:playlistId', (req, res) => {
       .refreshPlaylist(playlistId)
       .then(_ => {
         console.log(
+<<<<<<< HEAD
           JSON.stringify({
             level: 'log',
             name: 'playlistController',
@@ -318,10 +335,20 @@ playlistController.post('/refresh/:playlistId', (req, res) => {
             response: _,
           }),
         );
+=======
+          'playlistController - POST - /refresh/:playlistId call has initiated refreshPlaylist with authorization: ',
+          authorization,
+          ' and playlistId ',
+          playlistId,
+          ' has succeeded',
+        );
+        console.log(_);
+>>>>>>> 7400fd7 (Added logs to playlist.controller)
         res.status(200).send('Successfully refreshed the playlist.');
       })
       .catch(e => {
         console.log(
+<<<<<<< HEAD
           JSON.stringify({
             level: 'log',
             name: 'playlistController',
@@ -332,10 +359,20 @@ playlistController.post('/refresh/:playlistId', (req, res) => {
             error: e,
           }),
         );
+=======
+          'playlistController - POST - /refresh/:playlistId call has initiated refreshPlaylist with authorization: ',
+          authorization,
+          ' and playlistId ',
+          playlistId,
+          ' has failed',
+        );
+        console.error(e);
+>>>>>>> 7400fd7 (Added logs to playlist.controller)
         res.status(500).send('Unable to refresh to the playlist. Please try again later.');
       });
   } else {
     console.log(
+<<<<<<< HEAD
       JSON.stringify({
         level: 'log',
         name: 'playlistController',
@@ -344,6 +381,13 @@ playlistController.post('/refresh/:playlistId', (req, res) => {
         time: new Date(),
         message: `spotifyService.refreshPlaylist(${playlistId}) call not initiated due to missing playlistId=${!playlistId} or authorization=${!authorization}`,
       }),
+=======
+      'playlistController - POST - /refresh/:playlistId call has with authorization: ',
+      authorization,
+      ' and playlistId ',
+      playlistId,
+      ' has failed due to missing playlistId or authorization header',
+>>>>>>> 7400fd7 (Added logs to playlist.controller)
     );
     res.status(400).send('PlaylistId or authorization header missing!');
   }
