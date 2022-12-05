@@ -6,12 +6,19 @@ export const playlistController: Router = express.Router();
 const spotifyService = new SpotifyService();
 
 playlistController.get('/playlists', (req, res) => {
+  console.log('playlistController - GET - /playlists has been called');
+  console.log(req);
   const accessToken = req.headers.authorization?.split(' ')[1];
   if (accessToken) {
     spotifyService
       .getUserPlaylists(accessToken)
-      .then(x => res.send(x))
+      .then(x => {
+        console.log('playlistController - GET - /playlists call as been completed.');
+        console.log(x);
+        res.send(x);
+      })
       .catch(e => {
+        console.log('playlistController - GET - /playlists call as been errored.');
         console.error(e.message);
         if (e?.message === 'Unable to authenticate user') {
           res.status(401).send(e);
@@ -20,6 +27,7 @@ playlistController.get('/playlists', (req, res) => {
         }
       });
   } else {
+    console.log('playlistController - GET - /playlists call as been errored due to a missing access token.');
     res.status(400).send('Missing access token!');
   }
 });
@@ -28,17 +36,43 @@ playlistController.put('/playlist/:playlistId/subscribe', (req, res) => {
   const accessToken = req?.headers?.authorization?.split(' ')[1];
   const { playlistId } = req.params;
 
+  console.log('playlistController - PUT - /playlist/:playlistId/subscribe has been called');
+  console.log(req);
+
   if (accessToken && playlistId) {
+    console.log(
+      'playlistController - PUT - /playlist/:playlistId/subscribe call has initiated subscribeToPlaylist method for ',
+      playlistId,
+    );
     spotifyService
       .subscribeToPlaylist(accessToken, playlistId)
       .then(subscribedUser => {
+        console.log(
+          'playlistController - PUT - /playlist/:playlistId/subscribe call has completed subscribeToPlaylist method for ',
+          playlistId,
+        );
+        console.log(subscribedUser);
         if (subscribedUser) {
+          console.log(
+            'playlistController - PUT - /playlist/:playlistId/subscribe call is calling spotifyService.refreshPlaylist for ',
+            playlistId,
+          );
           // Intentionally not returning this as it might take awhile.
           spotifyService
             .refreshPlaylist(playlistId)
-            .then(_ => console.log('Successfully refresh playlist', playlistId))
+            .then(_ => {
+              console.log(
+                'playlistController - PUT - /playlist/:playlistId/subscribe spotifyService.refreshPlaylist for ',
+                playlistId,
+                ' has completed successfully',
+              );
+            })
             .catch(e => {
-              console.error('Unable to refresh playlist', playlistId);
+              console.log(
+                'playlistController - PUT - /playlist/:playlistId/subscribe spotifyService.refreshPlaylist for ',
+                playlistId,
+                ' has failed.',
+              );
               console.error(e);
             });
           res.status(200).send({ message: 'Successfully subscribed to the playlist! A refresh will occur shortly...' });
@@ -47,6 +81,11 @@ playlistController.put('/playlist/:playlistId/subscribe', (req, res) => {
         }
       })
       .catch(e => {
+        console.log(
+          'playlistController - PUT - /playlist/:playlistId/subscribe call to subscribeToPlaylist method for ',
+          playlistId,
+          ' has failed',
+        );
         console.error(e);
         res.status(500).send('Unable to subscribe to the playlist. Please try again later.');
       });
@@ -57,11 +96,27 @@ playlistController.put('/playlist/:playlistId/subscribe', (req, res) => {
 
 playlistController.post('/playlist', (req, res) => {
   const { authorization } = req.headers;
+  console.log(
+    'playlistController - POST - /playlist call has initiated createUserPlayslist with authorization: ',
+    authorization,
+  );
   if (authorization) {
     spotifyService
       .createUserPlaylist(authorization)
-      .then(() => res.send())
+      .then(() => {
+        console.log(
+          'playlistController - POST - /playlist call to createUserPlayslist with authorization: ',
+          authorization,
+          ' has succeeded',
+        );
+        res.send();
+      })
       .catch(e => {
+        console.log(
+          'playlistController - POST - /playlist call to createUserPlayslist with authorization: ',
+          authorization,
+          ' has failed',
+        );
         console.error(e);
         res.status(500).send(e);
       });
@@ -97,18 +152,46 @@ playlistController.delete('/playlist', async (req, res) => {
 playlistController.post('/refresh/:playlistId', (req, res) => {
   const { playlistId } = req.params;
   const { authorization } = req.headers;
+  console.log(
+    'playlistController - POST - /refresh/:playlistId call has initiated refreshPlaylist with authorization: ',
+    authorization,
+    ' and playlistId ',
+    playlistId,
+  );
 
   if (playlistId && authorization === process.env.SPOTIFY_REMIX_API_KEY) {
     spotifyService
       .refreshPlaylist(playlistId)
       .then(_ => {
+        console.log(
+          'playlistController - POST - /refresh/:playlistId call has initiated refreshPlaylist with authorization: ',
+          authorization,
+          ' and playlistId ',
+          playlistId,
+          ' has succeeded',
+        );
+        console.log(_);
         res.status(200).send('Successfully refreshed the playlist.');
       })
       .catch(e => {
+        console.log(
+          'playlistController - POST - /refresh/:playlistId call has initiated refreshPlaylist with authorization: ',
+          authorization,
+          ' and playlistId ',
+          playlistId,
+          ' has failed',
+        );
         console.error(e);
         res.status(500).send('Unable to refresh to the playlist. Please try again later.');
       });
   } else {
+    console.log(
+      'playlistController - POST - /refresh/:playlistId call has with authorization: ',
+      authorization,
+      ' and playlistId ',
+      playlistId,
+      ' has failed due to missing playlistId or authorization header',
+    );
     res.status(400).send('PlaylistId or authorization header missing!');
   }
 });
