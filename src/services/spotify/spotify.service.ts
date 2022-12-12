@@ -186,9 +186,11 @@ export class SpotifyService {
     return this.generatePlaylist(music, songsPerUser);
   }
 
-  refreshPlaylist(playlistId: string): Promise<void> {
+  async refreshPlaylist(playlistId: string): Promise<void> {
     const identifier = `playlist-${playlistId}`;
-    const queue = this.queueService.queue<Playlist | undefined>(identifier, () => this.populatePlaylist(playlistId));
+    const queue = await this.queueService.queue<Playlist | undefined>(identifier, () =>
+      this.populatePlaylist(playlistId),
+    );
     if (queue.length === 1) {
       return this.queueService.dequeue(identifier);
     } else {
