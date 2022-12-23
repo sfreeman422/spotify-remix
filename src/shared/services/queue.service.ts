@@ -9,7 +9,7 @@ export class QueueService {
   private state: Record<string, (() => Promise<any>)[]> = {};
 
   queue<T>(key: string, fn: () => Promise<T>): (() => Promise<T>)[] {
-    if (this.state[key] && this.state[key].length > 0) {
+    if (this.state[key] && this.state[key].length) {
       this.state[key].push(fn);
     } else {
       this.state[key] = [fn];
@@ -18,6 +18,7 @@ export class QueueService {
   }
 
   dequeue(key: string): Promise<void> {
+    console.log('attampting to dequeue for key ', key);
     if (Object.keys(this.state).includes(key) && this.state[key].length) {
       console.log('dequeueing for key', key);
       return this.state[key][0]().then(_ => {
@@ -26,6 +27,7 @@ export class QueueService {
       });
     }
     return new Promise((resolve, _reject) => {
+      console.log('Unable to dequeue due to lack of fn in queue for ', key, 'removing this.state[key]');
       delete this.state[key];
       resolve();
     });
