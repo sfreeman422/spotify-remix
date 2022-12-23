@@ -159,11 +159,18 @@ export class SpotifyService {
       if (x.topSongs.length < songsPerUser && x.likedSongs.length < songsPerUser) {
         x.topSongs.forEach(song => historyIds.push(song.uri));
         const newSongsByUser: SongsByUser = Object.assign({}, x);
-        return this.httpService.getLikedSongsByUser(x.user).then(y => {
-          newSongsByUser.likedSongs = y?.likedSongs?.filter(x => !historyIds.includes(x.uri)) || [];
-          newSongsByUser.likedSongs.forEach(song => historyIds.push(song.uri));
-          return newSongsByUser;
-        });
+        return this.httpService
+          .getLikedSongsByUser(x.user)
+          .then(y => {
+            newSongsByUser.likedSongs = y?.likedSongs?.filter(x => !historyIds.includes(x.uri)) || [];
+            newSongsByUser.likedSongs.forEach(song => historyIds.push(song.uri));
+            return newSongsByUser;
+          })
+          .catch(e => {
+            console.error(`Unable to getLikedSongsIfNecessary for ${x.user}`);
+            console.error(e);
+            throw new Error(`Unable to getLikedSongsIfNecessary for ${x.user}`);
+          });
       }
       return x;
     });
