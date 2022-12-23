@@ -109,27 +109,34 @@ export class SpotifyService {
     return members?.length
       ? await Promise.all(
           members.map(async (member: User) =>
-            this.httpService.getTopSongsByUser(member).then(x => {
-              const seenArtists: Record<string, number> = {};
+            this.httpService
+              .getTopSongsByUser(member)
+              .then(x => {
+                const seenArtists: Record<string, number> = {};
 
-              x.topSongs = x.topSongs.filter(song => {
-                let shouldSongBeIgnored = false;
-                // This ensures that we only allow a given maxSongsPerArtistPerUser so that we do not get entire albums from one person.
-                song.artists.forEach(artist => {
-                  seenArtists[artist.id] = seenArtists[artist.id] ? ++seenArtists[artist.id] : 1;
-                  if (seenArtists[artist.id] > maxSongsPerArtistPerUser) {
-                    shouldSongBeIgnored = true;
-                  }
+                x.topSongs = x.topSongs.filter(song => {
+                  let shouldSongBeIgnored = false;
+                  // This ensures that we only allow a given maxSongsPerArtistPerUser so that we do not get entire albums from one person.
+                  song.artists.forEach(artist => {
+                    seenArtists[artist.id] = seenArtists[artist.id] ? ++seenArtists[artist.id] : 1;
+                    if (seenArtists[artist.id] > maxSongsPerArtistPerUser) {
+                      shouldSongBeIgnored = true;
+                    }
+                  });
+                  return !historyIds.includes(song.uri) && !shouldSongBeIgnored;
                 });
-                return !historyIds.includes(song.uri) && !shouldSongBeIgnored;
-              });
 
-              x.topSongs.forEach(song => {
-                historyIds.push(song.uri);
-              });
+                x.topSongs.forEach(song => {
+                  historyIds.push(song.uri);
+                });
 
-              return x;
-            }),
+                return x;
+              })
+              .catch(e => {
+                console.error(`Unable to getTopSongs fro ${member.spotifyId}`);
+                console.error(e);
+                throw new Error(`Unable to getTopSongs for ${member.spotifyId}`);
+              }),
           ),
         )
       : [];
