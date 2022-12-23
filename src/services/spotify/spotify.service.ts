@@ -189,7 +189,7 @@ export class SpotifyService {
   refreshPlaylist(playlistId: string): Promise<void> {
     const identifier = `playlist-${playlistId}`;
     const queue = this.queueService.queue<Playlist | undefined>(identifier, () => this.populatePlaylist(playlistId));
-    if (queue.length >= 1) {
+    if (queue.length) {
       return this.queueService.dequeue(identifier);
     } else {
       throw new Error('Unable to refresh the playlist because the queue was empty');
