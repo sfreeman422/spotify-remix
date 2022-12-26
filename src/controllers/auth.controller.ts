@@ -12,6 +12,7 @@ authController.get('/login', (_req, res) => {
       level: 'log',
       name: 'authController',
       route: '/login',
+      method: 'GET',
       time: new Date(),
       request: _req,
       message: 'login route hit',
@@ -27,6 +28,7 @@ authController.get('/login/callback', (req, res) => {
       level: 'error',
       name: 'authController',
       route: '/login/callback',
+      method: 'GET',
       time: new Date(),
       request: req,
       message: `login/callback route hit`,
@@ -39,8 +41,8 @@ authController.get('/login/callback', (req, res) => {
         level: 'error',
         name: 'authController',
         route: '/login/callback',
+        method: 'GET',
         time: new Date(),
-        request: req,
         message: `missing code=${code} and state=${state} returning 500 for state mismatch`,
       }),
     );
@@ -51,8 +53,8 @@ authController.get('/login/callback', (req, res) => {
         level: 'log',
         name: 'authController',
         route: '/login/callback',
+        method: 'GET',
         time: new Date(),
-        request: req,
         message: `calling authService.getUserDataAndSaveUser(${code})`,
       }),
     );
@@ -66,16 +68,25 @@ authController.get('/login/callback', (req, res) => {
             level: 'log',
             name: 'authController',
             route: '/login/callback',
+            method: 'GET',
             time: new Date(),
-            request: req,
             message: `authService.getUserDataAndSaveUser was successful - redirecting to /dashboard?accessToken=${x.accessToken}&refreshToken=${x.refreshToken}&spotifyId=${x.spotifyId}`,
           }),
         );
         res.redirect(`/dashboard?accessToken=${x.accessToken}&refreshToken=${x.refreshToken}&spotifyId=${x.spotifyId}`);
       })
       .catch(e => {
-        console.error('error on /login/callback');
-        console.error(e);
+        console.error(
+          JSON.stringify({
+            level: 'log',
+            name: 'authController',
+            route: '/login/callback',
+            method: 'GET',
+            time: new Date(),
+            message: `authService.getUserDataAndSaveUser failed`,
+            error: e,
+          }),
+        );
         res.status(500).send(e);
       });
   }
@@ -87,9 +98,10 @@ authController.get('/refresh', async (req, res) => {
       level: 'log',
       name: 'authController',
       route: '/refresh',
+      method: 'GET',
       time: new Date(),
       request: req,
-      message: `/refresh route hit`,
+      message: `/refresh route hit - making call to authService.refreshTokens()`,
     }),
   );
   const { authorization, refreshtoken } = req.headers;
@@ -99,10 +111,30 @@ authController.get('/refresh', async (req, res) => {
     authService
       .refreshTokens(accessToken, refreshtoken as string, spotifyId as string)
       .then(x => {
+        console.log(
+          JSON.stringify({
+            level: 'log',
+            name: 'authController',
+            route: '/refresh',
+            method: 'GET',
+            time: new Date(),
+            message: `authService.refreshTokens() call succeeded`,
+          }),
+        );
         res.send(x);
       })
       .catch(e => {
-        console.error(e);
+        console.error(
+          JSON.stringify({
+            level: 'log',
+            name: 'authController',
+            route: '/refresh',
+            method: 'GET',
+            time: new Date(),
+            message: `authService.refreshTokens() call failed`,
+            error: e,
+          }),
+        );
         res.status(500).send(e);
       });
   } else {
@@ -111,9 +143,9 @@ authController.get('/refresh', async (req, res) => {
         level: 'log',
         name: 'authController',
         route: '/refresh',
+        method: 'GET',
         time: new Date(),
-        request: req,
-        message: `returning 400 - missing authorization=${!!authorization}, missing spotifyId=${!!spotifyId} or missing refreshToken=${!!refreshtoken}`,
+        message: `returning 400 - missing authorization=${!authorization}, missing spotifyId=${!spotifyId} or missing refreshToken=${!refreshtoken}`,
       }),
     );
     res.status(400).send('Missing authorization header or spotifyId');
