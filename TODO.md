@@ -1,5 +1,6 @@
 # TODO:
 
+- Add winston logger
 - Continue implementing APIResponse interface for HTTP Responses and expose accessToken and refreshToken in UI. Update UI to store accessToken and refreshToken when it exists on a given response.
 - There is an issue where if a playlist is trying to be updated, and part of that update requires that the user gets a new bearertoken, that user may not be able to get its songs.. not sure whats going on - check spotify-http.service line 176 and try to get that log to hit.
 - Fix double click bug when joining a playlist - in subscribe.html dont just immediately refresh tokens. instead, handle failures by refreshing the token and trying again. perhaps we can also just change this on the API to do that automatically, and if the failure persists after X retries, send back an error.
