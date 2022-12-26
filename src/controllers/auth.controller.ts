@@ -27,13 +27,8 @@ authController.get('/login/callback', (req, res) => {
       level: 'error',
       name: 'authController',
       route: '/login/callback',
-<<<<<<< HEAD
       method: 'GET',
       time: new Date(),
-=======
-      time: new Date(),
-      request: req,
->>>>>>> 55552b6 (Updated authController logs in standardized format)
       message: `login/callback route hit`,
     }),
   );
@@ -44,13 +39,8 @@ authController.get('/login/callback', (req, res) => {
         level: 'error',
         name: 'authController',
         route: '/login/callback',
-<<<<<<< HEAD
         method: 'GET',
         time: new Date(),
-=======
-        time: new Date(),
-        request: req,
->>>>>>> 55552b6 (Updated authController logs in standardized format)
         message: `missing code=${code} and state=${state} returning 500 for state mismatch`,
       }),
     );
@@ -61,13 +51,8 @@ authController.get('/login/callback', (req, res) => {
         level: 'log',
         name: 'authController',
         route: '/login/callback',
-<<<<<<< HEAD
         method: 'GET',
         time: new Date(),
-=======
-        time: new Date(),
-        request: req,
->>>>>>> 55552b6 (Updated authController logs in standardized format)
         message: `calling authService.getUserDataAndSaveUser(${code})`,
       }),
     );
@@ -81,13 +66,8 @@ authController.get('/login/callback', (req, res) => {
             level: 'log',
             name: 'authController',
             route: '/login/callback',
-<<<<<<< HEAD
             method: 'GET',
             time: new Date(),
-=======
-            time: new Date(),
-            request: req,
->>>>>>> 55552b6 (Updated authController logs in standardized format)
             message: `authService.getUserDataAndSaveUser was successful - redirecting to /dashboard?accessToken=${x.accessToken}&refreshToken=${x.refreshToken}&spotifyId=${x.spotifyId}`,
           }),
         );
@@ -116,15 +96,9 @@ authController.get('/refresh', async (req, res) => {
       level: 'log',
       name: 'authController',
       route: '/refresh',
-<<<<<<< HEAD
       method: 'GET',
       time: new Date(),
       message: `/refresh route hit - making call to authService.refreshTokens()`,
-=======
-      time: new Date(),
-      request: req,
-      message: `/refresh route hit`,
->>>>>>> 55552b6 (Updated authController logs in standardized format)
     }),
   );
   const { authorization, refreshtoken } = req.headers;
@@ -166,15 +140,9 @@ authController.get('/refresh', async (req, res) => {
         level: 'log',
         name: 'authController',
         route: '/refresh',
-<<<<<<< HEAD
         method: 'GET',
         time: new Date(),
         message: `returning 400 - missing authorization=${!authorization}, missing spotifyId=${!spotifyId} or missing refreshToken=${!refreshtoken}`,
-=======
-        time: new Date(),
-        request: req,
-        message: `returning 400 - missing authorization=${!!authorization}, missing spotifyId=${!!spotifyId} or missing refreshToken=${!!refreshtoken}`,
->>>>>>> 55552b6 (Updated authController logs in standardized format)
       }),
     );
     res.status(400).send('Missing authorization header or spotifyId');
