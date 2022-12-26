@@ -82,18 +82,9 @@ playlistController.put('/playlist/:playlistId/subscribe', (req, res) => {
   );
 
   if (accessToken && playlistId) {
-    console.log(
-      'playlistController - PUT - /playlist/:playlistId/subscribe call has initiated subscribeToPlaylist method for ',
-      playlistId,
-    );
     spotifyService
       .subscribeToPlaylist(accessToken, playlistId)
       .then(subscribedUser => {
-        console.log(
-          'playlistController - PUT - /playlist/:playlistId/subscribe call has completed subscribeToPlaylist method for ',
-          playlistId,
-        );
-        console.log(subscribedUser);
         if (subscribedUser) {
           console.log(
             JSON.stringify({

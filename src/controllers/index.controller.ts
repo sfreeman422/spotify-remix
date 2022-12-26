@@ -11,13 +11,8 @@ indexController.get('/', (_req, res) => {
       level: 'log',
       name: 'indexController',
       route: '/',
-<<<<<<< HEAD
       method: 'GET',
       time: new Date(),
-=======
-      time: new Date(),
-      request: _req,
->>>>>>> 796a55d (Updated indexController logs)
       message: `/ route hit`,
     }),
   );
@@ -30,13 +25,8 @@ indexController.get('/dashboard', (_req, res) => {
       level: 'log',
       name: 'indexController',
       route: '/dashboard',
-<<<<<<< HEAD
       method: 'GET',
       time: new Date(),
-=======
-      time: new Date(),
-      request: _req,
->>>>>>> 796a55d (Updated indexController logs)
       message: `/dashboard route hit`,
     }),
   );
@@ -49,13 +39,8 @@ indexController.get('/playlist', (_req, res) => {
       level: 'log',
       name: 'indexController',
       route: '/playlist',
-<<<<<<< HEAD
       method: 'GET',
       time: new Date(),
-=======
-      time: new Date(),
-      request: _req,
->>>>>>> 796a55d (Updated indexController logs)
       message: `/playlist route hit`,
     }),
   );
@@ -68,13 +53,8 @@ indexController.get('/history', (_req, res) => {
       level: 'log',
       name: 'indexController',
       route: '/history',
-<<<<<<< HEAD
       method: 'GET',
       time: new Date(),
-=======
-      time: new Date(),
-      request: _req,
->>>>>>> 796a55d (Updated indexController logs)
       message: `/history route hit`,
     }),
   );
@@ -87,13 +67,8 @@ indexController.get('/how-it-works', (_req, res) => {
       level: 'log',
       name: 'indexController',
       route: '/how-it-works',
-<<<<<<< HEAD
       method: 'GET',
       time: new Date(),
-=======
-      time: new Date(),
-      request: _req,
->>>>>>> 796a55d (Updated indexController logs)
       message: `/how-it-works route hit`,
     }),
   );
