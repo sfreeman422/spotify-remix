@@ -44,6 +44,7 @@ axios.interceptors.response.use(undefined, error => {
           res.data = { ...res.data, accessToken: user.accessToken, refreshToken: user.refreshToken };
           console.log('Refreshed user token, returning');
           console.log(res.data);
+          return res;
         });
       } else {
         return Promise.reject('Unable to authenticate user');
