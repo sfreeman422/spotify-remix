@@ -13,7 +13,6 @@ indexController.get('/', (_req, res) => {
       route: '/',
       method: 'GET',
       time: new Date(),
-      request: _req,
       message: `/ route hit`,
     }),
   );
@@ -28,7 +27,6 @@ indexController.get('/dashboard', (_req, res) => {
       route: '/dashboard',
       method: 'GET',
       time: new Date(),
-      request: _req,
       message: `/dashboard route hit`,
     }),
   );
@@ -43,7 +41,6 @@ indexController.get('/playlist', (_req, res) => {
       route: '/playlist',
       method: 'GET',
       time: new Date(),
-      request: _req,
       message: `/playlist route hit`,
     }),
   );
@@ -58,7 +55,6 @@ indexController.get('/history', (_req, res) => {
       route: '/history',
       method: 'GET',
       time: new Date(),
-      request: _req,
       message: `/history route hit`,
     }),
   );
@@ -73,7 +69,6 @@ indexController.get('/how-it-works', (_req, res) => {
       route: '/how-it-works',
       method: 'GET',
       time: new Date(),
-      request: _req,
       message: `/how-it-works route hit`,
     }),
   );

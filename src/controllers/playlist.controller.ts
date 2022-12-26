@@ -13,7 +13,6 @@ playlistController.get('/playlists', (req, res) => {
       route: '/playlists',
       method: 'GET',
       time: new Date(),
-      request: req,
       message: `/playlists route hit calling spotifyService.getUserPlaylists()`,
     }),
   );
@@ -78,7 +77,6 @@ playlistController.put('/playlist/:playlistId/subscribe', (req, res) => {
       route: `/playlist/${playlistId}/subscribe`,
       method: 'PUT',
       time: new Date(),
-      request: req,
       message: `/playlist/${playlistId}/subscribe route hit - calling SpotifyService.subscribeToPlaylist()`,
     }),
   );
@@ -179,7 +177,6 @@ playlistController.post('/playlist', (req, res) => {
       route: `/playlist`,
       method: 'POST',
       time: new Date(),
-      request: req,
       message: `/playlist route hit attempting to call spotifyService.createUserPlaylist()`,
     }),
   );
@@ -239,7 +236,6 @@ playlistController.delete('/playlist', async (req, res) => {
       route: `/playlist`,
       method: 'DELETE',
       time: new Date(),
-      request: req,
       message: `/playist route hit - calling spotifyService.removePlaylist()`,
     }),
   );
@@ -303,7 +299,6 @@ playlistController.post('/refresh/:playlistId', (req, res) => {
       route: `/refresh/:playlistId`,
       method: 'POST',
       time: new Date(),
-      request: req,
       message: `/refresh/:playlistId hit attempting to call spotifyService.refreshPlaylist(${playlistId})`,
     }),
   );
@@ -363,7 +358,6 @@ playlistController.get('/playlist/:playlistId/history', (req, res) => {
       route: `/playlist/:playlistId/history`,
       method: 'GET',
       time: new Date(),
-      request: req,
       message: `/playlist/${playlistId}/history hit attempting to call spotifyService.getPlaylistHistory(${playlistId})`,
     }),
   );

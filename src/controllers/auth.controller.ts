@@ -14,7 +14,6 @@ authController.get('/login', (_req, res) => {
       route: '/login',
       method: 'GET',
       time: new Date(),
-      request: _req,
       message: 'login route hit',
     }),
   );
@@ -30,7 +29,6 @@ authController.get('/login/callback', (req, res) => {
       route: '/login/callback',
       method: 'GET',
       time: new Date(),
-      request: req,
       message: `login/callback route hit`,
     }),
   );
@@ -100,7 +98,6 @@ authController.get('/refresh', async (req, res) => {
       route: '/refresh',
       method: 'GET',
       time: new Date(),
-      request: req,
       message: `/refresh route hit - making call to authService.refreshTokens()`,
     }),
   );
