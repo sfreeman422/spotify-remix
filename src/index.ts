@@ -66,7 +66,7 @@ axiosRetry(axios, {
 const cert = fs.readFileSync('/etc/letsencrypt/live/remix.lol/fullchain.pem');
 const key = fs.readFileSync('/etc/letsencrypt/live/remix.lol/privkey.pem');
 
-https.createServer({ cert, key }).listen(443, (e?: Error) => {
+https.createServer({ cert, key }, app).listen(443, (e?: Error) => {
   e ? console.error(e) : console.log(`Listening on port ${PORT}`);
   getDataSource()
     .then(_ => console.log('Connected to DB'))
