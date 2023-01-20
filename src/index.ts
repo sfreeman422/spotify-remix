@@ -8,6 +8,8 @@ import axiosRetry from 'axios-retry';
 import { User } from './shared/db/models/User';
 import { RefreshService } from './shared/services/refresh.service';
 import { getDataSource } from './shared/db/AppDataSource';
+import https from 'https';
+import fs from 'fs';
 
 if (!process.env.PRODUCTION) {
   dotenv.config();
@@ -61,7 +63,10 @@ axiosRetry(axios, {
   retryCondition: err => (err?.response?.status && err.response.status >= 403) || err?.response?.status === undefined,
 });
 
-app.listen(PORT, (e?: Error) => {
+const cert = fs.readFileSync('/etc/letsencrypt/live/remix.lol/fullchain.pem');
+const key = fs.readFileSync('/etc/letsencrypt/live/remix.lol/privkey.pem');
+
+https.createServer({ cert, key }).listen(443, (e?: Error) => {
   e ? console.error(e) : console.log(`Listening on port ${PORT}`);
   getDataSource()
     .then(_ => console.log('Connected to DB'))
