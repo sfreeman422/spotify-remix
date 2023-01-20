@@ -28,7 +28,7 @@ users = mycursor.fetchall()
 
 for user in users:
   print(user)
-  url = "http://remix.lol/refresh?spotifyId={spotifyId}".format(spotifyId=user['spotifyId'])
+  url = "https://remix.lol/refresh?spotifyId={spotifyId}".format(spotifyId=user['spotifyId'])
   headers = { 'Authorization': 'Bearer {accessToken}'.format(accessToken=user['accessToken'])}
   response = requests.get(url, headers=headers)
   if (response.status_code > 200):
