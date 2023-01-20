@@ -63,12 +63,21 @@ axiosRetry(axios, {
   retryCondition: err => (err?.response?.status && err.response.status >= 403) || err?.response?.status === undefined,
 });
 
-const cert = fs.readFileSync('/etc/letsencrypt/live/remix.lol/fullchain.pem');
-const key = fs.readFileSync('/etc/letsencrypt/live/remix.lol/privkey.pem');
-
-https.createServer({ cert, key }, app).listen(443, (e?: Error) => {
-  e ? console.error(e) : console.log(`Listening on port ${PORT}`);
-  getDataSource()
-    .then(_ => console.log('Connected to DB'))
-    .catch(e => console.error(e));
-});
+if (process.env.PRODUCTION) {
+  console.log('PRODUCTION ENVIRONMENT DETECTED. Attempting to load HTTPS certs');
+  const cert = fs.readFileSync('/etc/letsencrypt/live/remix.lol/fullchain.pem');
+  const key = fs.readFileSync('/etc/letsencrypt/live/remix.lol/privkey.pem');
+  https.createServer({ cert, key }, app).listen(443, (e?: Error) => {
+    e ? console.error(e) : console.log(`Listening on port 443`);
+    getDataSource()
+      .then(_ => console.log('Connected to DB'))
+      .catch(e => console.error(e));
+  });
+} else {
+  app.listen(PORT, (e?: Error) => {
+    e ? console.error(e) : console.log(`Listening on port ${PORT}`);
+    getDataSource()
+      .then(_ => console.log('Connected to DB'))
+      .catch(e => console.error(e));
+  });
+}
