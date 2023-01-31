@@ -11,9 +11,8 @@ import { getDataSource } from './shared/db/AppDataSource';
 import https from 'https';
 import fs from 'fs';
 
-if (!process.env.PRODUCTION) {
-  dotenv.config();
-}
+// This should only run in non-prod but app is not configured correctly at the moment.
+dotenv.config();
 const app: Application = express();
 const PORT = process.env.PORT ? process.env.PORT : 3000;
 const refreshService = RefreshService.getInstance();
