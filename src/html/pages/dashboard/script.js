@@ -60,10 +60,10 @@ function createOwnedPlaylists(playlists) {
                     </div>
                     <h4 class="white">${item.name}</h3>
                     <div class="flex-space-even">
-                      <div class="hover-white hover-pointer bg-green padding-100 bdr-rad-010 width-content">
+                      <div class="hover-white hover-pointer bg-green padding-050 bdr-rad-010 width-content">
                         <a class="black font-size-small" href=${item.external_urls.spotify}>Open on Spotify</a>
                       </div>
-                      <div class="hover-white hover-pointer bg-green padding-100 bdr-rad-010 width-content" onclick="copyText('${window.location.protocol}//${window.location.host}/playlist?playlistId=${item.id}')">
+                      <div class="hover-white hover-pointer bg-green padding-050 bdr-rad-010 width-content" onclick="copyText('${window.location.protocol}//${window.location.host}/playlist?playlistId=${item.id}')">
                         <span class="black font-size-small" id="copy-invite-link">Copy Invite Link</span>
                       </div>
                     </div>
@@ -130,7 +130,7 @@ function getPlaylistsAndBuildDivs() {
         createEmptySection();
       } else {
         appContentDiv.innerHTML += `<div class="flex-center-hor">
-        <div class="hover-white hover-pointer bg-green padding-100 bdr-rad-010 width-content margin-bottom-100" id="create-playlist-button" onclick="createPlaylist()">
+        <div class="hover-white hover-pointer bg-green padding-050 bdr-rad-010 width-content margin-bottom-100" id="create-playlist-button" onclick="createPlaylist()">
           Create a Playlist
         </div>
         <span class="white font-size-big">Your Remixes</span>
