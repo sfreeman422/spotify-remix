@@ -32,9 +32,7 @@ app.use(controllers);
 axios.interceptors.response.use(undefined, error => {
   console.log('HTTP Request Failure:');
   console.log('status: ', error?.response?.status);
-  console.log('data: ', error?.response?.data);
   console.log('url: ', error?.config?.url);
-  console.log('config.data: ', error?.config?.data);
   console.log(error?.config?.['axios-retry']);
   if (error && error.config && error.response && error.response.status === 401) {
     const accessToken = error.config.headers.Authorization.split(' ')[1];

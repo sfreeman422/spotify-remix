@@ -43,7 +43,7 @@ export class RefreshService {
     }
 
     console.log('Refreshing token for user:');
-    console.log(user);
+    console.log(user?.spotifyId);
 
     if (user) {
       const reqOptions = {

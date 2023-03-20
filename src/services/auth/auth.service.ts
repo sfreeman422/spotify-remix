@@ -31,7 +31,6 @@ export class AuthService {
       'user-read-private',
     ];
     const scope = playlistScopes.concat(userScopes).join(' ');
-    console.log('redirecting to spotify login');
     res.redirect(
       'https://accounts.spotify.com/authorize?' +
         querystring.stringify({
