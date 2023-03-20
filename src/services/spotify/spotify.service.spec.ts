@@ -884,5 +884,9 @@ describe('SpotifyService', () => {
     it('should calculate a number of songs when there is 5 users', () => {
       expect(spotifyService.getNumberOfItemsPerUser(5)).toBe(6);
     });
+
+    it('should calculate a number of songs when there is 7 users', () => {
+      expect(spotifyService.getNumberOfItemsPerUser(7)).toBe(4);
+    });
   });
 });

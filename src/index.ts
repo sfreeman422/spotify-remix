@@ -43,8 +43,6 @@ axios.interceptors.response.use(undefined, error => {
         error.config.headers.authorization = `Bearer ${user.accessToken}`;
         return axios.request(error.config).then(res => {
           res.data = { ...res.data, accessToken: user.accessToken, refreshToken: user.refreshToken };
-          console.log('Refreshed user token, returning');
-          console.log(res.data);
           return res;
         });
       } else {
