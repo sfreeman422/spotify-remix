@@ -122,7 +122,7 @@ export class SpotifyService {
                   } else {
                     // This ensures that we only allow a given maxSongsPerArtistPerUser so that we do not get entire albums from one person.
                     song.artists.forEach(artist => {
-                      seenArtists[artist.id] = seenArtists[artist.id] ? seenArtists[artist.id] : 1;
+                      seenArtists[artist.id] = seenArtists[artist.id] ? seenArtists[artist.id] + 1 : 1;
                       if (seenArtists[artist.id] > maxSongsPerArtistPerUser) {
                         shouldSongBeIgnored = true;
                       }
