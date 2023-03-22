@@ -105,7 +105,7 @@ export class SpotifyService {
 
   async getTopSongs(members: User[], history: string[]): Promise<SongsByUser[]> {
     const historyIds = history;
-    const maxSongsPerArtistPerUser = 3;
+    const maxSongsPerArtistPerUser = 2;
     return members?.length
       ? await Promise.all(
           members.map(async (member: User) =>
