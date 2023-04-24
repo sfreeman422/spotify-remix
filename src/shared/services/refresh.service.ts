@@ -11,6 +11,7 @@ export class RefreshService {
     return RefreshService.instance;
   }
   private static instance: RefreshService;
+  MAX_RETRIES = 3;
 
   userService = new UserService();
   inflightRefreshes: Record<string, Promise<User | undefined> | undefined> = {};
@@ -32,6 +33,7 @@ export class RefreshService {
     accessToken: string,
     refreshToken?: string,
     spotifyId?: string,
+    retryCount = 0,
   ): Promise<User | undefined> {
     let user: User | null;
     if (spotifyId) {
@@ -75,16 +77,23 @@ export class RefreshService {
             reject(response || err);
           }
         });
-      }).then((tokens: TokenSet) => {
-        const tokenSet = tokens;
-        if (tokens && tokenSet.user) {
-          const updatedUser = tokenSet.user;
-          updatedUser.accessToken = tokenSet.accessToken;
-          updatedUser.refreshToken = tokenSet.refreshToken;
-          return this.userService.updateExistingUser(updatedUser);
-        }
-        return undefined;
-      });
+      })
+        .then((tokens: TokenSet) => {
+          const tokenSet = tokens;
+          if (tokens && tokenSet.user) {
+            const updatedUser = tokenSet.user;
+            updatedUser.accessToken = tokenSet.accessToken;
+            updatedUser.refreshToken = tokenSet.refreshToken;
+            return this.userService.updateExistingUser(updatedUser);
+          }
+          return undefined;
+        })
+        .catch(e => {
+          console.error(e);
+          return retryCount < this.MAX_RETRIES
+            ? this.refreshToken(accessToken, refreshToken, spotifyId, retryCount + 1)
+            : undefined;
+        });
     }
     return undefined;
   }
