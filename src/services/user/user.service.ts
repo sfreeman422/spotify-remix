@@ -1,10 +1,10 @@
-import { FindManyOptions, FindOptionsWhere } from 'typeorm';
+import { Between, FindManyOptions, FindOptionsWhere } from 'typeorm';
 import { getDataSource } from '../../shared/db/AppDataSource';
 import { Playlist } from '../../shared/db/models/Playlist';
 import { Song } from '../../shared/db/models/Song';
 import { User } from '../../shared/db/models/User';
 import { SongWithUserData } from '../spotify/spotify.interface';
-import { sub } from 'date-fns';
+import { format, sub } from 'date-fns';
 // TODO: Add error handling for getDataSource.
 export class UserService {
   public async getUser(findOptions: FindOptionsWhere<User> | FindOptionsWhere<User>[]): Promise<User | null> {
@@ -56,30 +56,15 @@ export class UserService {
   public async getPlaylist(playlistId: string): Promise<Playlist | undefined> {
     const start = sub(new Date(), { years: 1 });
     const end = sub(new Date(), { days: 6 });
-    console.log('attempting to get ', playlistId);
+
     return getDataSource().then(datasource =>
       datasource
         .getRepository(Playlist)
         .find({
-          where: { playlistId },
+          where: { playlistId, history: { createdAt: Between(start, end) } },
           relations: ['members', 'history', 'owner'],
         })
-        .then(res => {
-          console.log(res);
-          return res?.[0];
-        })
-        .then(playlist => ({
-          ...playlist,
-          history: playlist.history.filter(song => {
-            console.log(song.createdAt);
-            const songDate = new Date(song.createdAt);
-            return songDate >= start && songDate <= end;
-          }),
-        }))
-        .catch(e => {
-          console.error(e);
-          throw new Error(e);
-        }),
+        .then(res => res?.[0]),
     );
   }
 
@@ -129,7 +114,11 @@ export class UserService {
 
   public getPlaylistHistory(playlistId: string): Promise<Song[]> {
     return getDataSource()
-      .then(ds => ds.getRepository(Playlist).find({ where: { playlistId }, relations: ['history'] }))
+      .then(ds =>
+        ds
+          .getRepository(Playlist)
+          .find({ where: { playlistId }, relations: ['history'], order: { history: { createdAt: 'DESC' } } }),
+      )
       .then(x =>
         x ? x[0].history.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) : [],
       );
