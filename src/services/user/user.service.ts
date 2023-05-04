@@ -56,7 +56,7 @@ export class UserService {
   public async getPlaylist(playlistId: string): Promise<Playlist | undefined> {
     const start = sub(new Date(), { years: 1 });
     const end = sub(new Date(), { days: 6 });
-
+    console.log('attempting to get ', playlistId);
     return getDataSource().then(datasource =>
       datasource
         .getRepository(Playlist)
@@ -64,7 +64,10 @@ export class UserService {
           where: { playlistId },
           relations: ['members', 'history', 'owner'],
         })
-        .then(res => res?.[0])
+        .then(res => {
+          console.log(res);
+          return res?.[0];
+        })
         .then(playlist => ({
           ...playlist,
           history: playlist.history.filter(song => {
@@ -74,6 +77,7 @@ export class UserService {
           }),
         }))
         .catch(e => {
+          console.error(e);
           throw new Error(e);
         }),
     );

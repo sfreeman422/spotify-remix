@@ -16,7 +16,6 @@ export class QueueService {
     }
     console.log(`updated queue for - ${key}`);
     console.log(this.state);
-    console.log(this.state[key]);
     return this.state[key];
   }
 
