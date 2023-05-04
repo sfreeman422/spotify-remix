@@ -213,17 +213,22 @@ export class SpotifyService {
     const playlist = await this.userService.getPlaylist(playlistId, isNewPlaylist);
     if (playlist) {
       const { members, history, owner } = playlist;
+      console.log('history', history);
+      console.log('history.length', history.length);
 
       const songsPerUser = this.getNumberOfItemsPerUser(members.length);
       const music: SongWithUserData[] = await this.getAllMusic(members, songsPerUser, history);
       const orderedPlaylist: SongWithUserData[] = this.roundRobinSort(music);
+      console.log('orderedPlaylist', orderedPlaylist);
       // Get all songs from the playlist.
       const playlistTracks: SpotifyPlaylistItemInfo[] = await this.httpService.getPlaylistTracks(
         playlistId,
         owner.accessToken,
       );
       // Remove all songs from the playlist.
+      console.log('removing songs from the playlist', playlistId);
       await this.removeAllPlaylistTracks(playlistId, owner.accessToken, playlistTracks);
+      console.log('adding songs to the playlist', playlistId);
       return this.httpService
         .addSongsToPlaylist(owner.accessToken, playlistId, orderedPlaylist)
         .then(() => this.userService.saveSongs(playlist, orderedPlaylist));
