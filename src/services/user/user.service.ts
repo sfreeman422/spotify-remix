@@ -65,7 +65,10 @@ export class UserService {
           where: { playlistId, history: isNewPlaylist ? undefined : { createdAt: Between(start, end) } },
           relations: ['members', 'history', 'owner'],
         })
-        .then(res => res?.[0])
+        .then(res => {
+          console.log(res);
+          return res?.[0];
+        })
         .then(playlist => ({
           ...playlist,
           history: playlist.history.filter(song => {
@@ -75,6 +78,7 @@ export class UserService {
           }),
         }))
         .catch(e => {
+          console.error(e);
           throw new Error(e);
         }),
     );
