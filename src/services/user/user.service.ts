@@ -54,17 +54,24 @@ export class UserService {
     });
   }
   public async getPlaylist(playlistId: string): Promise<Playlist | undefined> {
-    const start = new Date(format(sub(new Date(), { years: 1 }), 'yyyy-MM-dd HH:mm:ss'));
-    const end = new Date(format(sub(new Date(), { days: 6 }), 'yyyy-MM-dd HH:mm:ss'));
+    const start = sub(new Date(), { years: 1 });
+    const end = sub(new Date(), { days: 6 });
 
     return getDataSource().then(datasource =>
       datasource
         .getRepository(Playlist)
         .find({
-          where: { playlistId, history: { createdAt: Between(start, end) } },
+          where: { playlistId },
           relations: ['members', 'history', 'owner'],
         })
-        .then(res => res?.[0]),
+        .then(res => res?.[0])
+        .then(playlist => ({
+          ...playlist,
+          history: playlist.history.filter(song => {
+            const songDate = new Date(song.createdAt);
+            return songDate >= start && songDate <= end;
+          }),
+        })),
     );
   }
 
