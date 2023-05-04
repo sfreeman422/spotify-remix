@@ -65,7 +65,14 @@ export class UserService {
           where: { playlistId, history: isNewPlaylist ? undefined : { createdAt: Between(start, end) } },
           relations: ['members', 'history', 'owner'],
         })
-        .then(res => res?.[0]),
+        .then(res => res?.[0])
+        .then(playlist => ({
+          ...playlist,
+          history: playlist.history.filter(song => {
+            const songDate = new Date(song.createdAt);
+            return songDate >= start && songDate <= end;
+          }),
+        })),
     );
   }
 
