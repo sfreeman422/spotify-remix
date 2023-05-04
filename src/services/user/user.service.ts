@@ -71,7 +71,10 @@ export class UserService {
             const songDate = new Date(song.createdAt);
             return songDate >= start && songDate <= end;
           }),
-        })),
+        }))
+        .catch(e => {
+          throw new Error(e);
+        }),
     );
   }
 
