@@ -1,9 +1,10 @@
-import { FindManyOptions, FindOptionsWhere } from 'typeorm';
+import { Between, FindManyOptions, FindOptionsWhere } from 'typeorm';
 import { getDataSource } from '../../shared/db/AppDataSource';
 import { Playlist } from '../../shared/db/models/Playlist';
 import { Song } from '../../shared/db/models/Song';
 import { User } from '../../shared/db/models/User';
 import { SongWithUserData } from '../spotify/spotify.interface';
+import { sub } from 'date-fns';
 // TODO: Add error handling for getDataSource.
 export class UserService {
   public async getUser(findOptions: FindOptionsWhere<User> | FindOptionsWhere<User>[]): Promise<User | null> {
@@ -53,10 +54,16 @@ export class UserService {
     });
   }
   public async getPlaylist(playlistId: string): Promise<Playlist | undefined> {
+    const start = sub(new Date(), { years: 1 });
+    const end = sub(new Date(), { days: 6 });
+
     return getDataSource().then(datasource =>
       datasource
         .getRepository(Playlist)
-        .find({ where: { playlistId }, relations: ['members', 'history', 'owner'] })
+        .find({
+          where: { playlistId, history: { createdAt: Between(start, end) } },
+          relations: ['members', 'history', 'owner'],
+        })
         .then(res => res?.[0]),
     );
   }
