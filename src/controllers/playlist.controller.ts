@@ -99,7 +99,7 @@ playlistController.put('/playlist/:playlistId/subscribe', (req, res) => {
           // Intentionally not returning this as it might take awhile.
           spotifyService
             .refreshPlaylist(playlistId)
-            .then(_ => {
+            .then(() => {
               console.log(
                 JSON.stringify({
                   level: 'log',

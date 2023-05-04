@@ -78,10 +78,6 @@ export class SpotifyService {
     throw new Error(`Unable to find playlist with id ${playlists}`);
   }
 
-  unsubscribeFromPlaylist(_accessToken: string, _playlistId: string): void {
-    console.log('not yet implemented');
-  }
-
   async subscribeToPlaylist(accessToken: string, playlistId: string): Promise<Playlist | undefined> {
     const user = await this.userService.getUserWithRelations({
       where: { accessToken },
@@ -97,7 +93,7 @@ export class SpotifyService {
       } else {
         return this.httpService
           .subscribeToPlaylist(accessToken, playlistId)
-          .then(_ => this.userService.updatePlaylistMembers(user, playlist));
+          .then(() => this.userService.updatePlaylistMembers(user, playlist));
       }
     }
     throw new Error(`Unable to find user by accessToken: ${accessToken} or playlistId: ${playlistId}`);
@@ -240,7 +236,7 @@ export class SpotifyService {
       console.log('adding songs to the playlist', playlistId);
       return this.httpService
         .addSongsToPlaylist(owner.accessToken, playlistId, orderedPlaylist)
-        .then(_ => this.userService.saveSongs(playlist, orderedPlaylist));
+        .then(() => this.userService.saveSongs(playlist, orderedPlaylist));
     }
     console.log('no playlist found, returning undefined');
     return undefined;

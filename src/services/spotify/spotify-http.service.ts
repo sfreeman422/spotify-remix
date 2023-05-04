@@ -82,7 +82,7 @@ export class SpotifyHttpService {
               },
             },
           )
-          .then(_ => playlist);
+          .then(() => playlist);
       })
       .catch(e => {
         console.error(e);
@@ -129,7 +129,7 @@ export class SpotifyHttpService {
               playlistTracks.concat(x),
             );
           }
-          return new Promise((resolve, _reject) => resolve(playlistTracks));
+          return new Promise(resolve => resolve(playlistTracks));
         },
       );
   }
@@ -218,7 +218,7 @@ export class SpotifyHttpService {
               likedSongs: songs.concat(data.likedSongs || []),
             }));
           }
-          return new Promise((resolve, _reject) => resolve({ user, topSongs: [], likedSongs: songs }));
+          return new Promise(resolve => resolve({ user, topSongs: [], likedSongs: songs }));
         },
       )
       .catch(e => {

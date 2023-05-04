@@ -65,14 +65,14 @@ if (process.env.PRODUCTION) {
   https.createServer({ cert, key }, app).listen(443, (e?: Error) => {
     e ? console.error(e) : console.log(`Listening on port 443`);
     getDataSource()
-      .then(_ => console.log('Connected to DB'))
+      .then(() => console.log('Connected to DB'))
       .catch(e => console.error(e));
   });
 } else {
   app.listen(PORT, (e?: Error) => {
     e ? console.error(e) : console.log(`Listening on port ${PORT}`);
     getDataSource()
-      .then(_ => console.log('Connected to DB'))
+      .then(() => console.log('Connected to DB'))
       .catch(e => console.error(e));
   });
 }
