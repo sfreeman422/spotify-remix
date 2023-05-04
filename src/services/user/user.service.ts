@@ -4,7 +4,7 @@ import { Playlist } from '../../shared/db/models/Playlist';
 import { Song } from '../../shared/db/models/Song';
 import { User } from '../../shared/db/models/User';
 import { SongWithUserData } from '../spotify/spotify.interface';
-import { sub } from 'date-fns';
+import { format, sub } from 'date-fns';
 // TODO: Add error handling for getDataSource.
 export class UserService {
   public async getUser(findOptions: FindOptionsWhere<User> | FindOptionsWhere<User>[]): Promise<User | null> {
@@ -54,8 +54,8 @@ export class UserService {
     });
   }
   public async getPlaylist(playlistId: string): Promise<Playlist | undefined> {
-    const start = sub(new Date(), { years: 1 });
-    const end = sub(new Date(), { days: 6 });
+    const start = new Date(format(sub(new Date(), { years: 1 }), 'yyyy-MM-dd HH:mm:ss'));
+    const end = new Date(format(sub(new Date(), { days: 6 }), 'yyyy-MM-dd HH:mm:ss'));
 
     return getDataSource().then(datasource =>
       datasource

@@ -296,10 +296,10 @@ playlistController.post('/refresh/:playlistId', (req, res) => {
     JSON.stringify({
       level: 'log',
       name: 'playlistController',
-      route: `/refresh/:playlistId`,
+      route: `/refresh/${playlistId}`,
       method: 'POST',
       time: new Date(),
-      message: `/refresh/:playlistId hit attempting to call spotifyService.refreshPlaylist(${playlistId})`,
+      message: `/refresh/${playlistId} hit attempting to call spotifyService.refreshPlaylist(${playlistId})`,
     }),
   );
 
@@ -311,7 +311,7 @@ playlistController.post('/refresh/:playlistId', (req, res) => {
           JSON.stringify({
             level: 'log',
             name: 'playlistController',
-            route: `/refresh/:playlistId`,
+            route: `/refresh/${playlistId}`,
             method: 'POST',
             time: new Date(),
             message: `spotifyService.refreshPlaylist(${playlistId}) call succeeded`,
@@ -325,7 +325,7 @@ playlistController.post('/refresh/:playlistId', (req, res) => {
           JSON.stringify({
             level: 'log',
             name: 'playlistController',
-            route: `/refresh/:playlistId`,
+            route: `/refresh/${playlistId}`,
             method: 'POST',
             time: new Date(),
             message: `spotifyService.refreshPlaylist(${playlistId}) call failed`,
@@ -339,7 +339,7 @@ playlistController.post('/refresh/:playlistId', (req, res) => {
       JSON.stringify({
         level: 'log',
         name: 'playlistController',
-        route: `/refresh/:playlistId`,
+        route: `/refresh/${playlistId}`,
         method: 'POST',
         time: new Date(),
         message: `spotifyService.refreshPlaylist(${playlistId}) call not initiated due to missing playlistId=${!playlistId} or authorization=${!authorization}`,
