@@ -68,6 +68,7 @@ export class UserService {
         .then(playlist => ({
           ...playlist,
           history: playlist.history.filter(song => {
+            console.log(song.createdAt);
             const songDate = new Date(song.createdAt);
             return songDate >= start && songDate <= end;
           }),
