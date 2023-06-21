@@ -53,7 +53,7 @@ export class UserService {
       return [];
     });
   }
-  public async getPlaylist(playlistId: string): Promise<Playlist | undefined> {
+  public async getPlaylist(playlistId: string, isNewPlaylist = false): Promise<Playlist | undefined> {
     const start = sub(new Date(), { years: 1 });
     const end = sub(new Date(), { days: 6 });
 
@@ -61,7 +61,7 @@ export class UserService {
       datasource
         .getRepository(Playlist)
         .find({
-          where: { playlistId, history: { createdAt: Between(start, end) } },
+          where: { playlistId, history: isNewPlaylist ? undefined : { createdAt: Between(start, end) } },
           relations: ['members', 'history', 'owner'],
         })
         .then(res => res?.[0]),

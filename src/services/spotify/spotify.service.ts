@@ -61,7 +61,7 @@ export class SpotifyService {
     if (user) {
       const createdPlaylist = await this.httpService.createUserPlaylist(accessToken, user);
       const savedPlaylist = await this.userService.savePlaylist(user, createdPlaylist.data.id);
-      return this.refreshPlaylist(savedPlaylist.playlistId);
+      return this.refreshPlaylist(savedPlaylist.playlistId, true);
     } else {
       throw new Error('Unable to find user');
     }
@@ -203,9 +203,11 @@ export class SpotifyService {
     return this.generatePlaylist(music, songsPerUser);
   }
 
-  refreshPlaylist(playlistId: string): Promise<void> {
+  refreshPlaylist(playlistId: string, isNewPlaylist = false): Promise<void> {
     const identifier = `playlist-${playlistId}`;
-    const queue = this.queueService.queue<Playlist | undefined>(identifier, () => this.populatePlaylist(playlistId));
+    const queue = this.queueService.queue<Playlist | undefined>(identifier, () =>
+      this.populatePlaylist(playlistId, isNewPlaylist),
+    );
     if (queue.length) {
       return this.queueService.dequeue(identifier);
     } else {
@@ -213,8 +215,9 @@ export class SpotifyService {
     }
   }
 
-  private async populatePlaylist(playlistId: string): Promise<Playlist | undefined> {
-    const playlist = await this.userService.getPlaylist(playlistId);
+  private async populatePlaylist(playlistId: string, isNewPlaylist: boolean): Promise<Playlist | undefined> {
+    const playlist = await this.userService.getPlaylist(playlistId, isNewPlaylist);
+    console.log(playlist);
     if (playlist) {
       const { members, history, owner } = playlist;
 
