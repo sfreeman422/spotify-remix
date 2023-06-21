@@ -62,10 +62,15 @@
             );
           })
           .catch(e => {
-            document.getElementById('message').className = 'error';
-            document.getElementById('message').innerHTML =
-              'It looks like we were unable to subscribe to this Remix! Please try again.';
             console.error(e);
+            if (e.status === 401) {
+              window.location = `${window.location.protocol}//${window.location.host}/login`;
+            } else {
+              console.log('a non 401 error occurred - we should render an error page');
+              document.getElementById('message').className = 'error';
+              document.getElementById('message').innerHTML =
+                'It looks like we were unable to subscribe to this Remix! Please try again.';
+            }
           });
       }
 
