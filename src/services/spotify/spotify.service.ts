@@ -111,7 +111,7 @@ export class SpotifyService {
 
                 x.topSongs = x.topSongs.filter(song => {
                   let shouldSongBeIgnored = historyIds.includes(song.uri);
-
+                  console.log('includes url: ', song.uri, shouldSongBeIgnored);
                   if (!song.available_markets.includes('US')) {
                     shouldSongBeIgnored = true;
                   } else {
@@ -210,7 +210,6 @@ export class SpotifyService {
 
   private async populatePlaylist(playlistId: string, isNewPlaylist: boolean): Promise<Playlist | undefined> {
     const playlist = await this.userService.getPlaylist(playlistId, isNewPlaylist);
-    console.log(playlist);
     if (playlist) {
       const { members, history, owner } = playlist;
 
