@@ -56,7 +56,8 @@ export class UserService {
   public async getPlaylist(playlistId: string, isNewPlaylist = false): Promise<Playlist | undefined> {
     const start = sub(new Date(), { years: 1 });
     const end = sub(new Date(), { days: 6 });
-
+    console.log('start: ', start.toString());
+    console.log('end: ', end.toString());
     return getDataSource().then(datasource =>
       datasource
         .getRepository(Playlist)

@@ -1,5 +1,4 @@
 import { AxiosResponse } from 'axios';
-import { isWithinInterval, subHours } from 'date-fns';
 import { Playlist } from '../../shared/db/models/Playlist';
 import { Song } from '../../shared/db/models/Song';
 import { User } from '../../shared/db/models/User';
@@ -111,7 +110,7 @@ export class SpotifyService {
                 const seenArtists: Record<string, number> = {};
 
                 x.topSongs = x.topSongs.filter(song => {
-                  let shouldSongBeIgnored = false;
+                  let shouldSongBeIgnored = historyIds.includes(song.uri);
 
                   if (!song.available_markets.includes('US')) {
                     shouldSongBeIgnored = true;
@@ -125,7 +124,7 @@ export class SpotifyService {
                     });
                   }
 
-                  return !historyIds.includes(song.uri) && !shouldSongBeIgnored;
+                  return !shouldSongBeIgnored;
                 });
 
                 x.topSongs.forEach(song => {
@@ -142,12 +141,6 @@ export class SpotifyService {
           ),
         )
       : [];
-  }
-
-  filterByHours(arr: Record<string, any>[], fieldName: string, numberOfHours: number): Record<string, any>[] {
-    return arr.filter(
-      x => !isWithinInterval(x[fieldName], { start: subHours(new Date(), numberOfHours), end: new Date() }),
-    );
   }
 
   // may need advanced filtering here to filter out songs per user.
