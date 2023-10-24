@@ -104,12 +104,16 @@ export class UserService {
         return song;
       });
 
-      const history = playlist.history.map(x => x);
-      const newHistory = history.concat(songs);
-
-      const updatedPlaylist = Object.assign(playlist, { history: newHistory });
-
-      return ds.getRepository(Playlist).save(updatedPlaylist);
+      return ds
+        .getRepository(Song)
+        .query(
+          `INSERT INTO song (playlistId, spotifyUrl, userId, title, artist, album) VALUES ${songs
+            .map(
+              x =>
+                `('${x.playlist.playlistId}', '${x.spotifyUrl}', '${x.userId}', '${x.title}', '${x.artist}', '${x.album}')`,
+            )
+            .join(', ')}`,
+        );
     });
   }
 
