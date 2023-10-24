@@ -91,7 +91,7 @@ export class UserService {
     });
   }
 
-  public saveSongs(playlist: Playlist, songsWithUserData: SongWithUserData[]): Promise<Playlist> {
+  public saveSongs(playlist: Playlist, songsWithUserData: SongWithUserData[]): Promise<any> {
     return getDataSource().then(ds => {
       const songs = songsWithUserData.map(x => {
         const song = new Song();
@@ -103,17 +103,14 @@ export class UserService {
         song.album = x.album.name;
         return song;
       });
+      return ds.getRepository(Song).insert(songs);
 
-      return ds
-        .getRepository(Song)
-        .query(
-          `INSERT INTO song (playlistId, spotifyUrl, userId, title, artist, album) VALUES ${songs
-            .map(
-              x =>
-                `('${x.playlist.playlistId}', '${x.spotifyUrl}', '${x.userId}', '${x.title}', '${x.artist}', '${x.album}')`,
-            )
-            .join(', ')}`,
-        );
+      // const history = playlist.history.map(x => x);
+      // const newHistory = history.concat(songs);
+
+      // const updatedPlaylist = Object.assign(playlist, { history: newHistory });
+
+      // return ds.getRepository(Playlist).save(updatedPlaylist);
     });
   }
 
