@@ -238,17 +238,17 @@ export class SpotifyService {
     playlistTracks: SpotifyPlaylistItemInfo[],
   ): Promise<any> {
     const calls = [];
-    if (playlistTracks.length > 100) {
-      const numberOfCalls = Math.ceil(playlistTracks.length / 100);
-      let lastIndex = 0;
-      for (let i = 0; i < numberOfCalls; i++) {
-        calls.push(
-          this.httpService.removeAllPlaylistTracks(playlistId, accessToken, playlistTracks.slice(lastIndex, 100)),
-        );
-        lastIndex += 100;
-      }
-    } else {
-      calls.push(this.httpService.removeAllPlaylistTracks(playlistId, accessToken, playlistTracks));
+    const numberOfCalls = Math.ceil(playlistTracks.length / 100);
+    let lastIndex = 0;
+    for (let i = 0; i < numberOfCalls; i++) {
+      calls.push(
+        this.httpService.removeAllPlaylistTracks(
+          playlistId,
+          accessToken,
+          playlistTracks.slice(lastIndex, lastIndex + 100),
+        ),
+      );
+      lastIndex += 100;
     }
     return Promise.all(calls);
   }
