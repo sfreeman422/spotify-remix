@@ -8,6 +8,9 @@
 .black {
   color: black;
 }
+.purple {
+  color: #7960ee;
+}
 
 /* background-color */
 .bg-white {
@@ -18,4 +21,7 @@
 }
 .bg-purple {
   background-color: #7960ee;
+}
+.bg-light-black {
+  background-color: #2d2b2f;
 }

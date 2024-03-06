@@ -877,20 +877,16 @@ describe('SpotifyService', () => {
   });
 
   describe('getNumberOfItemsPerUser()', () => {
-    it('should return minNumberOfSongs when there are 8 users', () => {
-      expect(spotifyService.getNumberOfItemsPerUser(8)).toBe(6);
-    });
-
-    it('should return minNumberOfSongs when there are more than 8 users', () => {
-      expect(spotifyService.getNumberOfItemsPerUser(10)).toBe(6);
-    });
-
     it('should return maxNumberofSongs when there is only 1 user', () => {
-      expect(spotifyService.getNumberOfItemsPerUser(1)).toBe(48);
+      expect(spotifyService.getNumberOfItemsPerUser(1)).toBe(30);
     });
 
     it('should calculate a number of songs when there is 5 users', () => {
-      expect(spotifyService.getNumberOfItemsPerUser(5)).toBe(9);
+      expect(spotifyService.getNumberOfItemsPerUser(5)).toBe(6);
+    });
+
+    it('should calculate a number of songs when there is 7 users', () => {
+      expect(spotifyService.getNumberOfItemsPerUser(7)).toBe(4);
     });
   });
 });

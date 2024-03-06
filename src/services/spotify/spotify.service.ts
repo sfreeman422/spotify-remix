@@ -1,5 +1,4 @@
 import { AxiosResponse } from 'axios';
-import { isWithinInterval, subHours } from 'date-fns';
 import { Playlist } from '../../shared/db/models/Playlist';
 import { Song } from '../../shared/db/models/Song';
 import { User } from '../../shared/db/models/User';
@@ -61,7 +60,7 @@ export class SpotifyService {
     if (user) {
       const createdPlaylist = await this.httpService.createUserPlaylist(accessToken, user);
       const savedPlaylist = await this.userService.savePlaylist(user, createdPlaylist.data.id);
-      return this.refreshPlaylist(savedPlaylist.playlistId);
+      return this.refreshPlaylist(savedPlaylist.playlistId, true);
     } else {
       throw new Error('Unable to find user');
     }
@@ -76,10 +75,6 @@ export class SpotifyService {
       return this.userService.deletePlaylist(playlistsOwnedAndToBeDeleted);
     }
     throw new Error(`Unable to find playlist with id ${playlists}`);
-  }
-
-  unsubscribeFromPlaylist(_accessToken: string, _playlistId: string): void {
-    console.log('not yet implemented');
   }
 
   async subscribeToPlaylist(accessToken: string, playlistId: string): Promise<Playlist | undefined> {
@@ -97,7 +92,7 @@ export class SpotifyService {
       } else {
         return this.httpService
           .subscribeToPlaylist(accessToken, playlistId)
-          .then(_ => this.userService.updatePlaylistMembers(user, playlist));
+          .then(() => this.userService.updatePlaylistMembers(user, playlist));
       }
     }
     throw new Error(`Unable to find user by accessToken: ${accessToken} or playlistId: ${playlistId}`);
@@ -105,40 +100,48 @@ export class SpotifyService {
 
   async getTopSongs(members: User[], history: string[]): Promise<SongsByUser[]> {
     const historyIds = history;
-    const maxSongsPerArtistPerUser = 3;
+    const maxSongsPerArtistPerUser = 2;
+    console.log(historyIds);
     return members?.length
       ? await Promise.all(
           members.map(async (member: User) =>
-            this.httpService.getTopSongsByUser(member).then(x => {
-              const seenArtists: Record<string, number> = {};
+            this.httpService
+              .getTopSongsByUser(member)
+              .then(x => {
+                const seenArtists: Record<string, number> = {};
 
-              x.topSongs = x.topSongs.filter(song => {
-                let shouldSongBeIgnored = false;
-                // This ensures that we only allow a given maxSongsPerArtistPerUser so that we do not get entire albums from one person.
-                song.artists.forEach(artist => {
-                  seenArtists[artist.id] = seenArtists[artist.id] ? ++seenArtists[artist.id] : 1;
-                  if (seenArtists[artist.id] > maxSongsPerArtistPerUser) {
+                x.topSongs = x.topSongs.filter(song => {
+                  let shouldSongBeIgnored = historyIds.includes(song.uri);
+                  console.log('includes url: ', song.uri, shouldSongBeIgnored);
+                  if (!song.available_markets.includes('US')) {
                     shouldSongBeIgnored = true;
+                  } else {
+                    // This ensures that we only allow a given maxSongsPerArtistPerUser so that we do not get entire albums from one person.
+                    song.artists.forEach(artist => {
+                      seenArtists[artist.id] = seenArtists[artist.id] ? seenArtists[artist.id] + 1 : 1;
+                      if (seenArtists[artist.id] > maxSongsPerArtistPerUser) {
+                        shouldSongBeIgnored = true;
+                      }
+                    });
                   }
+
+                  return !shouldSongBeIgnored;
                 });
-                return !historyIds.includes(song.uri) && !shouldSongBeIgnored;
-              });
 
-              x.topSongs.forEach(song => {
-                historyIds.push(song.uri);
-              });
+                x.topSongs.forEach(song => {
+                  historyIds.push(song.uri);
+                });
 
-              return x;
-            }),
+                return x;
+              })
+              .catch(e => {
+                console.error(`Unable to getTopSongs fro ${member.spotifyId}`);
+                console.error(e);
+                throw new Error(`Unable to getTopSongs for ${member.spotifyId}`);
+              }),
           ),
         )
       : [];
-  }
-
-  filterByHours(arr: Record<string, any>[], fieldName: string, numberOfHours: number): Record<string, any>[] {
-    return arr.filter(
-      x => !isWithinInterval(x[fieldName], { start: subHours(new Date(), numberOfHours), end: new Date() }),
-    );
   }
 
   // may need advanced filtering here to filter out songs per user.
@@ -152,66 +155,62 @@ export class SpotifyService {
       if (x.topSongs.length < songsPerUser && x.likedSongs.length < songsPerUser) {
         x.topSongs.forEach(song => historyIds.push(song.uri));
         const newSongsByUser: SongsByUser = Object.assign({}, x);
-        return this.httpService.getLikedSongsByUser(x.user).then(y => {
-          newSongsByUser.likedSongs = y?.likedSongs?.filter(x => !historyIds.includes(x.uri)) || [];
-          newSongsByUser.likedSongs.forEach(song => historyIds.push(song.uri));
-          return newSongsByUser;
-        });
+        return this.httpService
+          .getLikedSongsByUser(x.user)
+          .then(y => {
+            newSongsByUser.likedSongs =
+              y?.likedSongs?.filter(x => !historyIds.includes(x.uri) && x.available_markets.includes('US')) || [];
+            newSongsByUser.likedSongs.forEach(song => historyIds.push(song.uri));
+            return newSongsByUser;
+          })
+          .catch(e => {
+            console.error(`Unable to getLikedSongsIfNecessary for ${x.user}`);
+            console.error(e);
+            throw new Error(`Unable to getLikedSongsIfNecessary for ${x.user}`);
+          });
       }
       return x;
     });
   }
 
   generatePlaylist(music: SongsByUser[], songsPerUser: number): SongWithUserData[] {
-    const playlistSongs: SongWithUserData[] = [];
+    let playlistSongs: SongWithUserData[] = [];
     music.forEach((songsByUser: SongsByUser) => {
       const { topSongs, likedSongs } = songsByUser;
-
-      const hasTopSongs = topSongs.length !== 0;
-      const hasEnoughTopSongs = topSongs.length >= songsPerUser;
-      const hasLikedSongs = likedSongs && likedSongs.length !== 0;
-      const hasEnoughLikedSongs = hasLikedSongs && likedSongs.length >= songsPerUser;
-      const hasEnoughTopSongsAndLikedSongs =
-        hasTopSongs && hasLikedSongs && topSongs.length + likedSongs.length >= songsPerUser;
-
-      if (!hasTopSongs && hasLikedSongs && hasEnoughLikedSongs) {
-        playlistSongs.concat(likedSongs.slice(0, songsPerUser - 1));
-      } else if (hasEnoughTopSongs) {
-        playlistSongs.concat(topSongs.slice(0, songsPerUser - 1));
-      } else if (!hasEnoughTopSongs && hasEnoughTopSongsAndLikedSongs) {
-        topSongs.forEach(song => playlistSongs.push(song));
-        playlistSongs.concat(topSongs);
-        playlistSongs.concat(likedSongs.slice(0, playlistSongs.length - songsPerUser));
-      }
+      console.log('user: ', songsByUser.user.spotifyId, 'top songs: ', topSongs.length);
+      console.log('user: ', songsByUser.user.spotifyId, 'liked songs: ', likedSongs.length);
+      const lastIndex = songsPerUser - topSongs.length;
+      playlistSongs = playlistSongs.concat(topSongs.slice(0, songsPerUser)).concat(likedSongs.slice(0, lastIndex));
     });
+
+    console.log('playlistSongs', playlistSongs.length);
 
     return playlistSongs;
   }
 
   async getAllMusic(members: User[], songsPerUser: number, history: Song[]): Promise<SongWithUserData[]> {
-    const historyIds: string[] = this.filterByHours(history, 'createdAt', 144).map(x => x.spotifyUrl);
+    const historyIds: string[] = history.map(x => x.spotifyUrl);
 
     let music: SongsByUser[] = await this.getTopSongs(members, historyIds);
-
     music = await Promise.all(this.getLikedSongsIfNecessary(music, songsPerUser, historyIds));
 
     return this.generatePlaylist(music, songsPerUser);
   }
 
-  refreshPlaylist(playlistId: string): Promise<void> {
+  refreshPlaylist(playlistId: string, isNewPlaylist = false): Promise<void> {
     const identifier = `playlist-${playlistId}`;
-    const queue = this.queueService.queue<Playlist | undefined>(identifier, () => this.populatePlaylist(playlistId));
-    if (queue.length === 1) {
+    const queue = this.queueService.queue<Playlist | undefined>(identifier, () =>
+      this.populatePlaylist(playlistId, isNewPlaylist),
+    );
+    if (queue.length) {
       return this.queueService.dequeue(identifier);
     } else {
-      return new Promise((resolve, _reject) => {
-        resolve();
-      });
+      throw new Error('Unable to refresh the playlist because the queue was empty');
     }
   }
 
-  private async populatePlaylist(playlistId: string): Promise<Playlist | undefined> {
-    const playlist = await this.userService.getPlaylist(playlistId);
+  private async populatePlaylist(playlistId: string, isNewPlaylist: boolean): Promise<Playlist | undefined> {
+    const playlist = await this.userService.getPlaylist(playlistId, isNewPlaylist);
     if (playlist) {
       const { members, history, owner } = playlist;
 
@@ -227,8 +226,9 @@ export class SpotifyService {
       await this.removeAllPlaylistTracks(playlistId, owner.accessToken, playlistTracks);
       return this.httpService
         .addSongsToPlaylist(owner.accessToken, playlistId, orderedPlaylist)
-        .then(_ => this.userService.saveSongs(playlist, orderedPlaylist));
+        .then(() => this.userService.saveSongs(playlist, orderedPlaylist));
     }
+    console.log('no playlist found, returning undefined');
     return undefined;
   }
 
@@ -272,10 +272,8 @@ export class SpotifyService {
   }
 
   getNumberOfItemsPerUser(numberOfUsers: number): number {
-    const minSongsPerUser = 6;
-    const maxNumberOfSongs = 48;
-    const divided = Math.floor(maxNumberOfSongs / numberOfUsers);
-    return divided <= minSongsPerUser ? minSongsPerUser : divided;
+    const maxNumberOfSongs = 30;
+    return Math.floor(maxNumberOfSongs / numberOfUsers);
   }
 
   getPlaylistHistory(playlistId: string): Promise<Song[]> {

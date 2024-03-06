@@ -82,7 +82,7 @@ export class SpotifyHttpService {
               },
             },
           )
-          .then(_ => playlist);
+          .then(() => playlist);
       })
       .catch(e => {
         console.error(e);
@@ -129,7 +129,7 @@ export class SpotifyHttpService {
               playlistTracks.concat(x),
             );
           }
-          return new Promise((resolve, _reject) => resolve(playlistTracks));
+          return new Promise(resolve => resolve(playlistTracks));
         },
       );
   }
@@ -165,12 +165,11 @@ export class SpotifyHttpService {
     user: User,
     url = `${this.baseSelfUrl}/top/tracks?limit=50&time_range=short_term`,
   ): Promise<SongsByUser> {
+    const headers = {
+      Authorization: `Bearer ${user.accessToken}`,
+    };
     return axios
-      .get<SpotifyResponse<SpotifyTrack[]>>(url, {
-        headers: {
-          Authorization: `Bearer ${user.accessToken}`,
-        },
-      })
+      .get<SpotifyResponse<SpotifyTrack[]>>(url, { headers })
       .then<SongsByUser>(
         (x: AxiosResponse<SpotifyResponse<SpotifyTrack[]>>): Promise<SongsByUser> => {
           const songs = x.data.items.map(
@@ -187,7 +186,7 @@ export class SpotifyHttpService {
               likedSongs: [],
             }));
           }
-          return new Promise((resolve, _reject) => resolve({ user, topSongs: songs, likedSongs: [] }));
+          return Promise.resolve({ user, topSongs: songs, likedSongs: [] });
         },
       )
       .catch(e => {
@@ -219,7 +218,7 @@ export class SpotifyHttpService {
               likedSongs: songs.concat(data.likedSongs || []),
             }));
           }
-          return new Promise((resolve, _reject) => resolve({ user, topSongs: [], likedSongs: songs }));
+          return new Promise(resolve => resolve({ user, topSongs: [], likedSongs: songs }));
         },
       )
       .catch(e => {

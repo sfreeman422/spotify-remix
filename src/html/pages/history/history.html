@@ -21,11 +21,13 @@
   </head>
   <body>
     <div class="header flex-space-btwn">
-      <div id="logo">
-        <h1><span class="white">Remix</span><span class="green">.lol</span></h1>
+      <div class="hover-green" id="logo">
+        <h1>
+          <a href="/"><span class="white">Remix</span><span class="green">.lol</span></a>
+        </h1>
       </div>
       <div
-        class="width-content margin-100 hover-white hover-pointer bg-green padding-100 bdr-rad-010"
+        class="width-content margin-100 hover-white hover-pointer bg-green padding-050 bdr-rad-010"
         onclick="goToDashboard()"
       >
         Dashboard
@@ -74,6 +76,14 @@
               })}
             </table>
           `;
+          })
+          .catch(e => {
+            console.error(e);
+            if (e.status === 401) {
+              window.location = `${window.location.protocol}//${window.location.host}/login`;
+            } else {
+              console.log('a non 401 error occurred - we should render an error page');
+            }
           });
       } else {
         document.getElementById('playlists').innerHTML = `

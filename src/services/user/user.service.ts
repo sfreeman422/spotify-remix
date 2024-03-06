@@ -1,9 +1,10 @@
-import { FindManyOptions, FindOptionsWhere } from 'typeorm';
+import { Between, FindManyOptions, FindOptionsWhere } from 'typeorm';
 import { getDataSource } from '../../shared/db/AppDataSource';
 import { Playlist } from '../../shared/db/models/Playlist';
 import { Song } from '../../shared/db/models/Song';
 import { User } from '../../shared/db/models/User';
 import { SongWithUserData } from '../spotify/spotify.interface';
+import { sub } from 'date-fns';
 // TODO: Add error handling for getDataSource.
 export class UserService {
   public async getUser(findOptions: FindOptionsWhere<User> | FindOptionsWhere<User>[]): Promise<User | null> {
@@ -52,11 +53,18 @@ export class UserService {
       return [];
     });
   }
-  public async getPlaylist(playlistId: string): Promise<Playlist | undefined> {
+  public async getPlaylist(playlistId: string, isNewPlaylist = false): Promise<Playlist | undefined> {
+    const start = sub(new Date(), { years: 1 });
+    const end = sub(new Date(), { days: 6 });
+    console.log('start: ', start.toString());
+    console.log('end: ', end.toString());
     return getDataSource().then(datasource =>
       datasource
         .getRepository(Playlist)
-        .find({ where: { playlistId }, relations: ['members', 'history', 'owner'] })
+        .find({
+          where: { playlistId, history: isNewPlaylist ? undefined : { createdAt: Between(start, end) } },
+          relations: ['members', 'history', 'owner'],
+        })
         .then(res => res?.[0]),
     );
   }
@@ -72,7 +80,7 @@ export class UserService {
       return datasource
         .getRepository(Song)
         .remove(songs)
-        .then(_ => datasource.getRepository(Playlist).remove(playlists));
+        .then(() => datasource.getRepository(Playlist).remove(playlists));
     });
   }
 
@@ -83,7 +91,7 @@ export class UserService {
     });
   }
 
-  public saveSongs(playlist: Playlist, songsWithUserData: SongWithUserData[]): Promise<Playlist> {
+  public saveSongs(playlist: Playlist, songsWithUserData: SongWithUserData[]): Promise<any> {
     return getDataSource().then(ds => {
       const songs = songsWithUserData.map(x => {
         const song = new Song();
@@ -95,19 +103,24 @@ export class UserService {
         song.album = x.album.name;
         return song;
       });
+      return ds.getRepository(Song).insert(songs);
 
-      const history = playlist.history.map(x => x);
-      const newHistory = history.concat(songs);
+      // const history = playlist.history.map(x => x);
+      // const newHistory = history.concat(songs);
 
-      const updatedPlaylist = Object.assign(playlist, { history: newHistory });
+      // const updatedPlaylist = Object.assign(playlist, { history: newHistory });
 
-      return ds.getRepository(Playlist).save(updatedPlaylist);
+      // return ds.getRepository(Playlist).save(updatedPlaylist);
     });
   }
 
   public getPlaylistHistory(playlistId: string): Promise<Song[]> {
     return getDataSource()
-      .then(ds => ds.getRepository(Playlist).find({ where: { playlistId }, relations: ['history'] }))
+      .then(ds =>
+        ds
+          .getRepository(Playlist)
+          .find({ where: { playlistId }, relations: ['history'], order: { history: { createdAt: 'DESC' } } }),
+      )
       .then(x =>
         x ? x[0].history.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) : [],
       );
