@@ -7,11 +7,14 @@ import { UserService } from '../user/user.service';
 import { SpotifyHttpService } from './spotify-http.service';
 import { SpotifyPlaylist, SpotifyPlaylistItemInfo, SpotifyResponse, SpotifyUserData } from './spotify-http.interface';
 import { PlaylistData, SongsByUser, SongWithUserData } from './spotify.interface';
+import { KnownBlock, WebAPICallResult } from '@slack/web-api';
+import { SlackService } from '../slack/slack.service';
 
 export class SpotifyService {
   userService = new UserService();
   queueService = QueueService.getInstance();
   httpService = new SpotifyHttpService();
+  slackService = new SlackService();
 
   getUserData(accessToken: string): Promise<SpotifyUserData> {
     return this.httpService.getUserData(accessToken);
@@ -199,7 +202,7 @@ export class SpotifyService {
 
   refreshPlaylist(playlistId: string, isNewPlaylist = false): Promise<void> {
     const identifier = `playlist-${playlistId}`;
-    const queue = this.queueService.queue<Playlist | undefined>(identifier, () =>
+    const queue = this.queueService.queue<WebAPICallResult | undefined>(identifier, () =>
       this.populatePlaylist(playlistId, isNewPlaylist),
     );
     if (queue.length) {
@@ -209,7 +212,7 @@ export class SpotifyService {
     }
   }
 
-  private async populatePlaylist(playlistId: string, isNewPlaylist: boolean): Promise<Playlist | undefined> {
+  private async populatePlaylist(playlistId: string, isNewPlaylist: boolean): Promise<WebAPICallResult | undefined> {
     const playlist = await this.userService.getPlaylist(playlistId, isNewPlaylist);
     if (playlist) {
       const { members, history, owner } = playlist;
@@ -226,7 +229,43 @@ export class SpotifyService {
       await this.removeAllPlaylistTracks(playlistId, owner.accessToken, playlistTracks);
       return this.httpService
         .addSongsToPlaylist(owner.accessToken, playlistId, orderedPlaylist)
-        .then(() => this.userService.saveSongs(playlist, orderedPlaylist));
+        .then(() => this.userService.saveSongs(playlist, orderedPlaylist))
+        .then(() => {
+          // da bros playlist - this is not scalable, stupid temporary bandaid to support web-hook-like behavior.
+          if (playlist.playlistId === '3JCMiFTkDnUGmP6hcTDiQo') {
+            const message = '';
+
+            orderedPlaylist.forEach((song, index) => {
+              message.concat(
+                `${index + 1}. ${song.spotifyId} - ${song.artists.map(x => x.name).join(', ')} - ${song.name}\n`,
+              );
+            });
+
+            const blocks: KnownBlock[] = [
+              {
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: message,
+                },
+              },
+              {
+                type: 'divider',
+              },
+              {
+                type: 'context',
+                elements: [
+                  {
+                    type: 'mrkdwn',
+                    text: `:headbangingparrot: _Da Bros' Remix has been successfully refreshed_ :headbangingparrot:`,
+                  },
+                ],
+              },
+            ];
+            return this.slackService.sendMessage('#music', '', blocks);
+          }
+          return undefined;
+        });
     }
     console.log('no playlist found, returning undefined');
     return undefined;
