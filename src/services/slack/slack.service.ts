@@ -5,7 +5,7 @@ export class SlackService {
 
   public sendMessage(channel: string, text: string, blocks?: Block[] | KnownBlock[]): Promise<WebAPICallResult> {
     const token: string | undefined = process.env.MUZZLE_BOT_USER_TOKEN;
-
+    console.log('attempting to send slack message', { channel, text, blocks });
     // This is actually ChatPostMessageArguments but some weird behavior occuring.,
     const postRequest: any = {
       token,
@@ -17,9 +17,14 @@ export class SlackService {
       postRequest.blocks = blocks;
     }
 
+    console.log('post request', postRequest);
+
     return this.web.chat
       .postMessage(postRequest)
-      .then(result => result)
+      .then(result => {
+        console.log('message sent', result);
+        return result;
+      })
       .catch(e => {
         console.error(e);
         console.error(e.data);
