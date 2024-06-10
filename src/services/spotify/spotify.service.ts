@@ -241,6 +241,8 @@ export class SpotifyService {
               );
             });
 
+            console.log('message for blocks', message);
+
             const blocks: KnownBlock[] = [
               {
                 type: 'section',
@@ -262,7 +264,7 @@ export class SpotifyService {
                 ],
               },
             ];
-            return this.slackService.sendMessage('#music', '', blocks);
+            return this.slackService.sendMessage('#music', 'Data about the playlist', blocks);
           }
           return undefined;
         });
