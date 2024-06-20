@@ -233,10 +233,10 @@ export class SpotifyService {
         .then(() => {
           // da bros playlist - this is not scalable, stupid temporary bandaid to support web-hook-like behavior.
           if (playlist.playlistId === '3JCMiFTkDnUGmP6hcTDiQo') {
-            const message = '';
+            let message = '';
 
             orderedPlaylist.forEach((song, index) => {
-              message.concat(
+              message = message.concat(
                 `${index + 1}. ${song.spotifyId} - ${song.artists.map(x => x.name).join(', ')} - ${song.name}\n`,
               );
             });
