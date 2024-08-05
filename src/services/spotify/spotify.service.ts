@@ -171,7 +171,7 @@ export class SpotifyService {
           .catch(e => {
             console.error(`Unable to getLikedSongsIfNecessary for ${x.user}`);
             console.error(e);
-            return Promise.resolve(songsByUser);
+            return Promise.resolve(x);
           });
       }
       return x;
