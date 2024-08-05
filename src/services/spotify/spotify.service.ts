@@ -138,9 +138,11 @@ export class SpotifyService {
                 return x;
               })
               .catch(e => {
-                console.error(`Unable to getTopSongs fro ${member.spotifyId}`);
                 console.error(e);
-                throw new Error(`Unable to getTopSongs for ${member.spotifyId}`);
+                console.error(`Unable to getTopSongs for ${member.spotifyId}`);
+
+                // Enables the playlist to not break if one user is not able to get songs
+                Promise.resolve({ user: member, topSongs: [], likedSongs: [] });
               }),
           ),
         )
