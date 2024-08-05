@@ -142,7 +142,7 @@ export class SpotifyService {
                 console.error(`Unable to getTopSongs for ${member.spotifyId}`);
 
                 // Enables the playlist to not break if one user is not able to get songs
-                Promise.resolve({ user: member, topSongs: [], likedSongs: [] });
+                return Promise.resolve({ user: member, topSongs: [], likedSongs: [] });
               }),
           ),
         )
