@@ -42,7 +42,7 @@ export class SpotifyHttpService {
       .then(response => {
         if (!response) {
           // This sucks, we need a way to reliably know what error status was returned by the get call.
-          throw new Error('Unable to authenticate user');
+          throw new Error(`Did not get a response from ${this.baseSelfUrl}/playlists for accessToken: ${accessToken}`);
         }
         return response;
       })

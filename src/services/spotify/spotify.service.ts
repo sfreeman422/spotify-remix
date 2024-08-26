@@ -20,6 +20,13 @@ export class SpotifyService {
     return this.httpService.getUserData(accessToken);
   }
 
+  getOwnedPlaylists(createdPlaylists: Playlist[] | undefined, spotifyPlaylists: SpotifyPlaylist[]): SpotifyPlaylist[] {
+    if (!createdPlaylists?.length) {
+      return [];
+    }
+    return spotifyPlaylists.filter(x => createdPlaylists?.some(createdPlaylist => createdPlaylist.id === x.id));
+  }
+
   async getUserPlaylists(accessToken: string): Promise<PlaylistData> {
     const user: User | undefined = await this.userService.getUserWithRelations({
       where: { accessToken },
@@ -29,28 +36,29 @@ export class SpotifyService {
       .getUserPlaylists(accessToken)
       .then(
         (resp: AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>): PlaylistData => {
-          if (resp) {
-            const spotifyPlaylists: SpotifyPlaylist[] = resp.data.items;
-            if (user) {
-              const createdPlaylists = user?.ownedPlaylists?.map(x => x.playlistId) || [];
-              const memberPlaylists =
-                user?.memberPlaylists?.map(x => x.playlistId)?.filter(x => !createdPlaylists?.includes(x)) || [];
+          if (!resp.data?.items?.length || !user) {
+            return {
+              ownedPlaylists: [],
+              orphanPlaylists: [],
+              subscribedPlaylists: [],
+            };
+          } else {
+            const createdPlaylists: string[] = user?.ownedPlaylists?.map(x => x.playlistId) || [];
+            const memberPlaylists: string[] =
+              user?.memberPlaylists?.map(x => x.playlistId)?.filter(x => !createdPlaylists?.includes(x)) || [];
 
-              const orphanPlaylists = createdPlaylists.filter(x => !spotifyPlaylists.find(y => x === y.id));
-              const ownedPlaylists = spotifyPlaylists.filter(x => createdPlaylists?.includes(x.id));
-              const subscribedPlaylists = spotifyPlaylists.filter(x => memberPlaylists?.includes(x.id));
+            const orphanPlaylists: string[] = createdPlaylists.filter(x => !resp.data.items.find(y => x === y.id));
+            const ownedPlaylists: SpotifyPlaylist[] = resp.data.items.filter(x => createdPlaylists?.includes(x.id));
+            const subscribedPlaylists: SpotifyPlaylist[] = resp.data.items.filter(x => memberPlaylists?.includes(x.id));
 
-              return {
-                ownedPlaylists,
-                orphanPlaylists,
-                subscribedPlaylists,
-                refreshToken: resp?.data?.refreshToken,
-                accessToken: resp?.data?.accessToken,
-              };
-            }
-            return { ownedPlaylists: [], orphanPlaylists: [], subscribedPlaylists: [] };
+            return {
+              ownedPlaylists,
+              orphanPlaylists,
+              subscribedPlaylists,
+              refreshToken: resp?.data?.refreshToken,
+              accessToken: resp?.data?.accessToken,
+            };
           }
-          return { ownedPlaylists: [], orphanPlaylists: [], subscribedPlaylists: [] };
         },
       )
       .catch(e => {
@@ -89,7 +97,7 @@ export class SpotifyService {
     const playlist = await this.userService.getPlaylist(playlistId);
     if (user && playlist) {
       const userWithPlaylist = user;
-      const isUserAlreadyMember = userWithPlaylist.memberPlaylists?.map(x => x.playlistId).includes(playlistId);
+      const isUserAlreadyMember = !!userWithPlaylist.memberPlaylists?.some(x => x.playlistId === playlistId);
       if (isUserAlreadyMember) {
         return undefined;
       } else {
@@ -101,36 +109,46 @@ export class SpotifyService {
     throw new Error(`Unable to find user by accessToken: ${accessToken} or playlistId: ${playlistId}`);
   }
 
+  filterSongsNotInUSA(songs: SongWithUserData[]): SongWithUserData[] {
+    return songs.filter(song => song.available_markets.includes('US'));
+  }
+
+  filterMaxNumberOfSongsPerUserPerArists(
+    songs: SongWithUserData[],
+    maxSongsPerArtistPerUser: number,
+  ): SongWithUserData[] {
+    const seenArtists: Record<string, number> = {};
+
+    return songs.filter(song => {
+      let shouldSongBeIgnored = false;
+      song.artists.forEach(artist => {
+        seenArtists[artist.id] = seenArtists[artist.id] ? seenArtists[artist.id] + 1 : 1;
+        if (seenArtists[artist.id] > maxSongsPerArtistPerUser) {
+          shouldSongBeIgnored = true;
+        }
+      });
+
+      return !shouldSongBeIgnored;
+    });
+  }
+
   async getTopSongs(members: User[], history: string[]): Promise<SongsByUser[]> {
     const historyIds = history;
     const maxSongsPerArtistPerUser = 2;
-    console.log(historyIds);
     return members?.length
       ? await Promise.all(
           members.map(async (member: User) =>
             this.httpService
               .getTopSongsByUser(member)
+              .then(x => ({ ...x, topSongs: x.topSongs.filter(x => !historyIds.includes(x.uri)) }))
               .then(x => {
-                const seenArtists: Record<string, number> = {};
-
-                x.topSongs = x.topSongs.filter(song => {
-                  let shouldSongBeIgnored = historyIds.includes(song.uri);
-                  console.log('includes url: ', song.uri, shouldSongBeIgnored);
-                  if (!song.available_markets.includes('US')) {
-                    shouldSongBeIgnored = true;
-                  } else {
-                    // This ensures that we only allow a given maxSongsPerArtistPerUser so that we do not get entire albums from one person.
-                    song.artists.forEach(artist => {
-                      seenArtists[artist.id] = seenArtists[artist.id] ? seenArtists[artist.id] + 1 : 1;
-                      if (seenArtists[artist.id] > maxSongsPerArtistPerUser) {
-                        shouldSongBeIgnored = true;
-                      }
-                    });
-                  }
-
-                  return !shouldSongBeIgnored;
-                });
-
+                return { ...x, topSongs: this.filterSongsNotInUSA(x.topSongs) };
+              })
+              .then(x => ({
+                ...x,
+                topSongs: this.filterMaxNumberOfSongsPerUserPerArists(x.topSongs, maxSongsPerArtistPerUser),
+              }))
+              .then(x => {
                 x.topSongs.forEach(song => {
                   historyIds.push(song.uri);
                 });

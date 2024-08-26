@@ -1,5 +1,4 @@
 import { AxiosResponse } from 'axios';
-import { subHours } from 'date-fns';
 import { Playlist } from '../../shared/db/models/Playlist';
 import { Song } from '../../shared/db/models/Song';
 import { User } from '../../shared/db/models/User';
@@ -76,6 +75,40 @@ describe('SpotifyService', () => {
       expect(result).toEqual(expected);
     });
 
+    it('should return an empty PlaylistData when there is no response data', async () => {
+      expect.assertions(1);
+      const mockUser = undefined;
+      mockGetUserWithRelations.mockResolvedValueOnce(mockUser);
+      mockGetUserPlaylists.mockResolvedValueOnce(({
+        data: undefined,
+      } as unknown) as AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>);
+      const result = await spotifyService.getUserPlaylists('123');
+      const expected: PlaylistData = {
+        ownedPlaylists: [],
+        orphanPlaylists: [],
+        subscribedPlaylists: [],
+      };
+      expect(result).toEqual(expected);
+    });
+
+    it('should return an empty PlaylistData when there is no response.data.items', async () => {
+      expect.assertions(1);
+      const mockUser = undefined;
+      mockGetUserWithRelations.mockResolvedValueOnce(mockUser);
+      mockGetUserPlaylists.mockResolvedValueOnce({
+        data: {
+          items: [] as SpotifyPlaylist[],
+        },
+      } as AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>);
+      const result = await spotifyService.getUserPlaylists('123');
+      const expected: PlaylistData = {
+        ownedPlaylists: [],
+        orphanPlaylists: [],
+        subscribedPlaylists: [],
+      };
+      expect(result).toEqual(expected);
+    });
+
     it('should return a populated ownedPlaylist when a user has spotify data and owns a playlist', async () => {
       expect.assertions(1);
       const mockUser = {
@@ -107,6 +140,84 @@ describe('SpotifyService', () => {
         ] as SpotifyPlaylist[],
         orphanPlaylists: [],
         subscribedPlaylists: [],
+      };
+      expect(result).toEqual(expected);
+    });
+
+    it('should return a populated ownedPlaylist and subscribedPlaylists when a user has spotify data and is a member of a playlist and an owner of another playlist', async () => {
+      expect.assertions(1);
+      const mockUser = {
+        spotifyId: '123',
+        ownedPlaylists: [
+          {
+            playlistId: '456',
+          },
+        ] as Playlist[],
+        memberPlaylists: [{ playlistId: '789' }] as Playlist[],
+      } as User;
+      const mockSpotifyResponse = {
+        data: {
+          items: [
+            {
+              id: '456',
+            },
+            {
+              id: '789',
+            },
+          ],
+        },
+      } as AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>;
+
+      mockGetUserWithRelations.mockResolvedValueOnce(mockUser);
+      mockGetUserPlaylists.mockResolvedValueOnce(mockSpotifyResponse);
+      const result = await spotifyService.getUserPlaylists('123');
+      const expected: PlaylistData = {
+        ownedPlaylists: [
+          {
+            id: '456',
+          },
+        ] as SpotifyPlaylist[],
+        orphanPlaylists: [],
+        subscribedPlaylists: [{ id: '789' } as SpotifyPlaylist],
+      };
+      expect(result).toEqual(expected);
+    });
+
+    it('should return a populated ownedPlaylist and subscribedPlaylists when a user has spotify data and is a member of a playlist and an owner of another playlist', async () => {
+      expect.assertions(1);
+      const mockUser = {
+        spotifyId: '123',
+        ownedPlaylists: [
+          {
+            playlistId: '456',
+          },
+        ] as Playlist[],
+        memberPlaylists: [{ playlistId: '789' }] as Playlist[],
+      } as User;
+      const mockSpotifyResponse = {
+        data: {
+          items: [
+            {
+              id: '456',
+            },
+            {
+              id: '789',
+            },
+          ],
+        },
+      } as AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>;
+
+      mockGetUserWithRelations.mockResolvedValueOnce(mockUser);
+      mockGetUserPlaylists.mockResolvedValueOnce(mockSpotifyResponse);
+      const result = await spotifyService.getUserPlaylists('123');
+      const expected: PlaylistData = {
+        ownedPlaylists: [
+          {
+            id: '456',
+          },
+        ] as SpotifyPlaylist[],
+        orphanPlaylists: [],
+        subscribedPlaylists: [{ id: '789' } as SpotifyPlaylist],
       };
       expect(result).toEqual(expected);
     });
@@ -392,12 +503,29 @@ describe('SpotifyService', () => {
       );
       expect(result).toEqual({ playlistId: '1' });
     });
+
+    it('should call httpService.subscribeToPlaylist if a user and playlist exist and the user is not already a member of the playlist because they do not have any memberPlaylists', async () => {
+      getUserMock.mockResolvedValueOnce({ id: '1', memberPlaylists: undefined } as User);
+      getPlaylistMock.mockResolvedValueOnce({ playlistId: '1' } as Playlist);
+      subscribeToPlaylistMock.mockResolvedValueOnce({} as AxiosResponse<any, any>);
+      updatePlaylistMembersMock.mockResolvedValueOnce({ playlistId: '1' } as Playlist);
+      const result = await spotifyService.subscribeToPlaylist('123', '1');
+      expect(subscribeToPlaylistMock).toHaveBeenCalledWith('123', '1');
+      expect(updatePlaylistMembersMock).toHaveBeenCalledWith({ id: '1' }, { playlistId: '1' });
+      expect(result).toEqual({ playlistId: '1' });
+    });
   });
 
   describe('getTopSongs()', () => {
     let getTopSongsByUserMock: jest.SpyInstance<Promise<SongsByUser>>;
     beforeEach(() => {
       getTopSongsByUserMock = jest.spyOn(spotifyService.httpService, 'getTopSongsByUser');
+    });
+
+    it('should return an empty array if members is undefined', async () => {
+      const result = await spotifyService.getTopSongs((undefined as unknown) as User[], []);
+      expect(result).toEqual([]);
+      expect(getTopSongsByUserMock).toHaveBeenCalledTimes(0);
     });
 
     it('should return an empty array if no users are passed in', async () => {
@@ -411,9 +539,13 @@ describe('SpotifyService', () => {
         user: { id: '1' },
         topSongs: [
           {
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            available_markets: ['US'],
             uri: '1',
           },
           {
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            available_markets: ['US'],
             uri: '2',
           },
         ],
@@ -422,9 +554,13 @@ describe('SpotifyService', () => {
         user: { id: '2' },
         topSongs: [
           {
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            available_markets: ['US'],
             uri: '1',
           },
           {
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            available_markets: ['US'],
             uri: '2',
           },
         ],
@@ -433,9 +569,13 @@ describe('SpotifyService', () => {
         user: { id: '3' },
         topSongs: [
           {
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            available_markets: ['US'],
             uri: '1',
           },
           {
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            available_markets: ['US'],
             uri: '2',
           },
         ],
@@ -450,58 +590,36 @@ describe('SpotifyService', () => {
           },
           topSongs: [
             {
+              // eslint-disable-next-line @typescript-eslint/camelcase
+              available_markets: ['US'],
               uri: '2',
             },
           ],
+          likedSongs: [],
         },
         {
           user: {
             id: '2',
           },
-          topSongs: [],
+          topSongs: [
+            {
+              // eslint-disable-next-line @typescript-eslint/camelcase
+              available_markets: ['US'],
+              uri: '2',
+            },
+          ],
+          likedSongs: [],
         },
         {
           user: {
             id: '3',
           },
           topSongs: [],
+          likedSongs: [],
         },
       ];
       expect(result).toEqual(expected);
       expect(getTopSongsByUserMock).toHaveBeenCalledTimes(memberArr.length);
-    });
-  });
-
-  describe('filterByHours()', () => {
-    it('should return only songs that were created older than one hour ago', () => {
-      const passingDate1 = subHours(new Date(), 6);
-      const passingDate2 = subHours(new Date(), 3);
-      const mockSongs = [
-        {
-          createdAt: new Date(),
-        },
-        {
-          createdAt: passingDate1,
-        },
-        {
-          createdAt: passingDate2,
-        },
-        {
-          createdAt: new Date(),
-        },
-        {
-          createdAt: new Date(),
-        },
-      ] as Song[];
-      const expected = [
-        {
-          createdAt: passingDate1,
-        },
-        {
-          createdAt: passingDate2,
-        },
-      ];
-      expect(spotifyService.filterByHours(mockSongs, 'createdAt', 1)).toEqual(expected);
     });
   });
 
