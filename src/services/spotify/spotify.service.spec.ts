@@ -1,13 +1,19 @@
 import { AxiosResponse } from 'axios';
 import { Playlist } from '../../shared/db/models/Playlist';
 import { User } from '../../shared/db/models/User';
-import { mockQueueService } from '../../shared/mocks/mock-queue.service';
 import { mockSpotifyHttpService } from '../../shared/mocks/mock-spotify-http.service';
 import { mockUserService } from '../../shared/mocks/mock-user.service';
-import { SpotifyPlaylist, SpotifyResponse, SpotifyTrack, SpotifyUserData } from './spotify-http.interface';
+import {
+  SpotifyPlaylist,
+  SpotifyPlaylistItemInfo,
+  SpotifyResponse,
+  SpotifyTrack,
+  SpotifyUserData,
+} from './spotify-http.interface';
 import { PlaylistData, SongsByUser, SongWithUserData } from './spotify.interface';
 import { SpotifyService } from './spotify.service';
 import { Song } from '../../shared/db/models/Song';
+import { QueueService } from '../../shared/services/queue.service';
 
 describe('SpotifyService', () => {
   let spotifyService: SpotifyService;
@@ -16,7 +22,7 @@ describe('SpotifyService', () => {
     spotifyService = new SpotifyService();
     spotifyService.httpService = mockSpotifyHttpService;
     spotifyService.userService = mockUserService;
-    spotifyService.queueService = mockQueueService;
+    spotifyService.queueService = QueueService.getInstance();
   });
 
   afterEach(() => {
@@ -435,11 +441,34 @@ describe('SpotifyService', () => {
   });
 
   describe('removeAllPlaylistTracks()', () => {
-    console.log('not yet implemented');
+    it('should call httpService.removeAllPlaylistTracks one time if under 100 tracks', async () => {
+      const mockTracksUnder100: SpotifyPlaylistItemInfo[] = Array.from({ length: 99 }, (_, _x) => ({
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        is_local: false,
+      })) as SpotifyPlaylistItemInfo[];
+      await spotifyService.removeAllPlaylistTracks('123', '1', mockTracksUnder100);
+      expect(spotifyService.httpService.removeAllPlaylistTracks).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call httpService.removeAllPlaylistTracks multiple times if over 100 tracks', async () => {
+      const mockTracksOver100: SpotifyPlaylistItemInfo[] = Array.from({ length: 101 }, (_, _x) => ({
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        is_local: false,
+      })) as SpotifyPlaylistItemInfo[];
+      await spotifyService.removeAllPlaylistTracks('123', '1', mockTracksOver100);
+      expect(spotifyService.httpService.removeAllPlaylistTracks).toHaveBeenCalledTimes(2);
+    });
   });
 
   describe('refreshPlaylist()', () => {
-    console.log('not yet implemented');
+    it('should add to the queue and immediately dequeue', async () => {
+      jest.spyOn(spotifyService, 'populatePlaylist').mockResolvedValueOnce(undefined);
+      const queueSpy = jest.spyOn(spotifyService.queueService, 'queue');
+      const dequeueSpy = jest.spyOn(spotifyService.queueService, 'dequeue');
+      await spotifyService.refreshPlaylist('123', false);
+      expect(queueSpy).toHaveBeenCalledTimes(1);
+      expect(dequeueSpy).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('getUserData()', () => {

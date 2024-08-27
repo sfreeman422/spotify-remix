@@ -32,9 +32,11 @@ export class QueueService {
     const state = this.getState(key);
     if (state?.length) {
       console.log('Key found, running dequeue function for ', key);
-      return state[0]().then(() => {
+      state[0]().then(() => {
         state.splice(0, 1);
-        return this.dequeue(key);
+        if (state.length) {
+          this.dequeue(key);
+        }
       });
     }
     return new Promise(resolve => {

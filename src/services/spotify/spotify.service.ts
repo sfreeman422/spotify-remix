@@ -118,14 +118,11 @@ export class SpotifyService {
 
   refreshPlaylist(playlistId: string, isNewPlaylist = false): Promise<void> {
     const identifier = `playlist-${playlistId}`;
-    const queue = this.queueService.queue<WebAPICallResult | undefined>(identifier, () =>
+    this.queueService.queue<WebAPICallResult | undefined>(identifier, () =>
       this.populatePlaylist(playlistId, isNewPlaylist),
     );
-    if (queue.length) {
-      return this.queueService.dequeue(identifier);
-    } else {
-      throw new Error('Unable to refresh the playlist because the queue was empty');
-    }
+
+    return this.queueService.dequeue(identifier);
   }
 
   getUserData(accessToken: string): Promise<SpotifyUserData> {
