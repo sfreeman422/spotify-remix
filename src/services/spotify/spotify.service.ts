@@ -1,14 +1,20 @@
-import { AxiosResponse } from 'axios';
-import { Playlist } from '../../shared/db/models/Playlist';
 import { Song } from '../../shared/db/models/Song';
 import { User } from '../../shared/db/models/User';
 import { QueueService } from '../../shared/services/queue.service';
 import { UserService } from '../user/user.service';
 import { SpotifyHttpService } from './spotify-http.service';
-import { SpotifyPlaylist, SpotifyPlaylistItemInfo, SpotifyResponse, SpotifyUserData } from './spotify-http.interface';
+import {
+  SpotifyPlaylist,
+  SpotifyPlaylistItemInfo,
+  SpotifyResponse,
+  SpotifyTrack,
+  SpotifyUserData,
+} from './spotify-http.interface';
 import { PlaylistData, SongsByUser, SongWithUserData } from './spotify.interface';
 import { KnownBlock, WebAPICallResult } from '@slack/web-api';
 import { SlackService } from '../slack/slack.service';
+import { AxiosResponse } from 'axios';
+import { Playlist } from '../../shared/db/models/Playlist';
 
 export class SpotifyService {
   userService = new UserService();
@@ -16,16 +22,7 @@ export class SpotifyService {
   httpService = new SpotifyHttpService();
   slackService = new SlackService();
 
-  getUserData(accessToken: string): Promise<SpotifyUserData> {
-    return this.httpService.getUserData(accessToken);
-  }
-
-  getOwnedPlaylists(createdPlaylists: Playlist[] | undefined, spotifyPlaylists: SpotifyPlaylist[]): SpotifyPlaylist[] {
-    if (!createdPlaylists?.length) {
-      return [];
-    }
-    return spotifyPlaylists.filter(x => createdPlaylists?.some(createdPlaylist => createdPlaylist.id === x.id));
-  }
+  MAX_SONGS_PER_ARTIST_PER_USER = 3;
 
   async getUserPlaylists(accessToken: string): Promise<PlaylistData> {
     const user: User | undefined = await this.userService.getUserWithRelations({
@@ -66,17 +63,6 @@ export class SpotifyService {
       });
   }
 
-  async createUserPlaylist(accessToken: string): Promise<void> {
-    const user = await this.userService.getUser({ accessToken: accessToken.split(' ')[1] });
-    if (user) {
-      const createdPlaylist = await this.httpService.createUserPlaylist(accessToken, user);
-      const savedPlaylist = await this.userService.savePlaylist(user, createdPlaylist.data.id);
-      return this.refreshPlaylist(savedPlaylist.playlistId, true);
-    } else {
-      throw new Error('Unable to find user');
-    }
-  }
-
   async removePlaylist(accessToken: string, playlists: string[]): Promise<Playlist[]> {
     const ownedPlaylists = await this.userService.getAllOwnedPlaylists(accessToken);
     const playlistsOwnedAndToBeDeleted: Playlist[] = ownedPlaylists.filter(x =>
@@ -109,14 +95,59 @@ export class SpotifyService {
     throw new Error(`Unable to find user by accessToken: ${accessToken} or playlistId: ${playlistId}`);
   }
 
-  filterSongsNotInUSA(songs: SongWithUserData[]): SongWithUserData[] {
+  removeAllPlaylistTracks(
+    playlistId: string,
+    accessToken: string,
+    playlistTracks: SpotifyPlaylistItemInfo[],
+  ): Promise<any> {
+    const calls = [];
+    if (playlistTracks.length > 100) {
+      const numberOfCalls = Math.ceil(playlistTracks.length / 100);
+      let lastIndex = 0;
+      for (let i = 0; i < numberOfCalls; i++) {
+        calls.push(
+          this.httpService.removeAllPlaylistTracks(playlistId, accessToken, playlistTracks.slice(lastIndex, 100)),
+        );
+        lastIndex += 100;
+      }
+    } else {
+      calls.push(this.httpService.removeAllPlaylistTracks(playlistId, accessToken, playlistTracks));
+    }
+    return Promise.all(calls);
+  }
+
+  refreshPlaylist(playlistId: string, isNewPlaylist = false): Promise<void> {
+    const identifier = `playlist-${playlistId}`;
+    const queue = this.queueService.queue<WebAPICallResult | undefined>(identifier, () =>
+      this.populatePlaylist(playlistId, isNewPlaylist),
+    );
+    if (queue.length) {
+      return this.queueService.dequeue(identifier);
+    } else {
+      throw new Error('Unable to refresh the playlist because the queue was empty');
+    }
+  }
+
+  getUserData(accessToken: string): Promise<SpotifyUserData> {
+    return this.httpService.getUserData(accessToken);
+  }
+
+  async createUserPlaylist(accessToken: string): Promise<void> {
+    const user = await this.userService.getUser({ accessToken: accessToken.split(' ')[1] });
+    if (user) {
+      const createdPlaylist = await this.httpService.createUserPlaylist(accessToken, user);
+      const savedPlaylist = await this.userService.savePlaylist(user, createdPlaylist.data.id);
+      return this.refreshPlaylist(savedPlaylist.playlistId, true);
+    } else {
+      throw new Error('Unable to find user');
+    }
+  }
+
+  filterSongsNotInUSA(songs: SpotifyTrack[]): SpotifyTrack[] {
     return songs.filter(song => song.available_markets.includes('US'));
   }
 
-  filterMaxNumberOfSongsPerUserPerArists(
-    songs: SongWithUserData[],
-    maxSongsPerArtistPerUser: number,
-  ): SongWithUserData[] {
+  filterMaxNumberOfSongsPerUserPerArists(songs: SpotifyTrack[], maxSongsPerArtistPerUser: number): SpotifyTrack[] {
     const seenArtists: Record<string, number> = {};
 
     return songs.filter(song => {
@@ -132,68 +163,91 @@ export class SpotifyService {
     });
   }
 
+  filterSongsPerUser(songs: SpotifyTrack[], history: string[], maxNumberOfSongsPerArtistUser: number): SpotifyTrack[] {
+    const filteredByHistory = songs.filter(x => !history.includes(x.uri));
+    const filteredByUsa = this.filterSongsNotInUSA(filteredByHistory);
+    return this.filterMaxNumberOfSongsPerUserPerArists(filteredByUsa, maxNumberOfSongsPerArtistUser);
+  }
+
   async getTopSongs(members: User[], history: string[]): Promise<SongsByUser[]> {
-    const historyIds = history;
-    const maxSongsPerArtistPerUser = 2;
     return members?.length
       ? await Promise.all(
-          members.map(async (member: User) =>
-            this.httpService
-              .getTopSongsByUser(member)
-              .then(x => ({ ...x, topSongs: x.topSongs.filter(x => !historyIds.includes(x.uri)) }))
-              .then(x => {
-                return { ...x, topSongs: this.filterSongsNotInUSA(x.topSongs) };
-              })
-              .then(x => ({
-                ...x,
-                topSongs: this.filterMaxNumberOfSongsPerUserPerArists(x.topSongs, maxSongsPerArtistPerUser),
-              }))
-              .then(x => {
-                x.topSongs.forEach(song => {
-                  historyIds.push(song.uri);
+          members.map(
+            async (member: User): Promise<SongsByUser> => {
+              const topSongs: SongWithUserData[] = await this.httpService
+                .getTopSongsByUser(member)
+                .then(resp => {
+                  const filteredSongs = this.filterSongsPerUser(
+                    resp.items,
+                    history,
+                    this.MAX_SONGS_PER_ARTIST_PER_USER,
+                  );
+                  return filteredSongs.map(song => ({ ...song, spotifyId: member.spotifyId }));
+                })
+                .catch(e => {
+                  console.error(e);
+                  console.error(`Unable to getTopSongs for ${member.spotifyId}`);
+                  // Enables the playlist to not break if one user is not able to get songs
+                  return [];
                 });
 
-                return x;
-              })
-              .catch(e => {
-                console.error(e);
-                console.error(`Unable to getTopSongs for ${member.spotifyId}`);
+              const songsByUser: SongsByUser = {
+                user: member,
+                topSongs,
+                likedSongs: [],
+              };
 
-                // Enables the playlist to not break if one user is not able to get songs
-                return Promise.resolve({ user: member, topSongs: [], likedSongs: [] });
-              }),
+              return songsByUser;
+            },
           ),
         )
       : [];
   }
 
-  // may need advanced filtering here to filter out songs per user.
   getLikedSongsIfNecessary(
-    songsByUser: SongsByUser[],
+    songsByUser: SongsByUser,
     songsPerUser: number,
     history: string[],
-  ): Promise<SongsByUser>[] {
-    const historyIds = history;
-    return songsByUser.map(async (x: SongsByUser) => {
-      if (x.topSongs.length < songsPerUser && x.likedSongs.length < songsPerUser) {
-        x.topSongs.forEach(song => historyIds.push(song.uri));
-        const newSongsByUser: SongsByUser = Object.assign({}, x);
-        return this.httpService
-          .getLikedSongsByUser(x.user)
-          .then(y => {
-            newSongsByUser.likedSongs =
-              y?.likedSongs?.filter(x => !historyIds.includes(x.uri) && x.available_markets.includes('US')) || [];
-            newSongsByUser.likedSongs.forEach(song => historyIds.push(song.uri));
-            return newSongsByUser;
-          })
-          .catch(e => {
-            console.error(`Unable to getLikedSongsIfNecessary for ${x.user}`);
-            console.error(e);
-            return Promise.resolve(x);
-          });
-      }
-      return x;
-    });
+    url?: string,
+  ): Promise<SongsByUser> {
+    const needsMoreSongs = songsByUser.topSongs.length + songsByUser.likedSongs.length < songsPerUser;
+    if (needsMoreSongs) {
+      const newSongsByUser: SongsByUser = Object.assign({}, songsByUser);
+      return this.httpService
+        .getLikedSongsByUser(songsByUser.user, url)
+        .then(resp => {
+          const filteredSongs = this.filterSongsPerUser(resp.items, history, this.MAX_SONGS_PER_ARTIST_PER_USER);
+          return {
+            filteredSongs: filteredSongs.map(song => ({ ...song, spotifyId: songsByUser.user.spotifyId })),
+            next: resp.next,
+          };
+        })
+        .then(songsWithNext => {
+          newSongsByUser.likedSongs = newSongsByUser.likedSongs.concat(songsWithNext.filteredSongs);
+          if (newSongsByUser.likedSongs.length + newSongsByUser.topSongs.length < songsPerUser && songsWithNext.next) {
+            return this.getLikedSongsIfNecessary(newSongsByUser, songsPerUser, history, songsWithNext.next);
+          }
+          return newSongsByUser;
+        })
+        .catch(e => {
+          console.error(`Unable to getLikedSongsIfNecessary for ${songsByUser.user}`);
+          console.error(e);
+          // This prevents breaking the playlist if a user is unable to get liked songs.
+          return Promise.resolve(newSongsByUser);
+        });
+    }
+    return Promise.resolve(songsByUser);
+  }
+
+  async getAllMusic(members: User[], songsPerUser: number, history: Song[]): Promise<SongWithUserData[]> {
+    const historyIds: string[] = history.map(x => x.spotifyUrl);
+
+    let music: SongsByUser[] = await this.getTopSongs(members, historyIds);
+    // Add to temporary history since we do not want to repeat songs.
+    music.forEach(x => x.topSongs.forEach(song => historyIds.push(song.uri)));
+    music = await Promise.all(music.map(x => this.getLikedSongsIfNecessary(x, songsPerUser, historyIds)));
+
+    return this.generatePlaylist(music, songsPerUser);
   }
 
   generatePlaylist(music: SongsByUser[], songsPerUser: number): SongWithUserData[] {
@@ -211,28 +265,7 @@ export class SpotifyService {
     return playlistSongs;
   }
 
-  async getAllMusic(members: User[], songsPerUser: number, history: Song[]): Promise<SongWithUserData[]> {
-    const historyIds: string[] = history.map(x => x.spotifyUrl);
-
-    let music: SongsByUser[] = await this.getTopSongs(members, historyIds);
-    music = await Promise.all(this.getLikedSongsIfNecessary(music, songsPerUser, historyIds));
-
-    return this.generatePlaylist(music, songsPerUser);
-  }
-
-  refreshPlaylist(playlistId: string, isNewPlaylist = false): Promise<void> {
-    const identifier = `playlist-${playlistId}`;
-    const queue = this.queueService.queue<WebAPICallResult | undefined>(identifier, () =>
-      this.populatePlaylist(playlistId, isNewPlaylist),
-    );
-    if (queue.length) {
-      return this.queueService.dequeue(identifier);
-    } else {
-      throw new Error('Unable to refresh the playlist because the queue was empty');
-    }
-  }
-
-  private async populatePlaylist(playlistId: string, isNewPlaylist: boolean): Promise<WebAPICallResult | undefined> {
+  async populatePlaylist(playlistId: string, isNewPlaylist: boolean): Promise<WebAPICallResult | undefined> {
     const playlist = await this.userService.getPlaylist(playlistId, isNewPlaylist);
     if (playlist) {
       const { members, history, owner } = playlist;
@@ -291,27 +324,6 @@ export class SpotifyService {
     }
     console.log('no playlist found, returning undefined');
     return undefined;
-  }
-
-  removeAllPlaylistTracks(
-    playlistId: string,
-    accessToken: string,
-    playlistTracks: SpotifyPlaylistItemInfo[],
-  ): Promise<any> {
-    const calls = [];
-    if (playlistTracks.length > 100) {
-      const numberOfCalls = Math.ceil(playlistTracks.length / 100);
-      let lastIndex = 0;
-      for (let i = 0; i < numberOfCalls; i++) {
-        calls.push(
-          this.httpService.removeAllPlaylistTracks(playlistId, accessToken, playlistTracks.slice(lastIndex, 100)),
-        );
-        lastIndex += 100;
-      }
-    } else {
-      calls.push(this.httpService.removeAllPlaylistTracks(playlistId, accessToken, playlistTracks));
-    }
-    return Promise.all(calls);
   }
 
   roundRobinSort(arr: SongWithUserData[]): SongWithUserData[] {

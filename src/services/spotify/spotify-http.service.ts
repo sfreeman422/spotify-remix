@@ -8,7 +8,7 @@ import {
   SpotifyTrack,
   SpotifyUserData,
 } from './spotify-http.interface';
-import { SongsByUser, SongWithUserData } from './spotify.interface';
+import { SongWithUserData } from './spotify.interface';
 
 export class SpotifyHttpService {
   baseUrl = 'https://api.spotify.com/v1';
@@ -164,61 +164,35 @@ export class SpotifyHttpService {
   getTopSongsByUser(
     user: User,
     url = `${this.baseSelfUrl}/top/tracks?limit=50&time_range=short_term`,
-  ): Promise<SongsByUser> {
+  ): Promise<SpotifyResponse<SpotifyTrack[]>> {
     const headers = {
       Authorization: `Bearer ${user.accessToken}`,
     };
     return axios
       .get<SpotifyResponse<SpotifyTrack[]>>(url, { headers })
-      .then<SongsByUser>(
-        (x: AxiosResponse<SpotifyResponse<SpotifyTrack[]>>): Promise<SongsByUser> => {
-          const songs = x.data.items.map(
-            (song: SpotifyTrack): SongWithUserData => ({
-              ...song,
-              spotifyId: user.spotifyId,
-            }),
-          );
+      .then((x: AxiosResponse<SpotifyResponse<SpotifyTrack[]>>) => {
+        return x.data;
+      })
 
-          if (x.data.next) {
-            return this.getTopSongsByUser(user, x.data.next).then((data: SongsByUser) => ({
-              user: user,
-              topSongs: songs.concat(data.topSongs),
-              likedSongs: [],
-            }));
-          }
-          return Promise.resolve({ user, topSongs: songs, likedSongs: [] });
-        },
-      )
       .catch(e => {
         console.error(e);
         throw new Error(e);
       });
   }
 
-  getLikedSongsByUser(user: User, url = `${this.baseSelfUrl}/tracks?limit=50`): Promise<SongsByUser> {
+  getLikedSongsByUser(
+    user: User,
+    url = `${this.baseSelfUrl}/tracks?limit=50`,
+  ): Promise<SpotifyResponse<SpotifyTrack[]>> {
     return axios
       .get<SpotifyResponse<SpotifyLikedSong[]>>(url, {
         headers: {
           Authorization: `Bearer ${user.accessToken}`,
         },
       })
-      .then<SongsByUser>(
-        (x: AxiosResponse<SpotifyResponse<SpotifyLikedSong[]>>): Promise<SongsByUser> => {
-          const songs = x.data.items.map(
-            (song: SpotifyLikedSong): SongWithUserData =>
-              Object.assign(song.track, {
-                spotifyId: user.spotifyId,
-              }),
-          );
-
-          if (x.data.next) {
-            return this.getLikedSongsByUser(user, x.data.next).then(data => ({
-              user,
-              topSongs: [], // Dont love this.
-              likedSongs: songs.concat(data.likedSongs || []),
-            }));
-          }
-          return new Promise(resolve => resolve({ user, topSongs: [], likedSongs: songs }));
+      .then<SpotifyResponse<SpotifyTrack[]>>(
+        (x: AxiosResponse<SpotifyResponse<SpotifyLikedSong[]>>): SpotifyResponse<SpotifyTrack[]> => {
+          return { ...x.data, items: x.data.items.map(x => x.track) };
         },
       )
       .catch(e => {
