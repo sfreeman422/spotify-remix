@@ -17,12 +17,9 @@ export class SlackService {
       postRequest.blocks = blocks;
     }
 
-    console.log('post request', postRequest);
-
     return this.web.chat
       .postMessage(postRequest)
       .then(result => {
-        console.log('message sent', result);
         return result;
       })
       .catch(e => {

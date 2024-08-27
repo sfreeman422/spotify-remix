@@ -294,8 +294,6 @@ export class SpotifyService {
               );
             });
 
-            console.log('message for blocks', message);
-
             const blocks: KnownBlock[] = [
               {
                 type: 'section',
