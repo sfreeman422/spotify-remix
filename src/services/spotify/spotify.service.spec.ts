@@ -7,6 +7,7 @@ import { mockUserService } from '../../shared/mocks/mock-user.service';
 import { SpotifyPlaylist, SpotifyResponse, SpotifyTrack, SpotifyUserData } from './spotify-http.interface';
 import { PlaylistData, SongsByUser, SongWithUserData } from './spotify.interface';
 import { SpotifyService } from './spotify.service';
+import { Song } from '../../shared/db/models/Song';
 
 describe('SpotifyService', () => {
   let spotifyService: SpotifyService;
@@ -991,253 +992,290 @@ describe('SpotifyService', () => {
     });
   });
 
-  // describe('getAllMusic()', () => {
-  //   let mockGetTopSongs: jest.SpyInstance<Promise<SongsByUser[]>>;
-  //   let mockGetLikedSongsByUser: jest.SpyInstance<Promise<SongsByUser>>;
+  describe('getAllMusic()', () => {
+    let mockGetTopSongs: jest.SpyInstance<Promise<SongsByUser[]>>;
+    let mockGetLikedSongsIfNecessary: jest.SpyInstance<Promise<SongsByUser>>;
 
-  //   beforeEach(() => {
-  //     mockGetTopSongs = jest.spyOn(spotifyService, 'getTopSongs');
-  //     mockGetLikedSongsByUser = jest.spyOn(spotifyService.httpService, 'getLikedSongsByUser');
-  //   });
+    beforeEach(() => {
+      mockGetTopSongs = jest.spyOn(spotifyService, 'getTopSongs');
+      mockGetLikedSongsIfNecessary = jest.spyOn(spotifyService, 'getLikedSongsIfNecessary');
+    });
 
-  //   it('should throw an error if getTopSongs call throws an error', async () => {
-  //     expect.assertions(1);
-  //     mockGetTopSongs.mockRejectedValueOnce('Test');
-  //     try {
-  //       const members = [] as User[];
-  //       const songsPerUser = 6;
-  //       const history = [] as Song[];
-  //       await spotifyService.getAllMusic(members, songsPerUser, history);
-  //     } catch (e) {
-  //       expect(e).toBe('Test');
-  //     }
-  //   });
+    it('should handle an empty topSongs and liked songs arrays', async () => {
+      const generatePlaylistSpy = jest.spyOn(spotifyService, 'generatePlaylist');
+      mockGetTopSongs.mockResolvedValueOnce([]);
+      mockGetLikedSongsIfNecessary.mockResolvedValueOnce({} as SongsByUser);
+      const members = [] as User[];
+      const songsPerUser = 6;
+      const history = [] as Song[];
+      await spotifyService.getAllMusic(members, songsPerUser, history);
+      expect(generatePlaylistSpy).toHaveBeenCalledTimes(1);
+    });
 
-  //   it('should throw an error if getLikedSongsByUser call throws an error', async () => {
-  //     expect.assertions(1);
-  //     mockGetTopSongs.mockResolvedValueOnce([
-  //       {
-  //         user: {
-  //           id: '1',
-  //         },
-  //         topSongs: [
-  //           {
-  //             uri: '1',
-  //           },
-  //         ],
-  //       },
-  //     ] as SongsByUser[]);
-  //     mockGetLikedSongsByUser.mockRejectedValueOnce('Test');
-  //     try {
-  //       const members = [] as User[];
-  //       const songsPerUser = 6;
-  //       const history = [] as Song[];
-  //       await spotifyService.getAllMusic(members, songsPerUser, history);
-  //     } catch (e) {
-  //       expect(e).toBe('Test');
-  //     }
-  //   });
-  // });
+    it('should handle list of members and history', async () => {
+      const generatePlaylistSpy = jest.spyOn(spotifyService, 'generatePlaylist');
+      mockGetTopSongs.mockResolvedValueOnce([
+        {
+          user: {
+            id: '1',
+          },
+          topSongs: [
+            {
+              uri: '1',
+            },
+            {
+              uri: '2',
+            },
+          ],
+          likedSongs: [] as SongWithUserData[],
+        },
+      ] as SongsByUser[]);
+      mockGetLikedSongsIfNecessary.mockResolvedValueOnce({
+        user: {
+          id: '1',
+        },
+        topSongs: [
+          {
+            uri: '1',
+          },
+          {
+            uri: '2',
+          },
+        ],
+        likedSongs: [] as SongWithUserData[],
+      } as SongsByUser);
+      const members = [
+        {
+          id: '1',
+        } as User,
+      ] as User[];
+      const songsPerUser = 6;
+      const history = [
+        {
+          spotifyUrl: '1',
+        },
+        {
+          spotifyUrl: '2',
+        },
+      ] as Song[];
+      await spotifyService.getAllMusic(members, songsPerUser, history);
+      expect(generatePlaylistSpy).toHaveBeenCalledTimes(1);
+      expect(mockGetTopSongs).toHaveBeenCalledTimes(1);
+      expect(mockGetLikedSongsIfNecessary).toHaveBeenCalledTimes(1);
+    });
+  });
 
-  // describe('generatePlaylist()', () => {
-  //   it('should populate the playlist with only top songs if the user has enough top songs', () => {
-  //     const expected = [
-  //       {
-  //         uri: '1',
-  //       },
-  //       {
-  //         uri: '2',
-  //       },
-  //       {
-  //         uri: '3',
-  //       },
-  //     ] as SongWithUserData[];
-  //     const mockSongs = [
-  //       {
-  //         user: {
-  //           id: '1',
-  //         },
-  //         topSongs: [
-  //           {
-  //             uri: '1',
-  //           },
-  //           {
-  //             uri: '2',
-  //           },
-  //           {
-  //             uri: '3',
-  //           },
-  //         ],
-  //       },
-  //     ] as SongsByUser[];
-  //     expect(spotifyService.generatePlaylist(mockSongs, 3)).toEqual(expected);
-  //   });
+  describe('generatePlaylist()', () => {
+    it('should populate the playlist with only top songs if the user has enough top songs', () => {
+      const expected = [
+        {
+          uri: '1',
+        },
+        {
+          uri: '2',
+        },
+        {
+          uri: '3',
+        },
+      ] as SongWithUserData[];
+      const mockSongs = [
+        {
+          user: {
+            id: '1',
+          },
+          topSongs: [
+            {
+              uri: '1',
+            },
+            {
+              uri: '2',
+            },
+            {
+              uri: '3',
+            },
+          ],
+          likedSongs: [] as SongWithUserData[],
+        },
+      ] as SongsByUser[];
+      const result = spotifyService.generatePlaylist(mockSongs, 3);
+      expect(result).toEqual(expected);
+    });
 
-  //   it('should populate the playlist with top songs and liked songs if there are not enough top songs', () => {
-  //     const expected = [
-  //       {
-  //         uri: '1',
-  //       },
-  //       {
-  //         uri: '2',
-  //       },
-  //       {
-  //         uri: '3',
-  //       },
-  //     ] as SongWithUserData[];
-  //     const mockSongs = [
-  //       {
-  //         user: {
-  //           id: '1',
-  //         },
-  //         topSongs: [
-  //           {
-  //             uri: '1',
-  //           },
-  //           {
-  //             uri: '2',
-  //           },
-  //         ],
-  //         likedSongs: [
-  //           {
-  //             uri: '3',
-  //           },
-  //         ],
-  //       },
-  //     ] as SongsByUser[];
-  //     expect(spotifyService.generatePlaylist(mockSongs, 3)).toEqual(expected);
-  //   });
+    it('should populate the playlist with top songs and liked songs if there are not enough top songs', () => {
+      const expected = [
+        {
+          uri: '1',
+        },
+        {
+          uri: '2',
+        },
+        {
+          uri: '3',
+        },
+      ] as SongWithUserData[];
+      const mockSongs = [
+        {
+          user: {
+            id: '1',
+          },
+          topSongs: [
+            {
+              uri: '1',
+            },
+            {
+              uri: '2',
+            },
+          ],
+          likedSongs: [
+            {
+              uri: '3',
+            },
+          ],
+        },
+      ] as SongsByUser[];
+      expect(spotifyService.generatePlaylist(mockSongs, 3)).toEqual(expected);
+    });
 
-  //   it('should populate the playlist with only liked songs if there are no top songs', () => {
-  //     const mockSongs = [
-  //       {
-  //         user: {
-  //           id: '1',
-  //         },
-  //         topSongs: [] as SongWithUserData[],
-  //         likedSongs: [
-  //           {
-  //             uri: '1',
-  //           },
-  //           {
-  //             uri: '2',
-  //           },
-  //           {
-  //             uri: '3',
-  //           },
-  //         ],
-  //       },
-  //     ] as SongsByUser[];
-  //     const result = spotifyService.generatePlaylist(mockSongs, 3);
-  //     expect(result.indexOf({ uri: '1' } as SongWithUserData)).toBeTruthy();
-  //     expect(result.indexOf({ uri: '2' } as SongWithUserData)).toBeTruthy();
-  //     expect(result.indexOf({ uri: '3' } as SongWithUserData)).toBeTruthy();
-  //   });
-  // });
+    it('should populate the playlist with only liked songs if there are no top songs', () => {
+      const mockSongs = [
+        {
+          user: {
+            id: '1',
+          },
+          topSongs: [] as SongWithUserData[],
+          likedSongs: [
+            {
+              uri: '1',
+            },
+            {
+              uri: '2',
+            },
+            {
+              uri: '3',
+            },
+          ],
+        },
+      ] as SongsByUser[];
+      const expected = [
+        {
+          uri: '1',
+        },
+        {
+          uri: '2',
+        },
+        {
+          uri: '3',
+        },
+      ] as SongWithUserData[];
 
-  // describe('roundRobinSort()', () => {
-  //   it('should round robin sort', () => {
-  //     const unsorted = [
-  //       {
-  //         spotifyId: '1',
-  //         uri: '1',
-  //       },
-  //       {
-  //         spotifyId: '1',
-  //         uri: '1',
-  //       },
-  //       {
-  //         spotifyId: '3',
-  //         uri: '3',
-  //       },
-  //       {
-  //         spotifyId: '3',
-  //         uri: '3',
-  //       },
-  //       {
-  //         spotifyId: '2',
-  //         uri: '2',
-  //       },
-  //       {
-  //         spotifyId: '1',
-  //         uri: '1',
-  //       },
-  //     ] as SongWithUserData[];
+      const result = spotifyService.generatePlaylist(mockSongs, 3);
+      expect(result).toEqual(expected);
+    });
+  });
 
-  //     const sorted = [
-  //       {
-  //         spotifyId: '1',
-  //         uri: '1',
-  //       },
-  //       {
-  //         spotifyId: '3',
-  //         uri: '3',
-  //       },
-  //       {
-  //         spotifyId: '2',
-  //         uri: '2',
-  //       },
-  //       {
-  //         spotifyId: '1',
-  //         uri: '1',
-  //       },
-  //       {
-  //         spotifyId: '3',
-  //         uri: '3',
-  //       },
-  //       {
-  //         spotifyId: '1',
-  //         uri: '1',
-  //       },
-  //     ];
-  //     expect(spotifyService.roundRobinSort(unsorted)).toStrictEqual(sorted);
-  //   });
+  describe('roundRobinSort()', () => {
+    it('should round robin sort', () => {
+      const unsorted = [
+        {
+          spotifyId: '1',
+          uri: '1',
+        },
+        {
+          spotifyId: '1',
+          uri: '1',
+        },
+        {
+          spotifyId: '3',
+          uri: '3',
+        },
+        {
+          spotifyId: '3',
+          uri: '3',
+        },
+        {
+          spotifyId: '2',
+          uri: '2',
+        },
+        {
+          spotifyId: '1',
+          uri: '1',
+        },
+      ] as SongWithUserData[];
 
-  //   it('should round robin sort when only one access token exists', () => {
-  //     const unsorted = [
-  //       {
-  //         spotifyId: '1',
-  //         uri: '1',
-  //       },
-  //       {
-  //         spotifyId: '1',
-  //         uri: '1',
-  //       },
-  //       {
-  //         spotifyId: '1',
-  //         uri: '1',
-  //       },
-  //     ] as SongWithUserData[];
+      const sorted = [
+        {
+          spotifyId: '1',
+          uri: '1',
+        },
+        {
+          spotifyId: '3',
+          uri: '3',
+        },
+        {
+          spotifyId: '2',
+          uri: '2',
+        },
+        {
+          spotifyId: '1',
+          uri: '1',
+        },
+        {
+          spotifyId: '3',
+          uri: '3',
+        },
+        {
+          spotifyId: '1',
+          uri: '1',
+        },
+      ];
+      expect(spotifyService.roundRobinSort(unsorted)).toStrictEqual(sorted);
+    });
 
-  //     const sorted = [
-  //       {
-  //         spotifyId: '1',
-  //         uri: '1',
-  //       },
-  //       {
-  //         spotifyId: '1',
-  //         uri: '1',
-  //       },
-  //       {
-  //         spotifyId: '1',
-  //         uri: '1',
-  //       },
-  //     ] as SongWithUserData[];
-  //     expect(spotifyService.roundRobinSort(unsorted)).toStrictEqual(sorted);
-  //   });
-  // });
+    it('should round robin sort when only one access token exists', () => {
+      const unsorted = [
+        {
+          spotifyId: '1',
+          uri: '1',
+        },
+        {
+          spotifyId: '1',
+          uri: '1',
+        },
+        {
+          spotifyId: '1',
+          uri: '1',
+        },
+      ] as SongWithUserData[];
 
-  // describe('getNumberOfItemsPerUser()', () => {
-  //   it('should return maxNumberofSongs when there is only 1 user', () => {
-  //     expect(spotifyService.getNumberOfItemsPerUser(1)).toBe(30);
-  //   });
+      const sorted = [
+        {
+          spotifyId: '1',
+          uri: '1',
+        },
+        {
+          spotifyId: '1',
+          uri: '1',
+        },
+        {
+          spotifyId: '1',
+          uri: '1',
+        },
+      ] as SongWithUserData[];
+      expect(spotifyService.roundRobinSort(unsorted)).toStrictEqual(sorted);
+    });
+  });
 
-  //   it('should calculate a number of songs when there is 5 users', () => {
-  //     expect(spotifyService.getNumberOfItemsPerUser(5)).toBe(6);
-  //   });
+  describe('getNumberOfItemsPerUser()', () => {
+    it('should return maxNumberofSongs when there is only 1 user', () => {
+      expect(spotifyService.getNumberOfItemsPerUser(1)).toBe(30);
+    });
 
-  //   it('should calculate a number of songs when there is 7 users', () => {
-  //     expect(spotifyService.getNumberOfItemsPerUser(7)).toBe(4);
-  //   });
-  // });
+    it('should calculate a number of songs when there is 5 users', () => {
+      expect(spotifyService.getNumberOfItemsPerUser(5)).toBe(6);
+    });
+
+    it('should calculate a number of songs when there is 7 users', () => {
+      expect(spotifyService.getNumberOfItemsPerUser(7)).toBe(4);
+    });
+  });
 });
