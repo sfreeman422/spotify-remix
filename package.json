@@ -13,7 +13,7 @@
     "start": "npm run start:dev",
     "start:prod": "node dist/index.js",
     "start:dev": "nodemon --watch 'src/**/*.ts' --ignore 'src/**/*.spec.ts' --exec 'ts-node' src/index.ts",
-    "test": "jest --silent",
+    "test": "jest --silent --coverage",
     "test:watch": "jest --watch"
   },
   "author": "",
