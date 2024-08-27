@@ -29,6 +29,7 @@ playlists = mycursor.fetchall()
 for playlist in playlists:
   url = "https://remix.lol/refresh/{playlistId}".format(playlistId=playlist['playlistId'])
   headers = { "Authorization": os.getenv('SPOTIFY_REMIX_API_KEY')}
+  print('Attempting to refresh playlist {playlistId}'.format(playlistId=playlist["playlistId"]))
   response = requests.post(url, headers=headers)
   if (response.status_code > 200):
     print('{statusCode} Failure during playlist refresh for {playlistId}'.format(statusCode=response.status_code, playlistId=playlist["playlistId"]))
