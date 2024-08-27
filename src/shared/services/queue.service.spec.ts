@@ -40,7 +40,7 @@ describe('QueueService', () => {
   });
 
   describe('dequeue', () => {
-    it('should remove the first function from the queue and call it', async () => {
+    it('should remove the first function from the queue and call it, then call subsequent functions', async () => {
       const key = 'test';
       const fn1 = jest.fn(() => Promise.resolve());
       const fn2 = jest.fn(() => Promise.resolve());
@@ -71,6 +71,8 @@ describe('QueueService', () => {
       await queueService.dequeue(key);
       expect(fn1).toHaveBeenCalled();
       expect(fn2).toHaveBeenCalled();
+      const state = queueService.getState(key);
+      console.log(state);
       expect(queueService.getKeys()).toEqual([]);
     });
 

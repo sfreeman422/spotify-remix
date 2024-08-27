@@ -27,22 +27,27 @@ export class QueueService {
     return this.state[key];
   }
 
+  removeKey(key: string): Promise<void> {
+    return new Promise(resolve => {
+      delete this.state[key];
+      resolve();
+    });
+  }
+
   dequeue(key: string): Promise<void> {
     console.log('Attempting to dequeue for ', key);
     const state = this.getState(key);
     if (state?.length) {
       console.log('Key found, running dequeue function for ', key);
-      state[0]().then(() => {
+      return state[0]().then(() => {
         state.splice(0, 1);
         if (state.length) {
-          this.dequeue(key);
+          return this.dequeue(key);
+        } else {
+          return this.removeKey(key);
         }
       });
     }
-    return new Promise(resolve => {
-      console.log('Unable to dequeue due to lack of fn in queue for ', key, 'removing this.state[key]');
-      delete this.state[key];
-      resolve();
-    });
+    return this.removeKey(key);
   }
 }
