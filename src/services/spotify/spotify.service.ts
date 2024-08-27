@@ -11,7 +11,7 @@ import {
   SpotifyUserData,
 } from './spotify-http.interface';
 import { PlaylistData, SongsByUser, SongWithUserData } from './spotify.interface';
-import { KnownBlock, WebAPICallResult } from '@slack/web-api';
+import { WebAPICallResult } from '@slack/web-api';
 import { SlackService } from '../slack/slack.service';
 import { AxiosResponse } from 'axios';
 import { Playlist } from '../../shared/db/models/Playlist';
@@ -286,35 +286,7 @@ export class SpotifyService {
         .then(() => {
           // da bros playlist - this is not scalable, stupid temporary bandaid to support web-hook-like behavior.
           if (playlist.playlistId === '3JCMiFTkDnUGmP6hcTDiQo') {
-            let message = '';
-
-            orderedPlaylist.forEach((song, index) => {
-              message = message.concat(
-                `${index + 1}. ${song.spotifyId} - ${song.artists.map(x => x.name).join(', ')} - ${song.name}\n`,
-              );
-            });
-
-            const blocks: KnownBlock[] = [
-              {
-                type: 'section',
-                text: {
-                  type: 'mrkdwn',
-                  text: message,
-                },
-              },
-              {
-                type: 'divider',
-              },
-              {
-                type: 'context',
-                elements: [
-                  {
-                    type: 'mrkdwn',
-                    text: `:headbangingparrot: _Da Bros' Remix has been successfully refreshed_ :headbangingparrot:`,
-                  },
-                ],
-              },
-            ];
+            const blocks = this.slackService.buildMessage(orderedPlaylist);
             return this.slackService.sendMessage('#music', 'Data about the playlist', blocks);
           }
           return undefined;
