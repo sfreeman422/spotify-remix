@@ -66,6 +66,7 @@ export class AuthService {
         if (!err && response.statusCode === 200) {
           const accessToken = body.access_token;
           const refreshToken = body.refresh_token;
+          console.log('succesfully made call to get tokens', body);
           resolve({ accessToken, refreshToken });
         } else {
           reject(err);
