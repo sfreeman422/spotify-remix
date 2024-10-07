@@ -73,7 +73,6 @@ export class RefreshService {
             const refreshToken = body.refresh_token || user?.refreshToken;
             resolve({ user, accessToken, refreshToken } as TokenSet);
           } else {
-            console.error(err);
             reject(response || err);
           }
         });
@@ -88,8 +87,7 @@ export class RefreshService {
           }
           return undefined;
         })
-        .catch(e => {
-          console.error(e);
+        .catch(() => {
           return retryCount < this.MAX_RETRIES
             ? this.refreshToken(accessToken, refreshToken, spotifyId, retryCount + 1)
             : undefined;
