@@ -1,14 +1,19 @@
 import { AxiosResponse } from 'axios';
-import { subHours } from 'date-fns';
 import { Playlist } from '../../shared/db/models/Playlist';
-import { Song } from '../../shared/db/models/Song';
 import { User } from '../../shared/db/models/User';
-import { mockQueueService } from '../../shared/mocks/mock-queue.service';
 import { mockSpotifyHttpService } from '../../shared/mocks/mock-spotify-http.service';
 import { mockUserService } from '../../shared/mocks/mock-user.service';
-import { SpotifyPlaylist, SpotifyResponse, SpotifyUserData } from './spotify-http.interface';
+import {
+  SpotifyPlaylist,
+  SpotifyPlaylistItemInfo,
+  SpotifyResponse,
+  SpotifyTrack,
+  SpotifyUserData,
+} from './spotify-http.interface';
 import { PlaylistData, SongsByUser, SongWithUserData } from './spotify.interface';
 import { SpotifyService } from './spotify.service';
+import { Song } from '../../shared/db/models/Song';
+import { QueueService } from '../../shared/services/queue.service';
 
 describe('SpotifyService', () => {
   let spotifyService: SpotifyService;
@@ -17,36 +22,11 @@ describe('SpotifyService', () => {
     spotifyService = new SpotifyService();
     spotifyService.httpService = mockSpotifyHttpService;
     spotifyService.userService = mockUserService;
-    spotifyService.queueService = mockQueueService;
+    spotifyService.queueService = QueueService.getInstance();
   });
 
   afterEach(() => {
     jest.clearAllMocks();
-  });
-
-  describe('getUserData()', () => {
-    let mockGetUserData: jest.SpyInstance<Promise<SpotifyUserData>>;
-
-    beforeEach(() => {
-      mockGetUserData = jest.spyOn(spotifyService.httpService, 'getUserData');
-    });
-
-    it('should return user data when user data is returned', async () => {
-      expect.assertions(1);
-      const mockUser = { email: 'abc@123.com' } as SpotifyUserData;
-      mockGetUserData.mockResolvedValueOnce(mockUser);
-      const userData = await spotifyService.getUserData('123');
-      expect(userData).toBe(mockUser);
-    });
-
-    it('should throw an error when an error is thrown', async () => {
-      expect.assertions(1);
-      const mockError = new Error('Test');
-      mockGetUserData.mockRejectedValueOnce(mockError);
-      await spotifyService.getUserData('123').catch(e => {
-        expect(e).toBe(mockError);
-      });
-    });
   });
 
   describe('getUserPlaylists()', () => {
@@ -59,6 +39,40 @@ describe('SpotifyService', () => {
     });
 
     it('should return an empty PlaylistData when there is no user', async () => {
+      expect.assertions(1);
+      const mockUser = undefined;
+      mockGetUserWithRelations.mockResolvedValueOnce(mockUser);
+      mockGetUserPlaylists.mockResolvedValueOnce({
+        data: {
+          items: [] as SpotifyPlaylist[],
+        },
+      } as AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>);
+      const result = await spotifyService.getUserPlaylists('123');
+      const expected: PlaylistData = {
+        ownedPlaylists: [],
+        orphanPlaylists: [],
+        subscribedPlaylists: [],
+      };
+      expect(result).toEqual(expected);
+    });
+
+    it('should return an empty PlaylistData when there is no response data', async () => {
+      expect.assertions(1);
+      const mockUser = undefined;
+      mockGetUserWithRelations.mockResolvedValueOnce(mockUser);
+      mockGetUserPlaylists.mockResolvedValueOnce(({
+        data: undefined,
+      } as unknown) as AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>);
+      const result = await spotifyService.getUserPlaylists('123');
+      const expected: PlaylistData = {
+        ownedPlaylists: [],
+        orphanPlaylists: [],
+        subscribedPlaylists: [],
+      };
+      expect(result).toEqual(expected);
+    });
+
+    it('should return an empty PlaylistData when there is no response.data.items', async () => {
       expect.assertions(1);
       const mockUser = undefined;
       mockGetUserWithRelations.mockResolvedValueOnce(mockUser);
@@ -107,6 +121,84 @@ describe('SpotifyService', () => {
         ] as SpotifyPlaylist[],
         orphanPlaylists: [],
         subscribedPlaylists: [],
+      };
+      expect(result).toEqual(expected);
+    });
+
+    it('should return a populated ownedPlaylist and subscribedPlaylists when a user has spotify data and is a member of a playlist and an owner of another playlist', async () => {
+      expect.assertions(1);
+      const mockUser = {
+        spotifyId: '123',
+        ownedPlaylists: [
+          {
+            playlistId: '456',
+          },
+        ] as Playlist[],
+        memberPlaylists: [{ playlistId: '789' }] as Playlist[],
+      } as User;
+      const mockSpotifyResponse = {
+        data: {
+          items: [
+            {
+              id: '456',
+            },
+            {
+              id: '789',
+            },
+          ],
+        },
+      } as AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>;
+
+      mockGetUserWithRelations.mockResolvedValueOnce(mockUser);
+      mockGetUserPlaylists.mockResolvedValueOnce(mockSpotifyResponse);
+      const result = await spotifyService.getUserPlaylists('123');
+      const expected: PlaylistData = {
+        ownedPlaylists: [
+          {
+            id: '456',
+          },
+        ] as SpotifyPlaylist[],
+        orphanPlaylists: [],
+        subscribedPlaylists: [{ id: '789' } as SpotifyPlaylist],
+      };
+      expect(result).toEqual(expected);
+    });
+
+    it('should return a populated ownedPlaylist and subscribedPlaylists when a user has spotify data and is a member of a playlist and an owner of another playlist', async () => {
+      expect.assertions(1);
+      const mockUser = {
+        spotifyId: '123',
+        ownedPlaylists: [
+          {
+            playlistId: '456',
+          },
+        ] as Playlist[],
+        memberPlaylists: [{ playlistId: '789' }] as Playlist[],
+      } as User;
+      const mockSpotifyResponse = {
+        data: {
+          items: [
+            {
+              id: '456',
+            },
+            {
+              id: '789',
+            },
+          ],
+        },
+      } as AxiosResponse<SpotifyResponse<SpotifyPlaylist[]>>;
+
+      mockGetUserWithRelations.mockResolvedValueOnce(mockUser);
+      mockGetUserPlaylists.mockResolvedValueOnce(mockSpotifyResponse);
+      const result = await spotifyService.getUserPlaylists('123');
+      const expected: PlaylistData = {
+        ownedPlaylists: [
+          {
+            id: '456',
+          },
+        ] as SpotifyPlaylist[],
+        orphanPlaylists: [],
+        subscribedPlaylists: [{ id: '789' } as SpotifyPlaylist],
       };
       expect(result).toEqual(expected);
     });
@@ -214,6 +306,196 @@ describe('SpotifyService', () => {
     });
   });
 
+  describe('removePlaylist()', () => {
+    let getOwnedPlaylistsMock: jest.SpyInstance<Promise<Playlist[]>>;
+    let deletePlaylistMock: jest.SpyInstance<Promise<Playlist[]>>;
+
+    beforeEach(() => {
+      getOwnedPlaylistsMock = jest.spyOn(spotifyService.userService, 'getAllOwnedPlaylists');
+      deletePlaylistMock = jest.spyOn(spotifyService.userService, 'deletePlaylist');
+    });
+
+    it('should only delete playlists that a given user owns', async () => {
+      getOwnedPlaylistsMock.mockResolvedValueOnce([
+        {
+          playlistId: '1',
+        },
+        {
+          playlistId: '2',
+        },
+        {
+          playlistId: '3',
+        },
+      ] as Playlist[]);
+      deletePlaylistMock.mockResolvedValueOnce([]);
+      const result = await spotifyService.removePlaylist('123', ['3', '4', '5']);
+      expect(result).toEqual([]);
+      expect(spotifyService.userService.getAllOwnedPlaylists).toHaveBeenCalled();
+      expect(spotifyService.userService.deletePlaylist).toHaveBeenCalledWith([
+        {
+          playlistId: '3',
+        },
+      ]);
+    });
+
+    it('should throw an error when a user does not own any playlists but tries to delete playlists', async () => {
+      getOwnedPlaylistsMock.mockResolvedValueOnce([]);
+      deletePlaylistMock.mockResolvedValueOnce([]);
+      expect.assertions(3);
+      try {
+        await spotifyService.removePlaylist('123', ['3', '4', '5']);
+      } catch (e) {
+        expect(e).toBeDefined();
+        expect(spotifyService.userService.getAllOwnedPlaylists).toHaveBeenCalledTimes(1);
+        expect(spotifyService.userService.deletePlaylist).not.toHaveBeenCalled();
+      }
+    });
+
+    it('should throw an error when a user owns playlists but tries to delete playlists they do not own', async () => {
+      getOwnedPlaylistsMock.mockResolvedValueOnce([{ playlistId: '1' }, { playlistId: '2' }] as Playlist[]);
+      deletePlaylistMock.mockResolvedValueOnce([]);
+      expect.assertions(3);
+      try {
+        await spotifyService.removePlaylist('123', ['3', '4', '5']);
+      } catch (e) {
+        expect(e).toBeDefined();
+        expect(spotifyService.userService.getAllOwnedPlaylists).toHaveBeenCalledTimes(1);
+        expect(spotifyService.userService.deletePlaylist).not.toHaveBeenCalledWith();
+      }
+    });
+  });
+
+  describe('subscribeToPlaylist()', () => {
+    let getUserMock: jest.SpyInstance<Promise<User | undefined>>;
+    let getPlaylistMock: jest.SpyInstance<Promise<Playlist | undefined>>;
+    let subscribeToPlaylistMock: jest.SpyInstance<Promise<AxiosResponse<any, any>>>;
+    let updatePlaylistMembersMock: jest.SpyInstance<Promise<Playlist>>;
+
+    beforeEach(() => {
+      getUserMock = jest.spyOn(spotifyService.userService, 'getUserWithRelations');
+      getPlaylistMock = jest.spyOn(spotifyService.userService, 'getPlaylist');
+      subscribeToPlaylistMock = jest.spyOn(spotifyService.httpService, 'subscribeToPlaylist');
+      updatePlaylistMembersMock = jest.spyOn(spotifyService.userService, 'updatePlaylistMembers');
+    });
+
+    it('should throw an error if user is undefined', async () => {
+      getUserMock.mockResolvedValueOnce(undefined);
+      getPlaylistMock.mockResolvedValueOnce({ playlistId: '1' } as Playlist);
+      try {
+        await spotifyService.subscribeToPlaylist('123', '1');
+      } catch (e) {
+        expect((e as Error).message).toEqual('Unable to find user by accessToken: 123 or playlistId: 1');
+      }
+    });
+
+    it('should throw an error if playlist is undefined', async () => {
+      getUserMock.mockResolvedValueOnce({ id: '1' } as User);
+      getPlaylistMock.mockResolvedValueOnce(undefined);
+      try {
+        await spotifyService.subscribeToPlaylist('123', '1');
+      } catch (e) {
+        expect((e as Error).message).toEqual('Unable to find user by accessToken: 123 or playlistId: 1');
+      }
+    });
+
+    it('should return undefined if the user is already a member of the playlist', async () => {
+      getUserMock.mockResolvedValueOnce({
+        id: '1',
+        memberPlaylists: [{ playlistId: '1' }],
+      } as User);
+      getPlaylistMock.mockResolvedValueOnce({ playlistId: '1' } as Playlist);
+      const result = await spotifyService.subscribeToPlaylist('123', '1');
+      expect(result).toBe(undefined);
+    });
+
+    it('should call httpService.subscribeToPlaylist if a user and playlist exist and the user is not already a member of the playlist', async () => {
+      getUserMock.mockResolvedValueOnce({
+        id: '1',
+        memberPlaylists: [{ playlistId: '2' }],
+      } as User);
+      getPlaylistMock.mockResolvedValueOnce({ playlistId: '1' } as Playlist);
+      subscribeToPlaylistMock.mockResolvedValueOnce({} as AxiosResponse<any, any>);
+      updatePlaylistMembersMock.mockResolvedValueOnce({ playlistId: '1' } as Playlist);
+      const result = await spotifyService.subscribeToPlaylist('123', '1');
+      expect(subscribeToPlaylistMock).toHaveBeenCalledWith('123', '1');
+      expect(updatePlaylistMembersMock).toHaveBeenCalledWith(
+        { id: '1', memberPlaylists: [{ playlistId: '2' }] },
+        { playlistId: '1' },
+      );
+      expect(result).toEqual({ playlistId: '1' });
+    });
+
+    it('should call httpService.subscribeToPlaylist if a user and playlist exist and the user is not already a member of the playlist because they do not have any memberPlaylists', async () => {
+      getUserMock.mockResolvedValueOnce({
+        id: '1',
+        memberPlaylists: undefined,
+      } as User);
+      getPlaylistMock.mockResolvedValueOnce({ playlistId: '1' } as Playlist);
+      subscribeToPlaylistMock.mockResolvedValueOnce({} as AxiosResponse<any, any>);
+      updatePlaylistMembersMock.mockResolvedValueOnce({ playlistId: '1' } as Playlist);
+      const result = await spotifyService.subscribeToPlaylist('123', '1');
+      expect(subscribeToPlaylistMock).toHaveBeenCalledWith('123', '1');
+      expect(updatePlaylistMembersMock).toHaveBeenCalledWith({ id: '1' }, { playlistId: '1' });
+      expect(result).toEqual({ playlistId: '1' });
+    });
+  });
+
+  describe('removeAllPlaylistTracks()', () => {
+    it('should call httpService.removeAllPlaylistTracks one time if under 100 tracks', async () => {
+      const mockTracksUnder100: SpotifyPlaylistItemInfo[] = Array.from({ length: 99 }, (_, _x) => ({
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        is_local: false,
+      })) as SpotifyPlaylistItemInfo[];
+      await spotifyService.removeAllPlaylistTracks('123', '1', mockTracksUnder100);
+      expect(spotifyService.httpService.removeAllPlaylistTracks).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call httpService.removeAllPlaylistTracks multiple times if over 100 tracks', async () => {
+      const mockTracksOver100: SpotifyPlaylistItemInfo[] = Array.from({ length: 101 }, (_, _x) => ({
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        is_local: false,
+      })) as SpotifyPlaylistItemInfo[];
+      await spotifyService.removeAllPlaylistTracks('123', '1', mockTracksOver100);
+      expect(spotifyService.httpService.removeAllPlaylistTracks).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('refreshPlaylist()', () => {
+    it('should add to the queue and immediately dequeue', async () => {
+      jest.spyOn(spotifyService, 'populatePlaylist').mockResolvedValueOnce(undefined);
+      const queueSpy = jest.spyOn(spotifyService.queueService, 'queue');
+      const dequeueSpy = jest.spyOn(spotifyService.queueService, 'dequeue');
+      await spotifyService.refreshPlaylist('123', false);
+      expect(queueSpy).toHaveBeenCalledTimes(1);
+      expect(dequeueSpy).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('getUserData()', () => {
+    let mockGetUserData: jest.SpyInstance<Promise<SpotifyUserData>>;
+
+    beforeEach(() => {
+      mockGetUserData = jest.spyOn(spotifyService.httpService, 'getUserData');
+    });
+
+    it('should return user data when user data is returned', async () => {
+      expect.assertions(1);
+      const mockUser = { email: 'abc@123.com' } as SpotifyUserData;
+      mockGetUserData.mockResolvedValueOnce(mockUser);
+      const userData = await spotifyService.getUserData('123');
+      expect(userData).toBe(mockUser);
+    });
+
+    it('should throw an error when an error is thrown', async () => {
+      expect.assertions(1);
+      const mockError = new Error('Test');
+      mockGetUserData.mockRejectedValueOnce(mockError);
+      await spotifyService.getUserData('123').catch(e => {
+        expect(e).toBe(mockError);
+      });
+    });
+  });
+
   describe('createUserPlaylist()', () => {
     let getUserMock: jest.SpyInstance<Promise<User | null>>;
     let createUserPlaylistMock: jest.SpyInstance<Promise<any>>;
@@ -288,116 +570,59 @@ describe('SpotifyService', () => {
     });
   });
 
-  describe('removePlaylist()', () => {
-    let getOwnedPlaylistsMock: jest.SpyInstance<Promise<Playlist[]>>;
-    let deletePlaylistMock: jest.SpyInstance<Promise<Playlist[]>>;
-
-    beforeEach(() => {
-      getOwnedPlaylistsMock = jest.spyOn(spotifyService.userService, 'getAllOwnedPlaylists');
-      deletePlaylistMock = jest.spyOn(spotifyService.userService, 'deletePlaylist');
-    });
-
-    it('should only delete playlists that a given user owns', async () => {
-      getOwnedPlaylistsMock.mockResolvedValueOnce([
+  describe('filterSongsNotInUSA', () => {
+    it('should return only songs that are available in the US', () => {
+      const songs = [
         {
-          playlistId: '1',
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          available_markets: ['US'],
         },
         {
-          playlistId: '2',
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          available_markets: ['CA'],
         },
         {
-          playlistId: '3',
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          available_markets: ['US'],
         },
-      ] as Playlist[]);
-      deletePlaylistMock.mockResolvedValueOnce([]);
-      const result = await spotifyService.removePlaylist('123', ['3', '4', '5']);
-      expect(result).toEqual([]);
-      expect(spotifyService.userService.getAllOwnedPlaylists).toHaveBeenCalled();
-      expect(spotifyService.userService.deletePlaylist).toHaveBeenCalledWith([
-        {
-          playlistId: '3',
-        },
-      ]);
-    });
-
-    it('should call userService.deletePlaylist with an empty array when a user does not own any playlists but tries to delete playlists', async () => {
-      getOwnedPlaylistsMock.mockResolvedValueOnce([]);
-      deletePlaylistMock.mockResolvedValueOnce([]);
-      const result = await spotifyService.removePlaylist('123', ['3', '4', '5']);
-      expect(result).toEqual([]);
-      expect(spotifyService.userService.getAllOwnedPlaylists).toHaveBeenCalled();
-      expect(spotifyService.userService.deletePlaylist).toHaveBeenCalledWith([]);
-    });
-
-    it('should call userService.deletePlaylist with an empty array when a user owns playlists but tries to delete playlists they do not own', async () => {
-      getOwnedPlaylistsMock.mockResolvedValueOnce([{ playlistId: '1' }, { playlistId: '2' }] as Playlist[]);
-      deletePlaylistMock.mockResolvedValueOnce([]);
-      const result = await spotifyService.removePlaylist('123', ['3', '4', '5']);
-      expect(result).toEqual([]);
-      expect(spotifyService.userService.getAllOwnedPlaylists).toHaveBeenCalled();
-      expect(spotifyService.userService.deletePlaylist).toHaveBeenCalledWith([]);
+      ] as SongWithUserData[];
+      const result = spotifyService.filterSongsNotInUSA(songs);
+      expect(result.length).toBe(2);
+      expect(result[0]).toEqual(songs[0]);
+      expect(result[1]).toEqual(songs[2]);
     });
   });
 
-  describe('subscribeToPlaylist()', () => {
-    let getUserMock: jest.SpyInstance<Promise<User | undefined>>;
-    let getPlaylistMock: jest.SpyInstance<Promise<Playlist | undefined>>;
-    let subscribeToPlaylistMock: jest.SpyInstance<Promise<AxiosResponse<any, any>>>;
-    let updatePlaylistMembersMock: jest.SpyInstance<Promise<Playlist>>;
-
-    beforeEach(() => {
-      getUserMock = jest.spyOn(spotifyService.userService, 'getUserWithRelations');
-      getPlaylistMock = jest.spyOn(spotifyService.userService, 'getPlaylist');
-      subscribeToPlaylistMock = jest.spyOn(spotifyService.httpService, 'subscribeToPlaylist');
-      updatePlaylistMembersMock = jest.spyOn(spotifyService.userService, 'updatePlaylistMembers');
-    });
-
-    it('should throw an error if user is undefined', async () => {
-      getUserMock.mockResolvedValueOnce(undefined);
-      getPlaylistMock.mockResolvedValueOnce({ playlistId: '1' } as Playlist);
-      try {
-        await spotifyService.subscribeToPlaylist('123', '1');
-      } catch (e) {
-        expect((e as Error).message).toEqual('Unable to find user by accessToken: 123 or playlistId: 1');
-      }
-    });
-
-    it('should throw an error if playlist is undefined', async () => {
-      getUserMock.mockResolvedValueOnce({ id: '1' } as User);
-      getPlaylistMock.mockResolvedValueOnce(undefined);
-      try {
-        await spotifyService.subscribeToPlaylist('123', '1');
-      } catch (e) {
-        expect((e as Error).message).toEqual('Unable to find user by accessToken: 123 or playlistId: 1');
-      }
-    });
-
-    it('should return undefined if the user is already a member of the playlist', async () => {
-      getUserMock.mockResolvedValueOnce({ id: '1', memberPlaylists: [{ playlistId: '1' }] } as User);
-      getPlaylistMock.mockResolvedValueOnce({ playlistId: '1' } as Playlist);
-      const result = await spotifyService.subscribeToPlaylist('123', '1');
-      expect(result).toBe(undefined);
-    });
-
-    it('should call httpService.subscribeToPlaylist if a user and playlist exist and the user is not already a member of the playlist', async () => {
-      getUserMock.mockResolvedValueOnce({ id: '1', memberPlaylists: [{ playlistId: '2' }] } as User);
-      getPlaylistMock.mockResolvedValueOnce({ playlistId: '1' } as Playlist);
-      subscribeToPlaylistMock.mockResolvedValueOnce({} as AxiosResponse<any, any>);
-      updatePlaylistMembersMock.mockResolvedValueOnce({ playlistId: '1' } as Playlist);
-      const result = await spotifyService.subscribeToPlaylist('123', '1');
-      expect(subscribeToPlaylistMock).toHaveBeenCalledWith('123', '1');
-      expect(updatePlaylistMembersMock).toHaveBeenCalledWith(
-        { id: '1', memberPlaylists: [{ playlistId: '2' }] },
-        { playlistId: '1' },
-      );
-      expect(result).toEqual({ playlistId: '1' });
+  describe('filterMaxNumberOfSongsPerUserPerArists', () => {
+    it('should return only songs which are not repeated more than the max number of times per artist', () => {
+      const songs = [
+        {
+          artists: [{ id: '1' }, { id: '2' }],
+        },
+        {
+          artists: [{ id: '1' }, { id: '2' }],
+        },
+        {
+          artists: [{ id: '1' }, { id: '3' }],
+        },
+      ] as SongWithUserData[];
+      const result = spotifyService.filterMaxNumberOfSongsPerUserPerArists(songs, 2);
+      expect(result.length).toBe(2);
+      expect(result[0]).toEqual(songs[0]);
+      expect(result[1]).toEqual(songs[1]);
     });
   });
 
   describe('getTopSongs()', () => {
-    let getTopSongsByUserMock: jest.SpyInstance<Promise<SongsByUser>>;
+    let getTopSongsByUserMock: jest.SpyInstance<Promise<SpotifyResponse<SpotifyTrack[]>>>;
     beforeEach(() => {
       getTopSongsByUserMock = jest.spyOn(spotifyService.httpService, 'getTopSongsByUser');
+    });
+
+    it('should return an empty array if members is undefined', async () => {
+      const result = await spotifyService.getTopSongs((undefined as unknown) as User[], []);
+      expect(result).toEqual([]);
+      expect(getTopSongsByUserMock).toHaveBeenCalledTimes(0);
     });
 
     it('should return an empty array if no users are passed in', async () => {
@@ -406,129 +631,418 @@ describe('SpotifyService', () => {
       expect(getTopSongsByUserMock).toHaveBeenCalledTimes(0);
     });
 
-    it('should call httpService.getTopSongsByUser as many times as members.length and only return songs that are not included in history or included in other users top songs', async () => {
+    it('should call httpService.getTopSongsByUser as many times as members.length and only return songs that are not included in history', async () => {
       getTopSongsByUserMock.mockResolvedValueOnce({
-        user: { id: '1' },
-        topSongs: [
+        items: [
           {
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            available_markets: ['US'],
             uri: '1',
+            artists: [{ id: 'abc' }, { id: 'def' }],
           },
           {
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            available_markets: ['US'],
             uri: '2',
+            artists: [{ id: 'ghi' }, { id: 'jkl' }],
           },
         ],
-      } as SongsByUser);
+      } as SpotifyResponse<SpotifyTrack[]>);
       getTopSongsByUserMock.mockResolvedValueOnce({
-        user: { id: '2' },
-        topSongs: [
+        items: [
           {
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            available_markets: ['US'],
             uri: '1',
+            artists: [{ id: 'abc' }, { id: 'def' }],
           },
           {
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            available_markets: ['US'],
             uri: '2',
+            artists: [{ id: 'ghi' }, { id: 'jkl' }],
           },
         ],
-      } as SongsByUser);
+      } as SpotifyResponse<SpotifyTrack[]>);
       getTopSongsByUserMock.mockResolvedValueOnce({
-        user: { id: '3' },
-        topSongs: [
+        items: [
           {
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            available_markets: ['US'],
             uri: '1',
+            artists: [{ id: 'abc' }, { id: 'def' }],
           },
           {
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            available_markets: ['US'],
             uri: '2',
+            artists: [{ id: 'ghi' }, { id: 'jkl' }],
           },
         ],
-      } as SongsByUser);
+      } as SpotifyResponse<SpotifyTrack[]>);
       const mockHistory = ['1'];
-      const memberArr = [{ id: '1' }, { id: '2' }, { id: '3' }] as User[];
+      const memberArr = [{ spotifyId: '1' }, { spotifyId: '2' }, { spotifyId: '3' }] as User[];
       const result = await spotifyService.getTopSongs(memberArr, mockHistory);
       const expected = [
         {
           user: {
-            id: '1',
+            spotifyId: '1',
           },
           topSongs: [
             {
+              // eslint-disable-next-line @typescript-eslint/camelcase
+              available_markets: ['US'],
               uri: '2',
+              artists: [{ id: 'ghi' }, { id: 'jkl' }],
+              spotifyId: '1',
             },
           ],
+          likedSongs: [],
         },
         {
           user: {
-            id: '2',
+            spotifyId: '2',
           },
-          topSongs: [],
+          topSongs: [
+            {
+              // eslint-disable-next-line @typescript-eslint/camelcase
+              available_markets: ['US'],
+              uri: '2',
+              artists: [{ id: 'ghi' }, { id: 'jkl' }],
+              spotifyId: '2',
+            },
+          ],
+          likedSongs: [],
         },
         {
           user: {
-            id: '3',
+            spotifyId: '3',
           },
-          topSongs: [],
+          topSongs: [
+            {
+              // eslint-disable-next-line @typescript-eslint/camelcase
+              available_markets: ['US'],
+              uri: '2',
+              artists: [{ id: 'ghi' }, { id: 'jkl' }],
+              spotifyId: '3',
+            },
+          ],
+          likedSongs: [],
         },
       ];
       expect(result).toEqual(expected);
       expect(getTopSongsByUserMock).toHaveBeenCalledTimes(memberArr.length);
     });
-  });
 
-  describe('filterByHours()', () => {
-    it('should return only songs that were created older than one hour ago', () => {
-      const passingDate1 = subHours(new Date(), 6);
-      const passingDate2 = subHours(new Date(), 3);
-      const mockSongs = [
-        {
-          createdAt: new Date(),
-        },
-        {
-          createdAt: passingDate1,
-        },
-        {
-          createdAt: passingDate2,
-        },
-        {
-          createdAt: new Date(),
-        },
-        {
-          createdAt: new Date(),
-        },
-      ] as Song[];
+    it('should return an empty topSongs and likedSongs when an error is thrown by httpService.getSTopSongs', async () => {
+      getTopSongsByUserMock.mockRejectedValueOnce('Test');
+      const result = await spotifyService.getTopSongs([{ id: '1' } as User], []);
       const expected = [
         {
-          createdAt: passingDate1,
-        },
-        {
-          createdAt: passingDate2,
+          user: {
+            id: '1',
+          },
+          topSongs: [],
+          likedSongs: [],
         },
       ];
-      expect(spotifyService.filterByHours(mockSongs, 'createdAt', 1)).toEqual(expected);
+      expect(result).toEqual(expected);
+    });
+  });
+
+  describe('getLikedSongsIfNecessary()', () => {
+    let mockGetLikedSongsByUser: jest.SpyInstance<Promise<SpotifyResponse<SpotifyTrack[]>>>;
+    beforeEach(() => {
+      mockGetLikedSongsByUser = jest.spyOn(spotifyService.httpService, 'getLikedSongsByUser');
+    });
+
+    it('should return an empty array for likedSongs if there are enough topSongs', async () => {
+      const mockSongsByUser = {
+        user: {
+          id: '1',
+        },
+        topSongs: [
+          {
+            uri: '1',
+          },
+          {
+            uri: '2',
+          },
+        ],
+        likedSongs: [] as SongWithUserData[],
+      } as SongsByUser;
+      const result = await spotifyService.getLikedSongsIfNecessary(mockSongsByUser, 2, []);
+      expect(result.likedSongs).toEqual([]);
+    });
+
+    it('should return likedSongs when there are not enough top songs', async () => {
+      mockGetLikedSongsByUser.mockResolvedValueOnce({
+        items: [
+          {
+            uri: '3',
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            available_markets: ['US'],
+            artists: [{ id: 'ghi' }, { id: 'jkl' }],
+          },
+          {
+            uri: '4',
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            available_markets: ['US'],
+            artists: [{ id: '123' }, { id: '456' }],
+          },
+        ],
+        next: 'fake-url',
+      } as SpotifyResponse<SpotifyTrack[]>);
+      const mockSongsByUser = {
+        user: {
+          id: '1',
+        },
+        topSongs: [
+          {
+            uri: '1',
+          },
+          {
+            uri: '2',
+          },
+        ],
+        likedSongs: [] as SongWithUserData[],
+      } as SongsByUser;
+
+      const result = await spotifyService.getLikedSongsIfNecessary(mockSongsByUser, 3, []);
+      expect(result.likedSongs?.length).toBe(2);
+    });
+
+    it('should return only likedSongs that are not listed in history when there are not enough top songs', async () => {
+      mockGetLikedSongsByUser.mockResolvedValueOnce({
+        items: [
+          {
+            uri: '1',
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            available_markets: ['US'],
+            artists: [{ id: 'ghi' }, { id: 'jkl' }],
+          },
+          {
+            uri: '3',
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            available_markets: ['US'],
+            artists: [{ id: '123' }, { id: '456' }],
+          },
+        ],
+        next: 'fake-url',
+      } as SpotifyResponse<SpotifyTrack[]>);
+      const mockSongsByUser = {
+        user: {
+          spotifyId: '1',
+        },
+        topSongs: [
+          {
+            uri: '1',
+          },
+          {
+            uri: '2',
+          },
+        ],
+        likedSongs: [] as SongWithUserData[],
+      } as SongsByUser;
+      const expected = {
+        ...mockSongsByUser,
+        likedSongs: [
+          {
+            uri: '3',
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            available_markets: ['US'],
+            artists: [{ id: '123' }, { id: '456' }],
+            spotifyId: '1',
+          },
+        ],
+      };
+      const result = await spotifyService.getLikedSongsIfNecessary(mockSongsByUser, 3, ['1', '2']);
+      expect(result).toEqual(expected);
+    });
+
+    it('should return only likedSongs that are not listed in history when there are not enough top songs', async () => {
+      mockGetLikedSongsByUser.mockResolvedValueOnce({
+        items: [
+          {
+            uri: '1',
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            available_markets: ['US'],
+            artists: [{ id: 'ghi' }, { id: 'jkl' }],
+          },
+          {
+            uri: '3',
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            available_markets: ['US'],
+            artists: [{ id: '123' }, { id: '456' }],
+          },
+          {
+            uri: '5',
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            available_markets: ['US'],
+            artists: [{ id: '789' }, { id: '000' }],
+          },
+          {
+            uri: '7',
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            available_markets: ['US'],
+            artists: [{ id: '111' }, { id: '222' }],
+          },
+        ],
+      } as SpotifyResponse<SpotifyTrack[]>);
+      const mockSongsByUser = {
+        user: {
+          spotifyId: '1',
+        } as User,
+        topSongs: [
+          {
+            uri: '1',
+          },
+          {
+            uri: '2',
+          },
+        ],
+        likedSongs: [] as SongWithUserData[],
+      } as SongsByUser;
+      const expected = {
+        ...mockSongsByUser,
+        likedSongs: [
+          {
+            uri: '3',
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            available_markets: ['US'],
+            artists: [{ id: '123' }, { id: '456' }],
+            spotifyId: '1',
+          },
+          {
+            uri: '5',
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            available_markets: ['US'],
+            artists: [{ id: '789' }, { id: '000' }],
+            spotifyId: '1',
+          },
+        ],
+      };
+      const result = await spotifyService.getLikedSongsIfNecessary(mockSongsByUser, 3, ['1', '2', '7']);
+      expect(result).toEqual(expected);
+    });
+
+    it('should return only likedSongs that are not listed in history when there are not enough top songs, and it should call getLIkedSongsIfNecessary twice if more songs are required and next is present', async () => {
+      mockGetLikedSongsByUser.mockResolvedValueOnce({
+        items: [
+          {
+            uri: '1',
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            available_markets: ['US'],
+            artists: [{ id: 'ghi' }, { id: 'jkl' }],
+          },
+        ],
+        next: 'fake-url',
+      } as SpotifyResponse<SpotifyTrack[]>);
+
+      mockGetLikedSongsByUser.mockResolvedValueOnce({
+        items: [
+          {
+            uri: '3',
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            available_markets: ['US'],
+            artists: [{ id: '123' }, { id: '456' }],
+          },
+          {
+            uri: '5',
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            available_markets: ['US'],
+            artists: [{ id: '789' }, { id: '000' }],
+          },
+          {
+            uri: '7',
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            available_markets: ['US'],
+            artists: [{ id: '111' }, { id: '222' }],
+          },
+        ],
+      } as SpotifyResponse<SpotifyTrack[]>);
+      const mockSongsByUser = {
+        user: {
+          spotifyId: '1',
+        } as User,
+        topSongs: [
+          {
+            uri: '1',
+          },
+          {
+            uri: '2',
+          },
+        ],
+        likedSongs: [] as SongWithUserData[],
+      } as SongsByUser;
+      const expected = {
+        ...mockSongsByUser,
+        likedSongs: [
+          {
+            uri: '3',
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            available_markets: ['US'],
+            artists: [{ id: '123' }, { id: '456' }],
+            spotifyId: '1',
+          },
+          {
+            uri: '5',
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            available_markets: ['US'],
+            artists: [{ id: '789' }, { id: '000' }],
+            spotifyId: '1',
+          },
+        ],
+      };
+      const result = await spotifyService.getLikedSongsIfNecessary(mockSongsByUser, 4, ['1', '2', '7']);
+      expect(mockGetLikedSongsByUser).toHaveBeenCalledTimes(2);
+      expect(result).toEqual(expected);
+    });
+
+    it('should return the newSongsByUser if an error is received on call to get liked songs', async () => {
+      mockGetLikedSongsByUser.mockRejectedValueOnce('test');
+      const mockSongsByUser = {
+        user: {
+          id: '1',
+        },
+        topSongs: [
+          {
+            uri: '1',
+          },
+          {
+            uri: '2',
+          },
+        ],
+        likedSongs: [] as SongWithUserData[],
+      } as SongsByUser;
+      const result = await spotifyService.getLikedSongsIfNecessary(mockSongsByUser, 3, []);
+      expect(mockGetLikedSongsByUser).toHaveBeenCalledTimes(1);
+      expect(result).toEqual(mockSongsByUser);
     });
   });
 
   describe('getAllMusic()', () => {
     let mockGetTopSongs: jest.SpyInstance<Promise<SongsByUser[]>>;
-    let mockGetLikedSongsByUser: jest.SpyInstance<Promise<SongsByUser>>;
+    let mockGetLikedSongsIfNecessary: jest.SpyInstance<Promise<SongsByUser>>;
 
     beforeEach(() => {
       mockGetTopSongs = jest.spyOn(spotifyService, 'getTopSongs');
-      mockGetLikedSongsByUser = jest.spyOn(spotifyService.httpService, 'getLikedSongsByUser');
+      mockGetLikedSongsIfNecessary = jest.spyOn(spotifyService, 'getLikedSongsIfNecessary');
     });
 
-    it('should throw an error if getTopSongs call throws an error', async () => {
-      expect.assertions(1);
-      mockGetTopSongs.mockRejectedValueOnce('Test');
-      try {
-        const members = [] as User[];
-        const songsPerUser = 6;
-        const history = [] as Song[];
-        await spotifyService.getAllMusic(members, songsPerUser, history);
-      } catch (e) {
-        expect(e).toBe('Test');
-      }
+    it('should handle an empty topSongs and liked songs arrays', async () => {
+      const generatePlaylistSpy = jest.spyOn(spotifyService, 'generatePlaylist');
+      mockGetTopSongs.mockResolvedValueOnce([]);
+      mockGetLikedSongsIfNecessary.mockResolvedValueOnce({} as SongsByUser);
+      const members = [] as User[];
+      const songsPerUser = 6;
+      const history = [] as Song[];
+      await spotifyService.getAllMusic(members, songsPerUser, history);
+      expect(generatePlaylistSpy).toHaveBeenCalledTimes(1);
     });
 
-    it('should throw an error if getLikedSongsByUser call throws an error', async () => {
-      expect.assertions(1);
+    it('should handle list of members and history', async () => {
+      const generatePlaylistSpy = jest.spyOn(spotifyService, 'generatePlaylist');
       mockGetTopSongs.mockResolvedValueOnce([
         {
           user: {
@@ -538,153 +1052,45 @@ describe('SpotifyService', () => {
             {
               uri: '1',
             },
+            {
+              uri: '2',
+            },
           ],
+          likedSongs: [] as SongWithUserData[],
         },
       ] as SongsByUser[]);
-      mockGetLikedSongsByUser.mockRejectedValueOnce('Test');
-      try {
-        const members = [] as User[];
-        const songsPerUser = 6;
-        const history = [] as Song[];
-        await spotifyService.getAllMusic(members, songsPerUser, history);
-      } catch (e) {
-        expect(e).toBe('Test');
-      }
-    });
-  });
-
-  describe('getLikedSongsIfNecessary()', () => {
-    let mockGetLikedSongsByUser: jest.SpyInstance<Promise<SongsByUser>>;
-    beforeEach(() => {
-      mockGetLikedSongsByUser = jest.spyOn(spotifyService.httpService, 'getLikedSongsByUser');
-    });
-
-    it('should return an undefined likedSongs attribute if there are enough topSongs', async () => {
-      const mockSongsByUser = [
-        {
-          user: {
-            id: '1',
-          },
-          topSongs: [
-            {
-              uri: '1',
-            },
-            {
-              uri: '2',
-            },
-          ],
-        },
-      ] as SongsByUser[];
-      const result = await Promise.all(spotifyService.getLikedSongsIfNecessary(mockSongsByUser, 2, []));
-      expect(result[0].likedSongs).toBeUndefined();
-    });
-
-    it('should return likedSongs when there are not enough top songs', async () => {
-      mockGetLikedSongsByUser.mockResolvedValueOnce({
+      mockGetLikedSongsIfNecessary.mockResolvedValueOnce({
         user: {
           id: '1',
         },
-        likedSongs: [
-          {
-            uri: '3',
-          },
-          {
-            uri: '4',
-          },
-        ],
-      } as SongsByUser);
-      const mockSongsByUser = [
-        {
-          user: {
-            id: '1',
-          },
-          topSongs: [
-            {
-              uri: '1',
-            },
-            {
-              uri: '2',
-            },
-          ],
-        },
-      ] as SongsByUser[];
-
-      const result = await Promise.all(spotifyService.getLikedSongsIfNecessary(mockSongsByUser, 3, []));
-      expect(result[0].likedSongs?.length).toBe(2);
-    });
-
-    it('should return only likedSongs that are not also topSongs when there are not enough top songs', async () => {
-      mockGetLikedSongsByUser.mockResolvedValueOnce({
-        user: {
-          id: '1',
-        },
-        likedSongs: [
+        topSongs: [
           {
             uri: '1',
           },
           {
-            uri: '3',
+            uri: '2',
           },
         ],
+        likedSongs: [] as SongWithUserData[],
       } as SongsByUser);
-      const mockSongsByUser = [
+      const members = [
         {
-          user: {
-            id: '1',
-          },
-          topSongs: [
-            {
-              uri: '1',
-            },
-            {
-              uri: '2',
-            },
-          ],
-        },
-      ] as SongsByUser[];
-      const expected = [{ uri: '3' }];
-      const result = await Promise.all(spotifyService.getLikedSongsIfNecessary(mockSongsByUser, 3, []));
-      expect(result[0].likedSongs).toEqual(expected);
-    });
-
-    it('should return only likedSongs that are not also topSongs, and also not listed in history when there are not enough top songs', async () => {
-      mockGetLikedSongsByUser.mockResolvedValueOnce({
-        user: {
           id: '1',
-        },
-        likedSongs: [
-          {
-            uri: '1',
-          },
-          {
-            uri: '3',
-          },
-          {
-            uri: '5',
-          },
-          {
-            uri: '7',
-          },
-        ],
-      } as SongsByUser);
-      const mockSongsByUser = [
+        } as User,
+      ] as User[];
+      const songsPerUser = 6;
+      const history = [
         {
-          user: {
-            id: '1',
-          },
-          topSongs: [
-            {
-              uri: '1',
-            },
-            {
-              uri: '2',
-            },
-          ],
+          spotifyUrl: '1',
         },
-      ] as SongsByUser[];
-      const expected = [{ uri: '3' }, { uri: '5' }];
-      const result = await Promise.all(spotifyService.getLikedSongsIfNecessary(mockSongsByUser, 3, ['7']));
-      expect(result[0].likedSongs).toEqual(expected);
+        {
+          spotifyUrl: '2',
+        },
+      ] as Song[];
+      await spotifyService.getAllMusic(members, songsPerUser, history);
+      expect(generatePlaylistSpy).toHaveBeenCalledTimes(1);
+      expect(mockGetTopSongs).toHaveBeenCalledTimes(1);
+      expect(mockGetLikedSongsIfNecessary).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -717,9 +1123,11 @@ describe('SpotifyService', () => {
               uri: '3',
             },
           ],
+          likedSongs: [] as SongWithUserData[],
         },
       ] as SongsByUser[];
-      expect(spotifyService.generatePlaylist(mockSongs, 3)).toEqual(expected);
+      const result = spotifyService.generatePlaylist(mockSongs, 3);
+      expect(result).toEqual(expected);
     });
 
     it('should populate the playlist with top songs and liked songs if there are not enough top songs', () => {
@@ -777,10 +1185,20 @@ describe('SpotifyService', () => {
           ],
         },
       ] as SongsByUser[];
+      const expected = [
+        {
+          uri: '1',
+        },
+        {
+          uri: '2',
+        },
+        {
+          uri: '3',
+        },
+      ] as SongWithUserData[];
+
       const result = spotifyService.generatePlaylist(mockSongs, 3);
-      expect(result.indexOf({ uri: '1' } as SongWithUserData)).toBeTruthy();
-      expect(result.indexOf({ uri: '2' } as SongWithUserData)).toBeTruthy();
-      expect(result.indexOf({ uri: '3' } as SongWithUserData)).toBeTruthy();
+      expect(result).toEqual(expected);
     });
   });
 
