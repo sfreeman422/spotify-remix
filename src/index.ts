@@ -53,7 +53,7 @@ axios.interceptors.response.use(undefined, error => {
 });
 
 axiosRetry(axios, {
-  retries: 10,
+  retries: 5,
   retryDelay: retryCount => retryCount * 1000,
   retryCondition: err => (err?.response?.status && err.response.status >= 403) || err?.response?.status === undefined,
 });

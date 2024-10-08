@@ -66,6 +66,7 @@ export class AuthService {
         if (!err && response.statusCode === 200) {
           const accessToken = body.access_token;
           const refreshToken = body.refresh_token;
+          console.log('succesfully made call to get tokens', body);
           resolve({ accessToken, refreshToken });
         } else {
           reject(err);
@@ -75,10 +76,15 @@ export class AuthService {
   }
 
   async getUserDataAndSaveUser(code: string): Promise<User> {
-    const tokens = await this.getTokens(code).catch(e => {
-      console.error(e);
-      throw new Error(e);
-    });
+    const tokens = await this.getTokens(code)
+      .then(tokens => {
+        console.log('received tokens accessToken:', tokens.accessToken, 'refreshToken:', tokens.refreshToken);
+        return tokens;
+      })
+      .catch(e => {
+        console.error(e);
+        throw new Error(e);
+      });
     const userData = await this.spotifyService.getUserData(tokens.accessToken).catch(e => {
       console.error(e);
       throw new Error(e);

@@ -8,6 +8,14 @@ export class QueueService {
   private static instance: QueueService;
   private state: Record<string, (() => Promise<any>)[]> = {};
 
+  getKeys(): string[] {
+    return Object.keys(this.state);
+  }
+
+  getState(key: string): (() => Promise<any>)[] {
+    return this.state[key];
+  }
+
   queue<T>(key: string, fn: () => Promise<T>): (() => Promise<T>)[] {
     if (this.state[key] && this.state[key].length) {
       this.state[key].push(fn);
@@ -19,19 +27,27 @@ export class QueueService {
     return this.state[key];
   }
 
-  dequeue(key: string): Promise<void> {
-    console.log('Attempting to dequeue for ', key);
-    if (Object.keys(this.state).includes(key) && this.state[key].length) {
-      console.log('Key found, running dequeue function for ', key);
-      return this.state[key][0]().then(() => {
-        this.state[key].splice(0, 1);
-        return this.dequeue(key);
-      });
-    }
+  removeKey(key: string): Promise<void> {
     return new Promise(resolve => {
-      console.log('Unable to dequeue due to lack of fn in queue for ', key, 'removing this.state[key]');
       delete this.state[key];
       resolve();
     });
+  }
+
+  dequeue(key: string): Promise<void> {
+    console.log('Attempting to dequeue for ', key);
+    const state = this.getState(key);
+    if (state?.length) {
+      console.log('Key found, running dequeue function for ', key);
+      return state[0]().then(() => {
+        state.splice(0, 1);
+        if (state.length) {
+          return this.dequeue(key);
+        } else {
+          return this.removeKey(key);
+        }
+      });
+    }
+    return this.removeKey(key);
   }
 }
