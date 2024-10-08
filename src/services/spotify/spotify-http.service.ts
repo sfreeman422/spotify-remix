@@ -173,7 +173,6 @@ export class SpotifyHttpService {
       .then((x: AxiosResponse<SpotifyResponse<SpotifyTrack[]>>) => {
         return x.data;
       })
-
       .catch(e => {
         console.error(e);
         throw new Error(e);
