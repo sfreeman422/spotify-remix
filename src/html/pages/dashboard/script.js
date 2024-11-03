@@ -56,7 +56,7 @@ function createOwnedPlaylists(playlists) {
       (document.getElementById('managed-playlists').innerHTML += `
                   <div class="card">
                     <div class="flex-hor-center">
-                      <img src=${item && item.images[1] && item.images[1].url} class="playlist-img"></img>
+                      <img src=${item && item?.images?.[1] && item?.images?.[1].url} class="playlist-img"></img>
                     </div>
                     <h4 class="white">${item.name}</h3>
                     <div class="flex-space-even">
@@ -196,6 +196,21 @@ function createPlaylist() {
       setTokens(x.accessToken, x.refreshToken);
     }
     playlistButton.innerHTML = 'Create a New Remix';
+    getPlaylistsAndBuildDivs();
+  });
+}
+
+function refreshPlaylist(playlistId) {
+  const accessToken = localStorage.getItem('spotify-remix-access-token');
+  fetch(`/refresh/${playlistId}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  }).then(x => {
+    if (x.accessToken && x.refreshToken) {
+      setTokens(x.accessToken, x.refreshToken);
+    }
     getPlaylistsAndBuildDivs();
   });
 }

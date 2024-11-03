@@ -303,6 +303,8 @@ playlistController.post('/refresh/:playlistId', (req, res) => {
     }),
   );
 
+  // check if authorization token is for user who owns the playlist. If it is, allow a refresh, if not, check for spotify_remiv_api_key if netiher, throw 401.
+
   if (playlistId && authorization === process.env.SPOTIFY_REMIX_API_KEY) {
     spotifyService
       .refreshPlaylist(playlistId)

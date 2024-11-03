@@ -101,7 +101,9 @@ export class SpotifyService {
     playlistTracks: SpotifyPlaylistItemInfo[],
   ): Promise<any> {
     const calls = [];
-    if (playlistTracks.length > 100) {
+    if (!playlistTracks.length) {
+      return Promise.resolve();
+    } else if (playlistTracks.length > 100) {
       const numberOfCalls = Math.ceil(playlistTracks.length / 100);
       let lastIndex = 0;
       for (let i = 0; i < numberOfCalls; i++) {
